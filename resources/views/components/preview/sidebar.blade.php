@@ -14,11 +14,17 @@
             <a class="abk-nav-link {{ $index === 0 ? 'active' : '' }}" href="{{ route('dev.preview', $role) }}">{{ $menu }}</a>
         @endforeach
     </nav>
-    <div class="mt-4 pt-3 border-top border-secondary-subtle">
-        <div class="small text-uppercase text-white-50 mb-2">Preview role</div>
-        @foreach ($roles as $key => $item)
-            <a class="abk-nav-link px-2 py-1 min-vh-0 {{ $key === $role ? 'text-white' : '' }}" href="{{ route('dev.preview', $key) }}">{{ $item['label'] }}</a>
-        @endforeach
+    <div class="mt-4 pt-3 border-top border-secondary-subtle abk-dev-controls">
+        <div class="small text-uppercase text-white-50 mb-2">Development only</div>
+        <div class="small text-white-50 mb-3">Role aktif: {{ $roles[$role]['label'] }}</div>
+        <form method="POST" action="{{ route('dev.change-role') }}">
+            @csrf
+            <button type="submit" class="abk-dev-button">Ganti Role</button>
+        </form>
+        <form method="POST" action="{{ route('dev.logout') }}" class="mt-2">
+            @csrf
+            <button type="submit" class="abk-dev-button abk-dev-button-muted">Keluar</button>
+        </form>
     </div>
     <div class="abk-sidebar-footer">{{ $roles[$role]['label'] }}<div class="abk-preview-only">Preview lokal</div></div>
 </aside>
