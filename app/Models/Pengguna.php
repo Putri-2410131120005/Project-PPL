@@ -2,23 +2,28 @@
 
 namespace App\Models;
 
-use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\Relations\HasOne;
+use Illuminate\Foundation\Auth\User as Authenticatable;
 
 class Pengguna extends Authenticatable
 {
     protected $table = 'pengguna';
+
     protected $primaryKey = 'id_pengguna';
+
     public $timestamps = false;
 
     protected $fillable = [
         'id_role',
         'nama',
+        'nip',
         'username',
         'email',
         'password',
+        'password_diubah_pada',
+        'wajib_ganti_password',
         'status_akun',
     ];
 
@@ -28,6 +33,8 @@ class Pengguna extends Authenticatable
     {
         return [
             'password' => 'hashed',
+            'password_diubah_pada' => 'datetime',
+            'wajib_ganti_password' => 'boolean',
         ];
     }
 

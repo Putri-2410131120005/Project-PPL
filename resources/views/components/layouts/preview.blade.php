@@ -1,4 +1,4 @@
-@props(['role', 'roles', 'title' => 'Preview SMART-ABK'])
+@props(['role', 'roles', 'title' => 'Preview SMART-ABK', 'active' => 'dashboard'])
 
 <!doctype html>
 <html lang="{{ str_replace('_', '-', app()->getLocale()) }}">
@@ -10,10 +10,11 @@
 </head>
 <body class="abk-preview">
     <div class="abk-shell">
-        <x-preview.sidebar :role="$role" :roles="$roles" />
+        <x-preview.sidebar :role="$role" :roles="$roles" :active="$active" />
         <main class="abk-main">
             {{ $slot }}
         </main>
     </div>
+    <x-preview.confirmation-modal />
 </body>
 </html>
