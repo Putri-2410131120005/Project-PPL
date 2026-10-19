@@ -2,23 +2,21 @@
 
 namespace App\Http\Controllers\Dev;
 
-use App\Http\Controllers\Controller;
 use App\Models\Kelas;
 use App\Models\MataPelajaran;
-use Illuminate\Database\QueryException;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Validation\Rule;
 use Illuminate\View\View;
 
-class AdminMasterDataController extends Controller
+class AdminMasterDataController extends AdminController
 {
     /** @var list<string> */
-    private const CLASS_STATUSES = ['Aktif', 'Diarsipkan'];
+    private const STATUSES = ['Aktif', 'Diarsipkan'];
 
     /** @var list<string> */
-    private const SUBJECT_STATUSES = ['Aktif', 'Diarsipkan'];
+    private const LEVELS = ['X', 'XI', 'XII'];
 
     public function classesIndex(Request $request): View
     {
@@ -39,13 +37,13 @@ class AdminMasterDataController extends Controller
             });
         }
 
-        if (($status = $request->string('status')->toString()) && in_array($status, self::CLASS_STATUSES, true)) {
+        if (($status = $request->string('status')->toString()) && in_array($status, self::STATUSES, true)) {
             $query->where('status_kelas', $status);
         }
 
         return view('dev.admin.master-data.classes.index', [
             'classes' => $query->paginate($this->perPage($request))->withQueryString(),
-            'classStatuses' => self::CLASS_STATUSES,
+            'classStatuses' => self::STATUSES,
             'filters' => $request->only(['cari', 'status']),
             ...$this->viewContext(),
         ]);
@@ -87,29 +85,6 @@ class AdminMasterDataController extends Controller
         return redirect()->route('dev.admin.classes.index')->with('success', $message);
     }
 
-    public function classesDestroy(Kelas $kelas): RedirectResponse
-    {
-        try {
-            $blockers = $this->classDeletionBlockers($kelas);
-
-            if ($blockers !== []) {
-                return redirect()->route('dev.admin.classes.index')->with(
-                    'error',
-                    "Kelas {$kelas->nama_kelas} tidak dapat dihapus karena ".implode(', ', $blockers).'.'
-                );
-            }
-
-            $kelas->delete();
-        } catch (QueryException) {
-            return redirect()->route('dev.admin.classes.index')->with(
-                'error',
-                'Kelas tidak dapat dihapus karena baru saja digunakan oleh data lain. Hapus atau pindahkan relasinya terlebih dahulu.'
-            );
-        }
-
-        return redirect()->route('dev.admin.classes.index')->with('success', "Kelas {$kelas->nama_kelas} berhasil dihapus.");
-    }
-
     public function subjectsIndex(Request $request): View
     {
         $query = MataPelajaran::query()
@@ -122,13 +97,13 @@ class AdminMasterDataController extends Controller
             $query->where('nama_mapel', 'like', "%{$search}%");
         }
 
-        if (($status = $request->string('status')->toString()) && in_array($status, self::SUBJECT_STATUSES, true)) {
+        if (($status = $request->string('status')->toString()) && in_array($status, self::STATUSES, true)) {
             $query->where('status_mapel', $status);
         }
 
         return view('dev.admin.master-data.subjects.index', [
             'subjects' => $query->paginate($this->perPage($request))->withQueryString(),
-            'subjectStatuses' => self::SUBJECT_STATUSES,
+            'subjectStatuses' => self::STATUSES,
             'filters' => $request->only(['cari', 'status']),
             ...$this->viewContext(),
         ]);
@@ -141,14 +116,7 @@ class AdminMasterDataController extends Controller
 
     public function subjectsStore(Request $request): RedirectResponse
     {
-        $data = $this->validatedSubject($request);
-        $classIds = $data['id_kelas'];
-        unset($data['id_kelas']);
-
-        DB::transaction(function () use ($data, $classIds): void {
-            $subject = MataPelajaran::create($data);
-            $subject->kelas()->sync($classIds);
-        }, 3);
+        $this->saveSubject(new MataPelajaran, $this->validatedSubject($request));
 
         return redirect()->route('dev.admin.subjects.index')->with('success', 'Mata pelajaran berhasil ditambahkan.');
     }
@@ -160,14 +128,7 @@ class AdminMasterDataController extends Controller
 
     public function subjectsUpdate(Request $request, MataPelajaran $mataPelajaran): RedirectResponse
     {
-        $data = $this->validatedSubject($request, $mataPelajaran);
-        $classIds = $data['id_kelas'];
-        unset($data['id_kelas']);
-
-        DB::transaction(function () use ($mataPelajaran, $data, $classIds): void {
-            $mataPelajaran->update($data);
-            $mataPelajaran->kelas()->sync($classIds);
-        }, 3);
+        $this->saveSubject($mataPelajaran, $this->validatedSubject($request, $mataPelajaran));
 
         return redirect()->route('dev.admin.subjects.index')->with('success', 'Mata pelajaran berhasil diperbarui.');
     }
@@ -184,34 +145,12 @@ class AdminMasterDataController extends Controller
         return redirect()->route('dev.admin.subjects.index')->with('success', $message);
     }
 
-    public function subjectsDestroy(MataPelajaran $mataPelajaran): RedirectResponse
-    {
-        try {
-            $blockers = $this->subjectDeletionBlockers($mataPelajaran);
-
-            if ($blockers !== []) {
-                return redirect()->route('dev.admin.subjects.index')->with(
-                    'error',
-                    "Mata pelajaran {$mataPelajaran->nama_mapel} tidak dapat dihapus karena ".implode(', ', $blockers).'.'
-                );
-            }
-
-            $mataPelajaran->delete();
-        } catch (QueryException) {
-            return redirect()->route('dev.admin.subjects.index')->with(
-                'error',
-                'Mata pelajaran tidak dapat dihapus karena baru saja digunakan oleh data lain. Hapus atau pindahkan relasinya terlebih dahulu.'
-            );
-        }
-
-        return redirect()->route('dev.admin.subjects.index')->with('success', "Mata pelajaran {$mataPelajaran->nama_mapel} berhasil dihapus.");
-    }
-
     private function classForm(Kelas $kelas, string $title): View
     {
         return view('dev.admin.master-data.classes.form', [
             'kelas' => $kelas,
-            'classStatuses' => self::CLASS_STATUSES,
+            'classStatuses' => self::STATUSES,
+            'classLevels' => self::LEVELS,
             'title' => $title,
             ...$this->viewContext(),
         ]);
@@ -237,7 +176,7 @@ class AdminMasterDataController extends Controller
                 ->orderBy('nama_kelas')
                 ->get(),
             'linkedClassIds' => $linkedClassIds,
-            'subjectStatuses' => self::SUBJECT_STATUSES,
+            'subjectStatuses' => self::STATUSES,
             'title' => $title,
             ...$this->viewContext(),
         ]);
@@ -260,9 +199,9 @@ class AdminMasterDataController extends Controller
 
         $data = $request->validate([
             'nama_kelas' => ['required', 'string', 'max:50', $uniqueClass],
-            'tingkat' => ['required', 'string', 'max:10'],
+            'tingkat' => ['required', Rule::in(self::LEVELS)],
             'tahun_ajaran' => ['required', 'string', 'max:20'],
-            'status_kelas' => ['nullable', Rule::in(self::CLASS_STATUSES)],
+            'status_kelas' => ['nullable', Rule::in(self::STATUSES)],
         ], [
             'nama_kelas.unique' => 'Kelas dengan tingkat dan tahun ajaran yang sama sudah ada.',
         ]);
@@ -294,7 +233,7 @@ class AdminMasterDataController extends Controller
 
         $data = $request->validate([
             'nama_mapel' => ['required', 'string', 'max:100', $uniqueSubject],
-            'status_mapel' => ['nullable', Rule::in(self::SUBJECT_STATUSES)],
+            'status_mapel' => ['nullable', Rule::in(self::STATUSES)],
             'id_kelas' => ['required', 'array', 'min:1'],
             'id_kelas.*' => ['integer', 'distinct', $availableClass],
         ], [
@@ -309,61 +248,18 @@ class AdminMasterDataController extends Controller
     }
 
     /**
-     * @return list<string>
+     * Menyimpan mata pelajaran beserta kelas yang dipilih.
+     *
+     * @param  array{nama_mapel: string, status_mapel: string, id_kelas: list<int>}  $data
      */
-    private function classDeletionBlockers(Kelas $kelas): array
+    private function saveSubject(MataPelajaran $mataPelajaran, array $data): void
     {
-        $blockers = [];
+        $classIds = $data['id_kelas'];
+        unset($data['id_kelas']);
 
-        if ($kelas->siswa()->exists()) {
-            $blockers[] = 'masih memiliki siswa';
-        }
-
-        if ($kelas->relasiGuruMapelKelas()->exists()) {
-            $blockers[] = 'masih dipetakan ke guru atau mata pelajaran';
-        }
-
-        return $blockers;
-    }
-
-    /**
-     * @return list<string>
-     */
-    private function subjectDeletionBlockers(MataPelajaran $mataPelajaran): array
-    {
-        $blockers = [];
-
-        if ($mataPelajaran->catatanPerkembangan()->exists()) {
-            $blockers[] = 'sudah memiliki catatan perkembangan';
-        }
-
-        if ($mataPelajaran->relasiGuruMapelKelas()->exists()) {
-            $blockers[] = 'masih dipetakan ke guru atau kelas';
-        }
-
-        return $blockers;
-    }
-
-    private function perPage(Request $request): int
-    {
-        return in_array($request->integer('per_halaman'), [10, 30, 50, 100], true)
-            ? $request->integer('per_halaman')
-            : 10;
-    }
-
-    private function viewContext(): array
-    {
-        return [
-            'role' => 'admin',
-            'profile' => ['label' => 'Admin / Pengelola', 'name' => 'Administrator', 'initials' => 'AD'],
-            'previewRoles' => [
-                'admin' => ['label' => 'Admin / Pengelola', 'name' => 'Administrator', 'initials' => 'AD'],
-                'guru-mapel' => ['label' => 'Guru Mata Pelajaran', 'name' => 'Guru Mata Pelajaran', 'initials' => 'GM'],
-                'tim-inklusi' => ['label' => 'Tim Inklusi', 'name' => 'Tim Inklusi', 'initials' => 'TI'],
-                'gpk' => ['label' => 'GPK', 'name' => 'Guru Pendamping Khusus', 'initials' => 'GP'],
-                'kepala-sekolah' => ['label' => 'Kepala Sekolah', 'name' => 'Kepala Sekolah', 'initials' => 'KS'],
-                'orang-tua' => ['label' => 'Orang Tua', 'name' => 'Orang Tua/Wali', 'initials' => 'OT'],
-            ],
-        ];
+        DB::transaction(function () use ($mataPelajaran, $data, $classIds): void {
+            $mataPelajaran->fill($data)->save();
+            $mataPelajaran->kelas()->sync($classIds);
+        }, 3);
     }
 }

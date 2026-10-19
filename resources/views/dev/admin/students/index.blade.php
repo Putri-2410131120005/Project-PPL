@@ -2,8 +2,7 @@
     <x-preview.topbar title="Kelola Data Siswa ABK" subtitle="Kelola data induk siswa, kelas, kebutuhan khusus, dan status keaktifan." :profile="$profile" />
     <div class="abk-breadcrumb"><a href="{{ route('dev.preview', 'admin') }}">Dashboard</a> <span>/</span> Siswa ABK</div>
 
-    @if (session('success'))<div class="alert alert-success abk-alert">{{ session('success') }}</div>@endif
-    @if (session('error'))<div class="alert alert-danger abk-alert">{{ session('error') }}</div>@endif
+    <x-preview.flash-messages />
 
     <section class="abk-panel abk-users-toolbar">
         <form class="abk-search-form" method="GET" action="{{ route('dev.admin.students.index') }}">

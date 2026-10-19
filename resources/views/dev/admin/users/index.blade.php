@@ -2,8 +2,7 @@
     <x-preview.topbar title="Kelola Pengguna" subtitle="Master akun seluruh pengguna, termasuk Orang Tua/Wali. Gunakan filter untuk memilih role." :profile="$profile" />
     <div class="abk-breadcrumb"><a href="{{ route('dev.preview', 'admin') }}">Dashboard</a> <span>/</span> Pengguna</div>
 
-    @if (session('success'))<div class="alert alert-success abk-alert">{{ session('success') }}</div>@endif
-    @if (session('error'))<div class="alert alert-danger abk-alert">{{ session('error') }}</div>@endif
+    <x-preview.flash-messages />
     @if (session('temporary_parent_password'))
         <div class="alert alert-warning abk-alert"><strong>Kredensial akun:</strong> username <code>{{ session('temporary_parent_username') }}</code> dan password sementara <code>{{ session('temporary_parent_password') }}</code>. Jika kredensial ini hilang, admin dapat menggunakan Reset Password kembali.</div>
     @endif

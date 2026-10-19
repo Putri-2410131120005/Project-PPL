@@ -19,7 +19,12 @@
                 </div>
                 <div class="col-12 col-md-6">
                     <label class="form-label" for="tingkat">Tingkat</label>
-                    <input class="form-control @error('tingkat') is-invalid @enderror" id="tingkat" name="tingkat" value="{{ old('tingkat', $kelas->tingkat) }}" required maxlength="10" placeholder="Contoh: X atau 1">
+                    <select class="form-select @error('tingkat') is-invalid @enderror" id="tingkat" name="tingkat" required>
+                        <option value="">Pilih tingkat</option>
+                        @foreach ($classLevels as $level)
+                            <option value="{{ $level }}" @selected(old('tingkat', $kelas->tingkat) === $level)>{{ $level }}</option>
+                        @endforeach
+                    </select>
                     @error('tingkat')<div class="invalid-feedback">{{ $message }}</div>@enderror
                 </div>
                 <div class="col-12 col-md-6">

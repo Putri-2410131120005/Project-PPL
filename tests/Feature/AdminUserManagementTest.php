@@ -160,7 +160,7 @@ class AdminUserManagementTest extends TestCase
         $this->withSession(['dev_role' => 'admin'])
             ->get(route('dev.admin.users.create'))
             ->assertOk()
-            ->assertSee('Penugasan awal Guru Mata Pelajaran')
+            ->assertSee('Pilih Mata Pelajaran dan Kelas yang Diajar')
             ->assertSee('Mata pelajaran')
             ->assertSee('name="id_kelas[]"', false);
 

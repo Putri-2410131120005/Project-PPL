@@ -21,10 +21,7 @@ Route::get('/', function () {
     return view('welcome');
 });
 
-/*
- * Development-only role selector. It is not application authentication and is
- * never registered in production.
- */
+// Pemilih peran ini hanya tersedia pada lingkungan pengembangan dan pengujian.
 if (app()->environment(['local', 'testing'])) {
     $roles = [
         'admin' => ['label' => 'Admin / Pengelola', 'name' => 'Administrator', 'initials' => 'AD'],
@@ -76,67 +73,69 @@ if (app()->environment(['local', 'testing'])) {
             Route::put('/orang-tua/ganti-password', [ParentAuthController::class, 'updatePassword'])->name('parent.password.update');
         });
 
-        Route::prefix('admin/pengguna')->name('admin.users.')->middleware('dev.admin')->group(function () {
-            Route::get('/', [AdminUserController::class, 'index'])->name('index');
-            Route::get('/tambah', [AdminUserController::class, 'create'])->name('create');
-            Route::post('/', [AdminUserController::class, 'store'])->name('store');
-            Route::get('/orang-tua/tambah', [AdminUserController::class, 'createParent'])->name('parents.create');
-            Route::post('/orang-tua', [AdminUserController::class, 'storeParent'])->name('parents.store');
-            Route::get('/{pengguna}/ubah', [AdminUserController::class, 'edit'])->name('edit');
-            Route::put('/{pengguna}', [AdminUserController::class, 'update'])->name('update');
-            Route::patch('/{pengguna}/status', [AdminUserController::class, 'toggleStatus'])->name('status');
-            Route::patch('/{pengguna}/reset-password', [AdminUserController::class, 'resetParentPassword'])->name('reset-password');
-        });
+        Route::middleware('dev.admin')->group(function () {
+            Route::prefix('admin/pengguna')->name('admin.users.')->group(function () {
+                Route::get('/', [AdminUserController::class, 'index'])->name('index');
+                Route::get('/tambah', [AdminUserController::class, 'create'])->name('create');
+                Route::post('/', [AdminUserController::class, 'store'])->name('store');
+                Route::get('/orang-tua/tambah', [AdminUserController::class, 'createParent'])->name('parents.create');
+                Route::post('/orang-tua', [AdminUserController::class, 'storeParent'])->name('parents.store');
+                Route::get('/{pengguna}/ubah', [AdminUserController::class, 'edit'])->name('edit');
+                Route::put('/{pengguna}', [AdminUserController::class, 'update'])->name('update');
+                Route::patch('/{pengguna}/status', [AdminUserController::class, 'toggleStatus'])->name('status');
+                Route::patch('/{pengguna}/reset-password', [AdminUserController::class, 'resetParentPassword'])->name('reset-password');
+            });
 
-        Route::prefix('admin/guru')->name('admin.staff.')->middleware('dev.admin')->group(function () {
-            Route::get('/', [AdminUserController::class, 'staffIndex'])->name('index');
-            Route::get('/tambah', [AdminUserController::class, 'createStaff'])->name('create');
-            Route::post('/', [AdminUserController::class, 'storeStaff'])->name('store');
-            Route::get('/{pengguna}/ubah', [AdminUserController::class, 'editStaff'])->name('edit');
-            Route::put('/{pengguna}', [AdminUserController::class, 'updateStaff'])->name('update');
-        });
+            Route::prefix('admin/guru')->name('admin.staff.')->group(function () {
+                Route::get('/', [AdminUserController::class, 'staffIndex'])->name('index');
+                Route::get('/tambah', [AdminUserController::class, 'createStaff'])->name('create');
+                Route::post('/', [AdminUserController::class, 'storeStaff'])->name('store');
+                Route::get('/{pengguna}/ubah', [AdminUserController::class, 'editStaff'])->name('edit');
+                Route::put('/{pengguna}', [AdminUserController::class, 'updateStaff'])->name('update');
+            });
 
-        Route::prefix('admin/orang-tua')->name('admin.parents.')->middleware('dev.admin')->group(function () {
-            Route::get('/', [AdminUserController::class, 'parentsIndex'])->name('index');
-        });
+            Route::prefix('admin/orang-tua')->name('admin.parents.')->group(function () {
+                Route::get('/', [AdminUserController::class, 'parentsIndex'])->name('index');
+            });
 
-        Route::prefix('admin/siswa')->name('admin.students.')->middleware('dev.admin')->group(function () {
-            Route::get('/', [AdminStudentController::class, 'index'])->name('index');
-            Route::get('/tambah', [AdminStudentController::class, 'create'])->name('create');
-            Route::post('/', [AdminStudentController::class, 'store'])->name('store');
-            Route::get('/{siswa}/ubah', [AdminStudentController::class, 'edit'])->name('edit');
-            Route::put('/{siswa}', [AdminStudentController::class, 'update'])->name('update');
-        });
+            Route::prefix('admin/siswa')->name('admin.students.')->group(function () {
+                Route::get('/', [AdminStudentController::class, 'index'])->name('index');
+                Route::get('/tambah', [AdminStudentController::class, 'create'])->name('create');
+                Route::post('/', [AdminStudentController::class, 'store'])->name('store');
+                Route::get('/{siswa}/ubah', [AdminStudentController::class, 'edit'])->name('edit');
+                Route::put('/{siswa}', [AdminStudentController::class, 'update'])->name('update');
+            });
 
-        Route::prefix('admin/kelas')->name('admin.classes.')->middleware('dev.admin')->group(function () {
-            Route::get('/', [AdminMasterDataController::class, 'classesIndex'])->name('index');
-            Route::get('/tambah', [AdminMasterDataController::class, 'classesCreate'])->name('create');
-            Route::post('/', [AdminMasterDataController::class, 'classesStore'])->name('store');
-            Route::get('/{kelas}/ubah', [AdminMasterDataController::class, 'classesEdit'])->name('edit');
-            Route::put('/{kelas}', [AdminMasterDataController::class, 'classesUpdate'])->name('update');
-            Route::patch('/{kelas}/status', [AdminMasterDataController::class, 'classesToggleArchive'])->name('status');
-        });
+            Route::prefix('admin/kelas')->name('admin.classes.')->group(function () {
+                Route::get('/', [AdminMasterDataController::class, 'classesIndex'])->name('index');
+                Route::get('/tambah', [AdminMasterDataController::class, 'classesCreate'])->name('create');
+                Route::post('/', [AdminMasterDataController::class, 'classesStore'])->name('store');
+                Route::get('/{kelas}/ubah', [AdminMasterDataController::class, 'classesEdit'])->name('edit');
+                Route::put('/{kelas}', [AdminMasterDataController::class, 'classesUpdate'])->name('update');
+                Route::patch('/{kelas}/status', [AdminMasterDataController::class, 'classesToggleArchive'])->name('status');
+            });
 
-        Route::prefix('admin/mata-pelajaran')->name('admin.subjects.')->middleware('dev.admin')->group(function () {
-            Route::get('/', [AdminMasterDataController::class, 'subjectsIndex'])->name('index');
-            Route::get('/tambah', [AdminMasterDataController::class, 'subjectsCreate'])->name('create');
-            Route::post('/', [AdminMasterDataController::class, 'subjectsStore'])->name('store');
-            Route::get('/{mataPelajaran}/ubah', [AdminMasterDataController::class, 'subjectsEdit'])->name('edit');
-            Route::put('/{mataPelajaran}', [AdminMasterDataController::class, 'subjectsUpdate'])->name('update');
-            Route::patch('/{mataPelajaran}/status', [AdminMasterDataController::class, 'subjectsToggleArchive'])->name('status');
-        });
+            Route::prefix('admin/mata-pelajaran')->name('admin.subjects.')->group(function () {
+                Route::get('/', [AdminMasterDataController::class, 'subjectsIndex'])->name('index');
+                Route::get('/tambah', [AdminMasterDataController::class, 'subjectsCreate'])->name('create');
+                Route::post('/', [AdminMasterDataController::class, 'subjectsStore'])->name('store');
+                Route::get('/{mataPelajaran}/ubah', [AdminMasterDataController::class, 'subjectsEdit'])->name('edit');
+                Route::put('/{mataPelajaran}', [AdminMasterDataController::class, 'subjectsUpdate'])->name('update');
+                Route::patch('/{mataPelajaran}/status', [AdminMasterDataController::class, 'subjectsToggleArchive'])->name('status');
+            });
 
-        Route::prefix('admin/pemetaan')->name('admin.mappings.')->middleware('dev.admin')->group(function () {
-            Route::get('/guru-mapel-kelas', [AdminMappingController::class, 'guruMapelKelasIndex'])->name('guru-mapel-kelas.index');
-            Route::delete('/guru-mapel-kelas/{mapping}', [AdminMappingController::class, 'guruMapelKelasDestroy'])->name('guru-mapel-kelas.destroy');
+            Route::prefix('admin/pemetaan')->name('admin.mappings.')->group(function () {
+                Route::get('/guru-mapel-kelas', [AdminMappingController::class, 'guruMapelKelasIndex'])->name('guru-mapel-kelas.index');
+                Route::delete('/guru-mapel-kelas/{mapping}', [AdminMappingController::class, 'guruMapelKelasDestroy'])->name('guru-mapel-kelas.destroy');
 
-            Route::get('/pendamping-siswa', [AdminMappingController::class, 'pendampingSiswaIndex'])->name('pendamping-siswa.index');
-            Route::delete('/pendamping-siswa/{mapping}', [AdminMappingController::class, 'pendampingSiswaDestroy'])->name('pendamping-siswa.destroy');
+                Route::get('/pendamping-siswa', [AdminMappingController::class, 'pendampingSiswaIndex'])->name('pendamping-siswa.index');
+                Route::delete('/pendamping-siswa/{mapping}', [AdminMappingController::class, 'pendampingSiswaDestroy'])->name('pendamping-siswa.destroy');
 
-            Route::get('/orang-tua-siswa', [AdminMappingController::class, 'orangTuaSiswaIndex'])->name('orang-tua-siswa.index');
-            Route::delete('/orang-tua-siswa/{mapping}', [AdminMappingController::class, 'orangTuaSiswaDestroy'])->name('orang-tua-siswa.destroy');
+                Route::get('/orang-tua-siswa', [AdminMappingController::class, 'orangTuaSiswaIndex'])->name('orang-tua-siswa.index');
+                Route::delete('/orang-tua-siswa/{mapping}', [AdminMappingController::class, 'orangTuaSiswaDestroy'])->name('orang-tua-siswa.destroy');
 
-            Route::get('/hak-akses', [AdminMappingController::class, 'accessRights'])->name('access-rights.index');
+                Route::get('/hak-akses', [AdminMappingController::class, 'accessRights'])->name('access-rights.index');
+            });
         });
 
         Route::get('/{role}', function (Request $request, string $role) use ($roles) {

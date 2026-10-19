@@ -2,7 +2,6 @@
 
 namespace App\Http\Controllers\Dev;
 
-use App\Http\Controllers\Controller;
 use App\Models\Kelas;
 use App\Models\MataPelajaran;
 use App\Models\OrangTua;
@@ -23,10 +22,19 @@ use Illuminate\Validation\Rule;
 use Illuminate\Validation\ValidationException;
 use Illuminate\View\View;
 
-class AdminUserController extends Controller
+class AdminUserController extends AdminController
 {
     /** @var list<string> */
     private const STAFF_ROLE_NAMES = ['Guru Mapel', 'Tim Inklusi', 'GPK', 'Kepala Sekolah'];
+
+    /** @var list<string> */
+    private const COMPANION_ROLE_NAMES = ['GPK', 'Tim Inklusi'];
+
+    /** @var list<string> */
+    private const MAPPING_EDUCATOR_ROLE_NAMES = ['Guru Mapel', 'Tim Inklusi', 'GPK'];
+
+    /** @var list<string> */
+    private const ADMIN_ROLE_NAMES = ['Admin', 'Admin / Pengelola'];
 
     public function index(Request $request): View
     {
@@ -247,52 +255,6 @@ class AdminUserController extends Controller
             ->with('temporary_parent_email', $parent->email)
             ->with('temporary_parent_username', $parent->username)
             ->with('temporary_parent_password', $parent->generated_temporary_password);
-    }
-
-    public function destroy(Pengguna $pengguna): RedirectResponse
-    {
-        try {
-            $blockers = DB::transaction(function () use ($pengguna): array {
-                $target = Pengguna::query()
-                    ->with('role')
-                    ->lockForUpdate()
-                    ->findOrFail($pengguna->getKey());
-
-                $parentProfile = OrangTua::query()
-                    ->where('id_pengguna', $target->getKey())
-                    ->lockForUpdate()
-                    ->first();
-
-                $blockers = $this->deletionBlockers($target, $parentProfile);
-
-                if ($blockers !== []) {
-                    return $blockers;
-                }
-
-                // Relasi siswa adalah bagian dari profil Orang Tua/Wali dan tidak
-                // menyimpan riwayat pembelajaran. Hapus atomik bersama akun agar
-                // admin dapat membatalkan akun yang dibuat untuk siswa yang keliru.
-                $parentProfile?->relasiSiswa()->delete();
-                $parentProfile?->delete();
-                $target->delete();
-
-                return [];
-            }, 3);
-        } catch (QueryException) {
-            return redirect()->route('dev.admin.users.index')->with(
-                'error',
-                'Akun tidak dapat dihapus karena baru saja terhubung ke data lain. Gunakan Nonaktifkan untuk menjaga riwayat data.'
-            );
-        }
-
-        if ($blockers !== []) {
-            return redirect()->route('dev.admin.users.index')->with(
-                'error',
-                "Akun {$pengguna->nama} tidak dapat dihapus karena ".implode(', ', $blockers).'. Gunakan Nonaktifkan untuk menjaga riwayat data.'
-            );
-        }
-
-        return redirect()->route('dev.admin.users.index')->with('success', "Akun {$pengguna->nama} berhasil dihapus permanen.");
     }
 
     public function createParent(): View
@@ -587,13 +549,13 @@ class AdminUserController extends Controller
             ]);
         }
 
-        if ($this->isEducatorRole((int) $data['id_role']) && blank($data['nip'] ?? null)) {
+        if ($this->isStaffRole((int) $data['id_role']) && blank($data['nip'] ?? null)) {
             throw ValidationException::withMessages([
                 'nip' => 'NIP wajib diisi untuk Guru Mapel, Tim Inklusi, GPK, dan Kepala Sekolah.',
             ]);
         }
 
-        if (! $this->isEducatorRole((int) $data['id_role'])) {
+        if (! $this->isStaffRole((int) $data['id_role'])) {
             $data['nip'] = null;
         }
 
@@ -601,9 +563,7 @@ class AdminUserController extends Controller
     }
 
     /**
-     * Create an account and, when supplied for a Guru Mapel, its first teaching
-     * assignment as one atomic change. Further assignments remain managed from
-     * the dedicated Pemetaan page.
+     * Membuat akun dan pemetaan awal dalam satu transaksi.
      *
      * @param  array{id_role: int, nama: string, username: string|null, email: string, nip: string|null, status_akun: string}  $data
      */
@@ -633,10 +593,7 @@ class AdminUserController extends Controller
     }
 
     /**
-     * Keep account edits safe and consistent with the selected role. An
-     * existing mapel/class assignment is only added when the form supplies a
-     * complete new combination; it is never silently removed by an account
-     * edit.
+     * Memperbarui akun dan pemetaan sesuai peran yang dipilih.
      *
      * @param  array{id_role: int, nama: string, username: string|null, email: string, nip: string|null, status_akun: string}  $data
      */
@@ -752,79 +709,29 @@ class AdminUserController extends Controller
             ->all();
     }
 
-    private function isEducatorRole(int $roleId): bool
-    {
-        return $this->isStaffRole($roleId);
-    }
-
     private function isStaffRole(int $roleId): bool
     {
-        return Role::query()->whereKey($roleId)->whereIn('nama_role', self::STAFF_ROLE_NAMES)->exists();
+        return $this->roleHasName($roleId, self::STAFF_ROLE_NAMES);
     }
 
     private function isSubjectTeacherRole(int $roleId): bool
     {
-        return Role::query()->whereKey($roleId)->where('nama_role', 'Guru Mapel')->exists();
+        return $this->roleHasName($roleId, ['Guru Mapel']);
     }
 
     private function isCompanionRole(int $roleId): bool
     {
-        return Role::query()->whereKey($roleId)->whereIn('nama_role', ['GPK', 'Tim Inklusi'])->exists();
+        return $this->roleHasName($roleId, self::COMPANION_ROLE_NAMES);
     }
 
     private function isMappingEducatorRole(int $roleId): bool
     {
-        return Role::query()
-            ->whereKey($roleId)
-            ->whereIn('nama_role', ['Guru Mapel', 'Tim Inklusi', 'GPK'])
-            ->exists();
-    }
-
-    private function perPage(Request $request): int
-    {
-        return in_array($request->integer('per_halaman'), [10, 30, 50, 100], true)
-            ? $request->integer('per_halaman')
-            : 10;
+        return $this->roleHasName($roleId, self::MAPPING_EDUCATOR_ROLE_NAMES);
     }
 
     private function isParentRole(int $roleId): bool
     {
-        return Role::query()->whereKey($roleId)->where('nama_role', 'Orang Tua')->exists();
-    }
-
-    /**
-     * @return list<string>
-     */
-    private function deletionBlockers(Pengguna $pengguna, ?OrangTua $parentProfile): array
-    {
-        $blockers = [];
-
-        if ($this->isLastActiveAdmin($pengguna)) {
-            $blockers[] = 'merupakan akun admin aktif terakhir';
-        }
-
-        if ($parentProfile?->relasiSiswa()->exists()) {
-            $blockers[] = 'masih terhubung ke data siswa';
-        }
-
-        $dependencies = [
-            [$pengguna->catatanPerkembangan(), 'memiliki catatan perkembangan'],
-            [$pengguna->catatanPendampingan(), 'memiliki catatan pendampingan'],
-            [$pengguna->verifikasiDilakukan(), 'memiliki riwayat verifikasi'],
-            [$pengguna->publikasiDilakukan(), 'memiliki riwayat publikasi'],
-            [$pengguna->rekapDibuat(), 'memiliki rekap perkembangan'],
-            [$pengguna->laporanDibuat(), 'memiliki laporan perkembangan'],
-            [$pengguna->relasiGuruMapelKelas(), 'masih dipetakan ke kelas atau mata pelajaran'],
-            [$pengguna->relasiPendampingSiswa(), 'masih dipetakan sebagai pendamping siswa'],
-        ];
-
-        foreach ($dependencies as [$relation, $message]) {
-            if ($relation->exists()) {
-                $blockers[] = $message;
-            }
-        }
-
-        return $blockers;
+        return $this->roleHasName($roleId, ['Orang Tua']);
     }
 
     private function isLastActiveAdmin(Pengguna $pengguna): bool
@@ -836,36 +743,23 @@ class AdminUserController extends Controller
         return ! Pengguna::query()
             ->where($pengguna->getKeyName(), '!=', $pengguna->getKey())
             ->where('status_akun', 'Aktif')
-            ->whereHas('role', fn ($query) => $query->whereIn('nama_role', ['Admin', 'Admin / Pengelola']))
+            ->whereHas('role', fn ($query) => $query->whereIn('nama_role', self::ADMIN_ROLE_NAMES))
             ->exists();
     }
 
     private function isAdminRole(Pengguna $pengguna): bool
     {
-        return in_array($pengguna->role?->nama_role, ['Admin', 'Admin / Pengelola'], true);
+        return in_array($pengguna->role?->nama_role, self::ADMIN_ROLE_NAMES, true);
     }
 
     private function isAdminRoleId(int $roleId): bool
     {
-        return Role::query()
-            ->whereKey($roleId)
-            ->whereIn('nama_role', ['Admin', 'Admin / Pengelola'])
-            ->exists();
+        return $this->roleHasName($roleId, self::ADMIN_ROLE_NAMES);
     }
 
-    private function viewContext(): array
+    /** @param list<string> $names */
+    private function roleHasName(int $roleId, array $names): bool
     {
-        return [
-            'role' => 'admin',
-            'profile' => ['label' => 'Admin / Pengelola', 'name' => 'Administrator', 'initials' => 'AD'],
-            'previewRoles' => [
-                'admin' => ['label' => 'Admin / Pengelola', 'name' => 'Administrator', 'initials' => 'AD'],
-                'guru-mapel' => ['label' => 'Guru Mata Pelajaran', 'name' => 'Guru Mata Pelajaran', 'initials' => 'GM'],
-                'tim-inklusi' => ['label' => 'Tim Inklusi', 'name' => 'Tim Inklusi', 'initials' => 'TI'],
-                'gpk' => ['label' => 'GPK', 'name' => 'Guru Pendamping Khusus', 'initials' => 'GP'],
-                'kepala-sekolah' => ['label' => 'Kepala Sekolah', 'name' => 'Kepala Sekolah', 'initials' => 'KS'],
-                'orang-tua' => ['label' => 'Orang Tua', 'name' => 'Orang Tua/Wali', 'initials' => 'OT'],
-            ],
-        ];
+        return Role::query()->whereKey($roleId)->whereIn('nama_role', $names)->exists();
     }
 }
