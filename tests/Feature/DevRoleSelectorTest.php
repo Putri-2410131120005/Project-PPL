@@ -2,15 +2,18 @@
 
 namespace Tests\Feature;
 
+use Illuminate\Foundation\Testing\RefreshDatabase;
 use Tests\TestCase;
 
 class DevRoleSelectorTest extends TestCase
 {
+    use RefreshDatabase;
+
     public function test_login_page_lists_all_development_roles(): void
     {
         $this->get(route('dev.login'))
             ->assertOk()
-            ->assertSee('Hanya untuk DEVELOPMENT')
+            ->assertSee('Pilih peran untuk membuka area kerja SMART-ABK')
             ->assertSeeInOrder([
                 'Admin / Pengelola',
                 'Guru Mata Pelajaran',

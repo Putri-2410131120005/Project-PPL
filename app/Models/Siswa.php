@@ -5,20 +5,29 @@ namespace App\Models;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Support\Facades\Storage;
 
 class Siswa extends Model
 {
     protected $table = 'siswa';
+
     protected $primaryKey = 'id_siswa';
+
     public $timestamps = false;
 
     protected $fillable = [
         'id_kelas',
         'nis',
         'nama_siswa',
+        'foto',
         'kebutuhan_khusus',
         'status_siswa',
     ];
+
+    public function getFotoUrlAttribute(): ?string
+    {
+        return $this->foto ? Storage::disk('public')->url($this->foto) : null;
+    }
 
     public function kelas(): BelongsTo
     {
