@@ -2,8 +2,7 @@
     <x-preview.topbar title="Penugasan Guru" subtitle="Tinjau hubungan Guru Mata Pelajaran dengan kelas dan mata pelajaran yang diampu." :profile="$profile" />
     <div class="abk-breadcrumb"><a href="{{ route('dev.preview', 'admin') }}">Dashboard</a> <span>/</span> Hubungan Data <span>/</span> Penugasan Guru</div>
 
-    @if (session('success'))<div class="alert alert-success abk-alert">{{ session('success') }}</div>@endif
-    @if (session('error'))<div class="alert alert-danger abk-alert">{{ session('error') }}</div>@endif
+    <x-preview.flash-messages />
 
     <section class="abk-panel abk-users-toolbar">
         <form class="abk-search-form" method="GET" action="{{ route('dev.admin.mappings.guru-mapel-kelas.index') }}">

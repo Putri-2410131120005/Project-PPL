@@ -1,11 +1,7 @@
 import './bootstrap';
 import { Modal } from 'bootstrap';
 
-/**
- * Confirmation is deliberately opt-in: only forms marked with
- * `data-confirm-form` are intercepted. This keeps ordinary navigation and
- * non-mutating forms immediate while making state-changing actions explicit.
- */
+// Menyiapkan modal konfirmasi untuk formulir yang mengubah data.
 const initialiseConfirmationModal = () => {
     const modalElement = document.getElementById('abkConfirmationModal');
 

@@ -2,8 +2,7 @@
     <x-preview.topbar title="Data Orang Tua/Wali" subtitle="Kelola akun wali yang ditautkan ke siswa." :profile="$profile" />
     <div class="abk-breadcrumb"><a href="{{ route('dev.preview', 'admin') }}">Dashboard</a> <span>/</span> Orang Tua/Wali</div>
 
-    @if (session('success'))<div class="alert alert-success abk-alert">{{ session('success') }}</div>@endif
-    @if (session('error'))<div class="alert alert-danger abk-alert">{{ session('error') }}</div>@endif
+    <x-preview.flash-messages />
     @if (session('temporary_parent_password'))
         <div class="alert alert-warning abk-alert">
             <strong>Simpan kredensial ini sekarang:</strong>

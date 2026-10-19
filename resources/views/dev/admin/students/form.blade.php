@@ -61,8 +61,8 @@
                     </div>
                 </div>
                 <div class="col-12">
-                    <label class="form-label" for="kebutuhan_khusus">Kebutuhan khusus <span class="text-muted">(opsional)</span></label>
-                    <input class="form-control @error('kebutuhan_khusus') is-invalid @enderror" id="kebutuhan_khusus" name="kebutuhan_khusus" value="{{ old('kebutuhan_khusus', $student->kebutuhan_khusus) }}" maxlength="150" placeholder="Contoh: hambatan penglihatan, kesulitan belajar, atau kebutuhan pendampingan tertentu">
+                    <label class="form-label" for="kebutuhan_khusus">Kebutuhan khusus</label>
+                    <input class="form-control @error('kebutuhan_khusus') is-invalid @enderror" id="kebutuhan_khusus" name="kebutuhan_khusus" value="{{ old('kebutuhan_khusus', $student->kebutuhan_khusus) }}" required maxlength="150" placeholder="Contoh: hambatan penglihatan, kesulitan belajar, atau kebutuhan pendampingan tertentu">
                     @error('kebutuhan_khusus')<div class="invalid-feedback">{{ $message }}</div>@enderror
                 </div>
             </div>

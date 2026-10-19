@@ -29,6 +29,7 @@ class StudentPhotoTest extends TestCase
                 'nis' => 'FOTO-001',
                 'nama_siswa' => 'Anak Dengan Foto',
                 'foto' => $photo,
+                'kebutuhan_khusus' => 'Hambatan penglihatan',
                 'status_siswa' => 'Aktif',
             ])
             ->assertRedirect(route('dev.admin.students.index'))
@@ -59,6 +60,7 @@ class StudentPhotoTest extends TestCase
                 'nis' => $student->nis,
                 'nama_siswa' => $student->nama_siswa,
                 'foto' => UploadedFile::fake()->image('baru.png'),
+                'kebutuhan_khusus' => 'Hambatan penglihatan',
                 'status_siswa' => 'Aktif',
             ])
             ->assertRedirect(route('dev.admin.students.index'))

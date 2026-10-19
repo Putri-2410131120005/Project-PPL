@@ -12,6 +12,40 @@ class AdminDataLifecycleTest extends TestCase
 {
     use RefreshDatabase;
 
+    public function test_class_level_only_accepts_x_xi_or_xii(): void
+    {
+        $this->withSession(['dev_role' => 'admin'])
+            ->post(route('dev.admin.classes.store'), [
+                'nama_kelas' => 'IX A',
+                'tingkat' => 'IX',
+                'tahun_ajaran' => '2026/2027',
+                'status_kelas' => 'Aktif',
+            ])
+            ->assertSessionHasErrors('tingkat');
+
+        $this->assertDatabaseMissing('kelas', ['nama_kelas' => 'IX A']);
+    }
+
+    public function test_special_need_is_required_when_storing_a_student(): void
+    {
+        $class = Kelas::create([
+            'nama_kelas' => 'X Wajib',
+            'tingkat' => 'X',
+            'tahun_ajaran' => '2026/2027',
+        ]);
+
+        $this->withSession(['dev_role' => 'admin'])
+            ->post(route('dev.admin.students.store'), [
+                'id_kelas' => $class->id_kelas,
+                'nis' => 'WAJIB-001',
+                'nama_siswa' => 'Siswa Uji Wajib',
+                'status_siswa' => 'Aktif',
+            ])
+            ->assertSessionHasErrors('kebutuhan_khusus');
+
+        $this->assertDatabaseMissing('siswa', ['nis' => 'WAJIB-001']);
+    }
+
     public function test_class_can_be_archived_without_removing_students_or_history_links(): void
     {
         $class = Kelas::create([

@@ -46,9 +46,9 @@ class AdminModulePagesTest extends TestCase
             ->get(route('dev.admin.users.create'))
             ->assertOk()
             ->assertSeeInOrder([
+                'id="id_role"',
                 'id="nama"',
                 'id="email"',
-                'id="id_role"',
                 'id="status_akun"',
                 'id="username"',
                 'id="nip"',
@@ -56,5 +56,26 @@ class AdminModulePagesTest extends TestCase
                 'id="companion-assignment-fields"',
                 'id="parent-fields"',
             ], false);
+    }
+
+    public function test_updated_admin_forms_show_the_requested_fields(): void
+    {
+        $this->withSession(['dev_role' => 'admin'])
+            ->get(route('dev.admin.classes.create'))
+            ->assertOk()
+            ->assertSee('id="tingkat" name="tingkat" required', false)
+            ->assertSeeInOrder(['value="X"', 'value="XI"', 'value="XII"'], false);
+
+        $this->withSession(['dev_role' => 'admin'])
+            ->get(route('dev.admin.students.create'))
+            ->assertOk()
+            ->assertSee('id="kebutuhan_khusus" name="kebutuhan_khusus"', false)
+            ->assertSee('name="kebutuhan_khusus" value="" required', false);
+
+        $this->withSession(['dev_role' => 'admin'])
+            ->get(route('dev.admin.users.create'))
+            ->assertOk()
+            ->assertDontSee('companion-selection-count')
+            ->assertDontSee('/2 siswa dipilih');
     }
 }

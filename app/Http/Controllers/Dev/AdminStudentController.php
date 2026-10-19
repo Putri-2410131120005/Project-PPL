@@ -2,20 +2,17 @@
 
 namespace App\Http\Controllers\Dev;
 
-use App\Http\Controllers\Controller;
 use App\Models\Kelas;
 use App\Models\Siswa;
-use Illuminate\Database\QueryException;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
-use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Validation\Rule;
 use Illuminate\Validation\ValidationException;
 use Illuminate\View\View;
 use Throwable;
 
-class AdminStudentController extends Controller
+class AdminStudentController extends AdminController
 {
     /**
      * @var list<string>
@@ -117,36 +114,6 @@ class AdminStudentController extends Controller
         return redirect()->route('dev.admin.students.index')->with('success', 'Data siswa ABK berhasil diperbarui.');
     }
 
-    public function destroy(Siswa $siswa): RedirectResponse
-    {
-        try {
-            $blockers = DB::transaction(function () use ($siswa): array {
-                $target = Siswa::query()->lockForUpdate()->findOrFail($siswa->getKey());
-                $blockers = $this->deletionBlockers($target);
-
-                if ($blockers === []) {
-                    $target->delete();
-                }
-
-                return $blockers;
-            }, 3);
-        } catch (QueryException) {
-            return redirect()->route('dev.admin.students.index')->with(
-                'error',
-                'Data siswa tidak dapat dihapus karena baru saja terhubung ke data lain. Gunakan status Nonaktif, Pindah, atau Lulus untuk menjaga riwayat data.'
-            );
-        }
-
-        if ($blockers !== []) {
-            return redirect()->route('dev.admin.students.index')->with(
-                'error',
-                "Data {$siswa->nama_siswa} tidak dapat dihapus karena ".implode(', ', $blockers).'. Gunakan perubahan status untuk menjaga riwayat data.'
-            );
-        }
-
-        return redirect()->route('dev.admin.students.index')->with('success', "Data {$siswa->nama_siswa} berhasil dihapus permanen.");
-    }
-
     private function formView(Siswa $siswa, string $title): View
     {
         return view('dev.admin.students.form', [
@@ -169,7 +136,7 @@ class AdminStudentController extends Controller
     }
 
     /**
-     * @return array{id_kelas: int, nis: string, nama_siswa: string, kebutuhan_khusus: string|null, status_siswa: string}
+     * @return array{id_kelas: int, nis: string, nama_siswa: string, kebutuhan_khusus: string, status_siswa: string}
      */
     private function validatedStudent(Request $request, ?Siswa $siswa = null): array
     {
@@ -186,7 +153,7 @@ class AdminStudentController extends Controller
             'nis' => ['required', 'string', 'max:30', Rule::unique('siswa', 'nis')->ignore($siswa, 'id_siswa')],
             'nama_siswa' => ['required', 'string', 'max:100'],
             'foto' => ['nullable', 'image', 'mimes:jpg,jpeg,png,webp', 'max:2048'],
-            'kebutuhan_khusus' => ['nullable', 'string', 'max:150'],
+            'kebutuhan_khusus' => ['required', 'string', 'max:150'],
             'status_siswa' => ['required', Rule::in(self::STATUSES)],
         ]);
 
@@ -208,55 +175,5 @@ class AdminStudentController extends Controller
         return $request->hasFile('foto')
             ? $request->file('foto')->store('foto-siswa', 'public')
             : null;
-    }
-
-    /**
-     * @return list<string>
-     */
-    private function deletionBlockers(Siswa $siswa): array
-    {
-        $dependencies = [
-            [$siswa->catatanPerkembangan(), 'memiliki catatan perkembangan'],
-            [$siswa->catatanPendampingan(), 'memiliki catatan pendampingan'],
-            [$siswa->rekapPerkembangan(), 'memiliki rekap perkembangan'],
-            [$siswa->relasiOrangTuaSiswa(), 'masih terhubung ke akun Orang Tua/Wali'],
-            [$siswa->relasiPendampingSiswa(), 'masih dipetakan ke guru pendamping'],
-        ];
-
-        $blockers = [];
-
-        foreach ($dependencies as [$relation, $message]) {
-            if ($relation->exists()) {
-                $blockers[] = $message;
-            }
-        }
-
-        return $blockers;
-    }
-
-    private function perPage(Request $request): int
-    {
-        return in_array($request->integer('per_halaman'), [10, 30, 50, 100], true)
-            ? $request->integer('per_halaman')
-            : 10;
-    }
-
-    /**
-     * @return array{role: string, profile: array{label: string, name: string, initials: string}, previewRoles: array<string, array{label: string, name: string, initials: string}>}
-     */
-    private function viewContext(): array
-    {
-        return [
-            'role' => 'admin',
-            'profile' => ['label' => 'Admin / Pengelola', 'name' => 'Administrator', 'initials' => 'AD'],
-            'previewRoles' => [
-                'admin' => ['label' => 'Admin / Pengelola', 'name' => 'Administrator', 'initials' => 'AD'],
-                'guru-mapel' => ['label' => 'Guru Mata Pelajaran', 'name' => 'Guru Mata Pelajaran', 'initials' => 'GM'],
-                'tim-inklusi' => ['label' => 'Tim Inklusi', 'name' => 'Tim Inklusi', 'initials' => 'TI'],
-                'gpk' => ['label' => 'GPK', 'name' => 'Guru Pendamping Khusus', 'initials' => 'GP'],
-                'kepala-sekolah' => ['label' => 'Kepala Sekolah', 'name' => 'Kepala Sekolah', 'initials' => 'KS'],
-                'orang-tua' => ['label' => 'Orang Tua', 'name' => 'Orang Tua/Wali', 'initials' => 'OT'],
-            ],
-        ];
     }
 }

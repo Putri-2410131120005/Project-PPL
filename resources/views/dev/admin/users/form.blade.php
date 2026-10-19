@@ -11,9 +11,9 @@
             @csrf
             @if ($user->exists) @method('PUT') @endif
             <div class="row g-3">
+                <div class="col-12 col-md-6"><label class="form-label" for="id_role">Role</label><select class="form-select @error('id_role') is-invalid @enderror" id="id_role" name="id_role" required><option value="">Pilih role</option>@foreach ($roles as $availableRole)<option value="{{ $availableRole->id_role }}" data-requires-nip="{{ in_array($availableRole->nama_role, ['Guru Mapel', 'Tim Inklusi', 'GPK', 'Kepala Sekolah'], true) ? 'true' : 'false' }}" data-is-subject-teacher="{{ $availableRole->nama_role === 'Guru Mapel' ? 'true' : 'false' }}" data-is-companion="{{ in_array($availableRole->nama_role, ['GPK', 'Tim Inklusi'], true) ? 'true' : 'false' }}" data-is-parent="{{ $availableRole->nama_role === 'Orang Tua' ? 'true' : 'false' }}" @selected((string) old('id_role', $user->id_role) === (string) $availableRole->id_role)>{{ $availableRole->nama_role }}</option>@endforeach</select>@error('id_role')<div class="invalid-feedback">{{ $message }}</div>@enderror</div>
                 <div class="col-12 col-md-6"><label class="form-label" for="nama">Nama pengguna</label><input class="form-control @error('nama') is-invalid @enderror" id="nama" name="nama" value="{{ old('nama', $user->nama) }}" required maxlength="100">@error('nama')<div class="invalid-feedback">{{ $message }}</div>@enderror</div>
                 <div class="col-12 col-md-6"><label class="form-label" for="email">Email <span class="text-muted d-none" id="email-optional">(opsional)</span></label><input type="email" class="form-control @error('email') is-invalid @enderror" id="email" name="email" value="{{ old('email', $user->email) }}" required maxlength="100">@error('email')<div class="invalid-feedback">{{ $message }}</div>@enderror</div>
-                <div class="col-12 col-md-6"><label class="form-label" for="id_role">Role</label><select class="form-select @error('id_role') is-invalid @enderror" id="id_role" name="id_role" required><option value="">Pilih role</option>@foreach ($roles as $availableRole)<option value="{{ $availableRole->id_role }}" data-requires-nip="{{ in_array($availableRole->nama_role, ['Guru Mapel', 'Tim Inklusi', 'GPK', 'Kepala Sekolah'], true) ? 'true' : 'false' }}" data-is-subject-teacher="{{ $availableRole->nama_role === 'Guru Mapel' ? 'true' : 'false' }}" data-is-companion="{{ in_array($availableRole->nama_role, ['GPK', 'Tim Inklusi'], true) ? 'true' : 'false' }}" data-is-parent="{{ $availableRole->nama_role === 'Orang Tua' ? 'true' : 'false' }}" @selected((string) old('id_role', $user->id_role) === (string) $availableRole->id_role)>{{ $availableRole->nama_role }}</option>@endforeach</select>@error('id_role')<div class="invalid-feedback">{{ $message }}</div>@enderror</div>
                 <div class="col-12 col-md-6"><label class="form-label" for="status_akun">Status akun</label><select class="form-select @error('status_akun') is-invalid @enderror" id="status_akun" name="status_akun" required><option value="Aktif" @selected(old('status_akun', $user->status_akun ?: 'Aktif') === 'Aktif')>Aktif</option><option value="Nonaktif" @selected(old('status_akun', $user->status_akun) === 'Nonaktif')>Nonaktif</option></select>@error('status_akun')<div class="invalid-feedback">{{ $message }}</div>@enderror</div>
                 <div class="col-12 col-md-6" id="username-field"><label class="form-label" for="username">Username <span class="text-muted">(opsional)</span></label><input class="form-control @error('username') is-invalid @enderror" id="username" name="username" value="{{ old('username', $user->username) }}" maxlength="50">@error('username')<div class="invalid-feedback">{{ $message }}</div>@enderror</div>
                 <div class="col-12 col-md-6" id="nip-field"><label class="form-label" for="nip">NIP</label><input class="form-control @error('nip') is-invalid @enderror" id="nip" name="nip" value="{{ old('nip', $user->nip) }}" maxlength="30">@error('nip')<div class="invalid-feedback">{{ $message }}</div>@enderror</div>
@@ -58,7 +58,6 @@
                                 </div>
                             @endforeach
                         </div>
-                        <div class="small text-muted mt-2"><span id="companion-selection-count">{{ $selectedCompanionStudentIds->count() }}</span>/2 siswa dipilih</div>
                         @error('id_siswa_pendamping')<div class="text-danger small mt-2">{{ $message }}</div>@enderror
                         @error('id_siswa_pendamping.*')<div class="text-danger small mt-2">{{ $message }}</div>@enderror
                     </div>
@@ -97,7 +96,6 @@
         const classChecklistHint = document.getElementById('class-checklist-hint');
         const companionFields = document.getElementById('companion-assignment-fields');
         const companionInputs = document.querySelectorAll('input[name="id_siswa_pendamping[]"]');
-        const companionSelectionCount = document.getElementById('companion-selection-count');
         const parentFields = document.getElementById('parent-fields');
         const parentInputs = parentFields.querySelectorAll('input, select');
 
@@ -118,10 +116,7 @@
         const syncCompanionLimit = () => {
             const selectedRole = roleSelect.options[roleSelect.selectedIndex];
             const isCompanion = selectedRole?.dataset.isCompanion === 'true';
-            emailInput.required = !isParent;
-            emailOptional.classList.toggle('d-none', !isParent);
             const selectedCount = Array.from(companionInputs).filter((input) => input.checked).length;
-            companionSelectionCount.textContent = selectedCount;
             companionInputs.forEach((input) => {
                 input.disabled = !isCompanion || (!input.checked && selectedCount >= 2);
             });
@@ -132,6 +127,8 @@
             const required = selectedRole?.dataset.requiresNip === 'true';
             const isParent = selectedRole?.dataset.isParent === 'true';
             const isCompanion = selectedRole?.dataset.isCompanion === 'true';
+            emailInput.required = !isParent;
+            emailOptional.classList.toggle('d-none', !isParent);
             nipField.classList.toggle('d-none', !required);
             nipInput.required = required;
             if (!required) nipInput.value = '';
