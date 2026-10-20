@@ -37,6 +37,24 @@ class TimInklusiModuleTest extends TestCase
             ->assertDontSee($first->nama);
     }
 
+    public function test_gpk_cannot_be_used_as_tim_inklusi_identity_even_in_development_mode(): void
+    {
+        $gpk = $this->makeUser('GPK Bukan Pendamping', 'GPK');
+
+        $this->from(route('dev.login'))->post(route('dev.login.store'), [
+            'role' => 'tim-inklusi',
+            'pendamping_id' => $gpk->getKey(),
+        ])->assertRedirect(route('dev.login'))
+            ->assertSessionHasErrors('pendamping_id')
+            ->assertSessionMissing(['dev_role', 'dev_pengguna_id']);
+
+        $this->withSession(['dev_role' => 'tim-inklusi', 'dev_pengguna_id' => $gpk->getKey()])
+            ->get(route('dev.tim-inklusi.dashboard'))
+            ->assertRedirect(route('dev.login'))
+            ->assertSessionHasErrors('pendamping_id')
+            ->assertSessionMissing(['dev_role', 'dev_pengguna_id']);
+    }
+
     public function test_dashboard_and_student_list_only_show_assigned_data(): void
     {
         [$pendamping, $assigned, $outside] = $this->fixture();

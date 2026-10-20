@@ -100,8 +100,8 @@ class StudentPhotoTest extends TestCase
             'hubungan' => 'Ibu',
         ]);
 
-        $this->withSession(['dev_role' => 'orang-tua'])
-            ->get(route('dev.preview', 'orang-tua'))
+        $this->actingAs($account, 'parent')
+            ->get(route('dev.parent.dashboard'))
             ->assertOk()
             ->assertSee('Anak Terhubung')
             ->assertSee(Storage::disk('public')->url($photoPath));

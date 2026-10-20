@@ -90,8 +90,32 @@ const initialiseConfirmationModal = () => {
     });
 };
 
+const initialiseDevelopmentRoleSelector = () => {
+    const role = document.querySelector('[data-development-role]');
+    const account = document.querySelector('[data-tim-inklusi-account]');
+
+    if (! (role instanceof HTMLSelectElement) || ! (account instanceof HTMLElement)) {
+        return;
+    }
+
+    const updateAccountVisibility = () => {
+        const isTimInklusi = role.value === 'tim-inklusi';
+        account.hidden = ! isTimInklusi;
+        account.querySelectorAll('select, input').forEach((field) => {
+            field.disabled = ! isTimInklusi;
+        });
+    };
+
+    role.addEventListener('change', updateAccountVisibility);
+    updateAccountVisibility();
+};
+
 if (document.readyState === 'loading') {
-    document.addEventListener('DOMContentLoaded', initialiseConfirmationModal, { once: true });
+    document.addEventListener('DOMContentLoaded', () => {
+        initialiseConfirmationModal();
+        initialiseDevelopmentRoleSelector();
+    }, { once: true });
 } else {
     initialiseConfirmationModal();
+    initialiseDevelopmentRoleSelector();
 }

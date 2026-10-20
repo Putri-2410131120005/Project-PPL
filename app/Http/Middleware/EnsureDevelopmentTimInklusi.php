@@ -29,19 +29,10 @@ class EnsureDevelopmentTimInklusi
             ->first();
 
         if (! $pendamping) {
-            // Identitas development dipilih server-side agar tidak dapat dipalsukan dari form.
-            $pendamping = Pengguna::query()
-                ->where('status_akun', 'Aktif')
-                ->whereHas('role', fn ($query) => $query->where('nama_role', 'Tim Inklusi'))
-                ->orderBy('id_pengguna')
-                ->first();
-        }
-
-        if (! $pendamping) {
             $request->session()->forget(['dev_role', 'dev_pengguna_id']);
 
             return redirect()->route('dev.login')
-                ->withErrors(['role' => 'Belum ada akun Tim Inklusi aktif. Tambahkan akun melalui Admin terlebih dahulu.']);
+                ->withErrors(['pendamping_id' => 'Sesi Tim Inklusi tidak valid. Pilih kembali akun Tim Inklusi yang aktif.']);
         }
 
         $request->session()->put('dev_pengguna_id', $pendamping->getKey());

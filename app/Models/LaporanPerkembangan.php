@@ -8,7 +8,9 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
 class LaporanPerkembangan extends Model
 {
     protected $table = 'laporan_perkembangan';
+
     protected $primaryKey = 'id_laporan';
+
     public $timestamps = false;
 
     protected $fillable = [
@@ -40,5 +42,13 @@ class LaporanPerkembangan extends Model
     public function publikator(): BelongsTo
     {
         return $this->belongsTo(Pengguna::class, 'id_publikator', 'id_pengguna');
+    }
+
+    /** Hanya laporan yang sudah tersedia dan dipublikasikan GPK. */
+    public function scopeTersedia($query)
+    {
+        return $query->where('status_laporan', 'Tersedia')
+            ->whereNotNull('id_publikator')
+            ->whereNotNull('tanggal_publikasi');
     }
 }

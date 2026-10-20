@@ -6,22 +6,57 @@
     <title>Masuk Orang Tua — SMART-ABK</title>
     @vite(['resources/css/app.css', 'resources/js/app.js'])
 </head>
-<body class="abk-login">
-    <main class="abk-login-card">
-        <div class="abk-login-brand">INKLUSI</div>
-        <p class="abk-subtitle mt-2 mb-0">Masuk sebagai Orang Tua/Wali</p>
-        <div class="abk-login-note">Gunakan username dan password yang diberikan oleh admin sekolah.</div>
-        <form method="POST" action="{{ route('dev.parent.login.store') }}">
-            @csrf
-            <label class="abk-login-label" for="username">Username</label>
-            <input class="form-control @error('username') is-invalid @enderror" id="username" name="username" value="{{ old('username') }}" autocomplete="username" required autofocus>
-            @error('username')<div class="invalid-feedback">{{ $message }}</div>@enderror
-            <label class="abk-login-label mt-3" for="password">Password</label>
-            <input type="password" class="form-control @error('password') is-invalid @enderror" id="password" name="password" autocomplete="current-password" required>
-            @error('password')<div class="invalid-feedback">{{ $message }}</div>@enderror
-            <button class="abk-login-submit" type="submit">Masuk</button>
-        </form>
-        <a class="d-inline-block mt-3 small" href="{{ route('dev.login') }}">Kembali ke pemilih role development</a>
+<body class="abk-parent-access-page">
+    <main class="abk-parent-access-main">
+        <h1>Masuk Orang Tua / Wali</h1>
+
+        <section class="abk-parent-access-frame">
+            <div class="abk-parent-access-visual">
+                <span class="abk-parent-access-glow abk-parent-access-glow-one" aria-hidden="true"></span>
+                <span class="abk-parent-access-glow abk-parent-access-glow-two" aria-hidden="true"></span>
+                <div class="abk-parent-access-grid" aria-hidden="true"></div>
+                <div class="abk-parent-access-brand">
+                    <span class="abk-parent-access-mark">SA</span>
+                    <strong>SMART-ABK</strong>
+                    <small>Sistem Monitoring Anak Berkebutuhan Khusus</small>
+                </div>
+                <p>Pantau perkembangan anak dengan informasi yang aman, terarah, dan terhubung dengan sekolah.</p>
+            </div>
+
+            <div class="abk-parent-access-form-wrap">
+                <section class="abk-parent-access-form-card">
+                    <h2>Selamat datang</h2>
+                    <p>Masuk menggunakan akun Orang Tua/Wali.</p>
+
+                    <form method="POST" action="{{ route('dev.parent.login.store') }}">
+                        @csrf
+                        <div class="abk-parent-access-field">
+                            <label for="username">Username</label>
+                            <div>
+                                <span aria-hidden="true">@</span>
+                                <input class="@error('username') is-invalid @enderror" id="username" name="username" value="{{ old('username') }}" autocomplete="username" placeholder="Masukkan username" required autofocus>
+                            </div>
+                            @error('username')<small class="abk-parent-access-error">{{ $message }}</small>@enderror
+                        </div>
+
+                        <div class="abk-parent-access-field">
+                            <label for="password">Password</label>
+                            <div>
+                                <span aria-hidden="true">●</span>
+                                <input type="password" class="@error('password') is-invalid @enderror" id="password" name="password" autocomplete="current-password" placeholder="Masukkan password" required>
+                            </div>
+                            @error('password')<small class="abk-parent-access-error">{{ $message }}</small>@enderror
+                        </div>
+
+                        <button type="submit">Masuk</button>
+                    </form>
+
+                    <div class="abk-parent-access-help">Akun diberikan oleh admin sekolah. Hubungi admin jika mengalami kendala login.</div>
+                </section>
+            </div>
+        </section>
+
+        <a class="abk-parent-access-back" href="{{ route('dev.login') }}">← Kembali ke login staf sekolah</a>
     </main>
 </body>
 </html>

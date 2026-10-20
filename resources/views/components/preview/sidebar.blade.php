@@ -26,6 +26,11 @@
             ['key' => 'students', 'label' => 'Data Siswa', 'href' => route('dev.tim-inklusi.students.index')],
             ['key' => 'history', 'label' => 'Riwayat Catatan', 'href' => route('dev.tim-inklusi.notes.index')],
         ],
+        'orang-tua' => [
+            ['key' => 'dashboard', 'label' => 'Dashboard', 'href' => route('dev.parent.dashboard')],
+            ['key' => 'progress', 'label' => 'Catatan Perkembangan', 'href' => route('dev.parent.notes.index')],
+            ['key' => 'reports', 'label' => 'Laporan Perkembangan', 'href' => route('dev.parent.reports.index')],
+        ],
         default => [
             ['key' => 'dashboard', 'label' => 'Dashboard', 'href' => route('dev.preview', $role)],
         ],
@@ -54,14 +59,16 @@
         @endforeach
     </nav>
     <div class="mt-4 pt-3 border-top border-secondary-subtle abk-session-controls">
+        @if ($role !== 'orang-tua')
         <form method="POST" action="{{ route('dev.change-role') }}" data-confirm-form data-confirm-title="Ganti peran?" data-confirm-message="Sesi saat ini akan diakhiri. Anda dapat memilih peran lain pada halaman berikutnya." data-confirm-button="Ganti Peran">
             @csrf
             <button type="submit" class="abk-dev-button">Ganti Peran</button>
         </form>
+        @endif
         <form method="POST" action="{{ route('dev.logout') }}" class="mt-2" data-confirm-form data-confirm-title="Keluar?" data-confirm-message="Sesi aktif akan diakhiri." data-confirm-button="Keluar" data-confirm-variant="danger">
             @csrf
             <button type="submit" class="abk-dev-button abk-dev-button-muted">Keluar</button>
         </form>
     </div>
-    <div class="abk-sidebar-footer">{{ $roles[$role]['label'] }}</div>
+    <div class="abk-sidebar-footer">{{ $roles[$role]['label'] }}@if (! empty($roles[$role]['secondary']))<small>{{ $roles[$role]['secondary'] }}</small>@endif</div>
 </aside>

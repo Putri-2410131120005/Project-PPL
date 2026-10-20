@@ -21,6 +21,10 @@ class EnsureParentAuthenticated
             return redirect()->route('dev.parent.login');
         }
 
+        if ($parent->wajib_ganti_password && ! $request->routeIs('dev.parent.password.*')) {
+            return redirect()->route('dev.parent.password.edit');
+        }
+
         return $next($request);
     }
 }
