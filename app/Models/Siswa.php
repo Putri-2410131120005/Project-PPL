@@ -5,7 +5,6 @@ namespace App\Models;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
-use Illuminate\Support\Facades\Storage;
 
 class Siswa extends Model
 {
@@ -26,7 +25,8 @@ class Siswa extends Model
 
     public function getFotoUrlAttribute(): ?string
     {
-        return $this->foto ? Storage::disk('public')->url($this->foto) : null;
+        // Gunakan URL relatif agar foto tetap mengikuti host dan port aplikasi yang aktif.
+        return $this->foto ? '/storage/'.ltrim(str_replace('\\', '/', $this->foto), '/') : null;
     }
 
     public function kelas(): BelongsTo

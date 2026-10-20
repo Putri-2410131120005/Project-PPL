@@ -5,6 +5,7 @@ use App\Http\Controllers\Dev\AdminMasterDataController;
 use App\Http\Controllers\Dev\AdminStudentController;
 use App\Http\Controllers\Dev\AdminUserController;
 use App\Http\Controllers\Dev\ParentAuthController;
+use App\Http\Controllers\Dev\TimInklusiController;
 use App\Models\Kelas;
 use App\Models\MataPelajaran;
 use App\Models\Pengguna;
@@ -39,29 +40,51 @@ if (app()->environment(['local', 'testing'])) {
                 : redirect()->route('dev.login');
         })->name('index');
 
-        Route::get('/login', fn () => view('dev.login', ['roles' => $roles]))->name('login');
+        Route::get('/login', fn () => view('dev.login', [
+            'roles' => $roles,
+            'timInklusiAccounts' => Pengguna::query()
+                ->where('status_akun', 'Aktif')
+                ->whereHas('role', fn ($query) => $query->where('nama_role', 'Tim Inklusi'))
+                ->orderBy('nama')
+                ->get(['id_pengguna', 'nama']),
+        ]))->name('login');
 
         Route::post('/login', function (Request $request) use ($roles) {
             $validated = $request->validate([
                 'role' => ['required', 'string', Rule::in(array_keys($roles))],
+                'pendamping_id' => ['nullable', 'integer'],
             ]);
 
+            $pendamping = null;
+            if ($validated['role'] === 'tim-inklusi') {
+                $pendamping = Pengguna::query()
+                    ->when($validated['pendamping_id'] ?? null, fn ($query, $id) => $query->whereKey($id))
+                    ->where('status_akun', 'Aktif')
+                    ->whereHas('role', fn ($query) => $query->where('nama_role', 'Tim Inklusi'))
+                    ->orderBy('id_pengguna')
+                    ->first();
+            }
+
             $request->session()->regenerate();
+            $request->session()->forget('dev_pengguna_id');
             $request->session()->put('dev_role', $validated['role']);
+            if ($pendamping) {
+                $request->session()->put('dev_pengguna_id', $pendamping->getKey());
+            }
 
             return redirect()->route('dev.preview', $validated['role']);
         })->name('login.store');
 
         Route::post('/change-role', function (Request $request) {
             Auth::guard('parent')->logout();
-            $request->session()->forget('dev_role');
+            $request->session()->forget(['dev_role', 'dev_pengguna_id']);
 
             return redirect()->route('dev.login');
         })->name('change-role');
 
         Route::post('/logout', function (Request $request) {
             Auth::guard('parent')->logout();
-            $request->session()->forget('dev_role');
+            $request->session()->forget(['dev_role', 'dev_pengguna_id']);
 
             return redirect()->route('dev.login');
         })->name('logout');
@@ -138,6 +161,20 @@ if (app()->environment(['local', 'testing'])) {
             });
         });
 
+        Route::middleware('dev.tim-inklusi')->prefix('tim-inklusi')->name('tim-inklusi.')->group(function () {
+            Route::get('/dashboard', [TimInklusiController::class, 'dashboard'])->name('dashboard');
+            Route::get('/siswa', [TimInklusiController::class, 'students'])->name('students.index');
+            Route::get('/siswa/{siswa}', [TimInklusiController::class, 'student'])->name('students.show');
+            Route::get('/siswa/{siswa}/rekomendasi', [TimInklusiController::class, 'recommendation'])->name('students.recommendation');
+            Route::get('/siswa/{siswa}/catatan/tambah', [TimInklusiController::class, 'createNote'])->name('notes.create');
+            Route::get('/siswa/{siswa}/perkembangan/{catatan}', [TimInklusiController::class, 'showDevelopmentNote'])->name('development-notes.show');
+            Route::post('/catatan', [TimInklusiController::class, 'storeNote'])->name('notes.store');
+            Route::get('/catatan', [TimInklusiController::class, 'notes'])->name('notes.index');
+            Route::get('/catatan/{catatan}', [TimInklusiController::class, 'showNote'])->name('notes.show');
+            Route::get('/catatan/{catatan}/ubah', [TimInklusiController::class, 'editNote'])->name('notes.edit');
+            Route::put('/catatan/{catatan}', [TimInklusiController::class, 'updateNote'])->name('notes.update');
+        });
+
         Route::get('/{role}', function (Request $request, string $role) use ($roles) {
             abort_unless(array_key_exists($role, $roles), 404);
 
@@ -149,6 +186,21 @@ if (app()->environment(['local', 'testing'])) {
 
             if ($selectedRole !== $role) {
                 return redirect()->route('dev.preview', $selectedRole);
+            }
+
+            if ($role === 'tim-inklusi') {
+                $pendamping = Pengguna::query()
+                    ->when($request->session()->get('dev_pengguna_id'), fn ($query, $id) => $query->whereKey($id))
+                    ->where('status_akun', 'Aktif')
+                    ->whereHas('role', fn ($query) => $query->where('nama_role', 'Tim Inklusi'))
+                    ->orderBy('id_pengguna')
+                    ->first();
+
+                if ($pendamping) {
+                    $request->session()->put('dev_pengguna_id', $pendamping->getKey());
+
+                    return redirect()->route('dev.tim-inklusi.dashboard');
+                }
             }
 
             $view = match ($role) {

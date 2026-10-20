@@ -21,6 +21,11 @@
             ['key' => 'verification', 'label' => 'Status Verifikasi', 'href' => route('dev.preview', $role)],
             ['key' => 'history', 'label' => 'Riwayat Perkembangan', 'href' => route('dev.preview', $role)],
         ],
+        'tim-inklusi' => [
+            ['key' => 'dashboard', 'label' => 'Dashboard', 'href' => route('dev.tim-inklusi.dashboard')],
+            ['key' => 'students', 'label' => 'Data Siswa', 'href' => route('dev.tim-inklusi.students.index')],
+            ['key' => 'history', 'label' => 'Riwayat Catatan', 'href' => route('dev.tim-inklusi.notes.index')],
+        ],
         default => [
             ['key' => 'dashboard', 'label' => 'Dashboard', 'href' => route('dev.preview', $role)],
         ],

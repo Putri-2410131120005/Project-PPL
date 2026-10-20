@@ -15,6 +15,7 @@ const initialiseConfirmationModal = () => {
     const subject = document.getElementById('abkConfirmationModalSubject');
     const confirmButton = document.getElementById('abkConfirmationModalConfirm');
     let pendingForm = null;
+    let pendingSubmitter = null;
 
     if (! title || ! message || ! subject || ! confirmButton) {
         return;
@@ -35,7 +36,16 @@ const initialiseConfirmationModal = () => {
     document.addEventListener('submit', (event) => {
         const form = event.target;
 
-        if (! (form instanceof HTMLFormElement) || ! form.matches('[data-confirm-form]')) {
+        if (! (form instanceof HTMLFormElement)) {
+            return;
+        }
+
+        const submitter = event.submitter instanceof HTMLElement ? event.submitter : null;
+        const confirmOnly = form.dataset.confirmOnly;
+        const requiresConfirmation = form.matches('[data-confirm-form]')
+            || (confirmOnly && submitter?.getAttribute('value') === confirmOnly);
+
+        if (! requiresConfirmation) {
             return;
         }
 
@@ -46,6 +56,7 @@ const initialiseConfirmationModal = () => {
 
         event.preventDefault();
         pendingForm = form;
+        pendingSubmitter = submitter;
 
         title.textContent = form.dataset.confirmTitle || 'Konfirmasi tindakan';
         message.textContent = form.dataset.confirmMessage || 'Apakah Anda yakin ingin melanjutkan tindakan ini?';
@@ -65,14 +76,17 @@ const initialiseConfirmationModal = () => {
         }
 
         const form = pendingForm;
+        const submitter = pendingSubmitter;
         pendingForm = null;
+        pendingSubmitter = null;
         form.dataset.confirmed = 'true';
         modal.hide();
-        form.requestSubmit();
+        form.requestSubmit(submitter);
     });
 
     modalElement.addEventListener('hidden.bs.modal', () => {
         pendingForm = null;
+        pendingSubmitter = null;
     });
 };
 
