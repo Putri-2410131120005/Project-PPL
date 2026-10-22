@@ -5,6 +5,8 @@ use App\Http\Controllers\Dev\AdminMasterDataController;
 use App\Http\Controllers\Dev\AdminStudentController;
 use App\Http\Controllers\Dev\AdminUserController;
 use App\Http\Controllers\Dev\ParentAuthController;
+use App\Http\Controllers\Dev\ParentPortalController;
+use App\Http\Controllers\Dev\TimInklusiController;
 use App\Models\Kelas;
 use App\Models\MataPelajaran;
 use App\Models\Pengguna;
@@ -31,37 +33,65 @@ if (app()->environment(['local', 'testing'])) {
         'kepala-sekolah' => ['label' => 'Kepala Sekolah', 'name' => 'Kepala Sekolah', 'initials' => 'KS'],
         'orang-tua' => ['label' => 'Orang Tua', 'name' => 'Orang Tua/Wali', 'initials' => 'OT'],
     ];
+    $developmentRoles = collect($roles)->except('orang-tua')->all();
 
-    Route::prefix('_dev')->name('dev.')->group(function () use ($roles) {
+    Route::prefix('_dev')->name('dev.')->group(function () use ($roles, $developmentRoles) {
         Route::get('/', function (Request $request) {
             return $request->session()->has('dev_role')
                 ? redirect()->route('dev.preview', $request->session()->get('dev_role'))
                 : redirect()->route('dev.login');
         })->name('index');
 
-        Route::get('/login', fn () => view('dev.login', ['roles' => $roles]))->name('login');
+        Route::get('/login', fn () => view('dev.login', [
+            'roles' => $developmentRoles,
+            'timInklusiAccounts' => Pengguna::query()
+                ->where('status_akun', 'Aktif')
+                ->whereHas('role', fn ($query) => $query->where('nama_role', 'Tim Inklusi'))
+                ->orderBy('nama')
+                ->get(['id_pengguna', 'nama']),
+        ]))->name('login');
 
-        Route::post('/login', function (Request $request) use ($roles) {
+        Route::post('/login', function (Request $request) use ($developmentRoles) {
             $validated = $request->validate([
-                'role' => ['required', 'string', Rule::in(array_keys($roles))],
+                'role' => ['required', 'string', Rule::in(array_keys($developmentRoles))],
+                'pendamping_id' => [Rule::requiredIf($request->input('role') === 'tim-inklusi'), 'nullable', 'integer'],
             ]);
 
+            $pendamping = null;
+            if ($validated['role'] === 'tim-inklusi') {
+                $pendamping = Pengguna::query()
+                    ->whereKey($validated['pendamping_id'])
+                    ->where('status_akun', 'Aktif')
+                    ->whereHas('role', fn ($query) => $query->where('nama_role', 'Tim Inklusi'))
+                    ->first();
+
+                if (! $pendamping) {
+                    return back()->withInput()->withErrors([
+                        'pendamping_id' => 'Akun yang dipilih bukan Tim Inklusi aktif.',
+                    ]);
+                }
+            }
+
             $request->session()->regenerate();
+            $request->session()->forget('dev_pengguna_id');
             $request->session()->put('dev_role', $validated['role']);
+            if ($pendamping !== null) {
+                $request->session()->put('dev_pengguna_id', $pendamping->getKey());
+            }
 
             return redirect()->route('dev.preview', $validated['role']);
         })->name('login.store');
 
         Route::post('/change-role', function (Request $request) {
             Auth::guard('parent')->logout();
-            $request->session()->forget('dev_role');
+            $request->session()->forget(['dev_role', 'dev_pengguna_id']);
 
             return redirect()->route('dev.login');
         })->name('change-role');
 
         Route::post('/logout', function (Request $request) {
             Auth::guard('parent')->logout();
-            $request->session()->forget('dev_role');
+            $request->session()->forget(['dev_role', 'dev_pengguna_id']);
 
             return redirect()->route('dev.login');
         })->name('logout');
@@ -71,6 +101,13 @@ if (app()->environment(['local', 'testing'])) {
         Route::middleware('parent.auth')->group(function () {
             Route::get('/orang-tua/ganti-password', [ParentAuthController::class, 'editPassword'])->name('parent.password.edit');
             Route::put('/orang-tua/ganti-password', [ParentAuthController::class, 'updatePassword'])->name('parent.password.update');
+            Route::get('/orang-tua/dashboard', [ParentPortalController::class, 'dashboard'])->name('parent.dashboard');
+            Route::get('/orang-tua/catatan', [ParentPortalController::class, 'notes'])->name('parent.notes.index');
+            Route::get('/orang-tua/catatan/{type}/{id}', [ParentPortalController::class, 'note'])
+                ->whereIn('type', ['perkembangan', 'pendampingan'])
+                ->whereNumber('id')
+                ->name('parent.notes.show');
+            Route::get('/orang-tua/laporan', [ParentPortalController::class, 'reports'])->name('parent.reports.index');
         });
 
         Route::middleware('dev.admin')->group(function () {
@@ -138,6 +175,20 @@ if (app()->environment(['local', 'testing'])) {
             });
         });
 
+        Route::middleware('dev.tim-inklusi')->prefix('tim-inklusi')->name('tim-inklusi.')->group(function () {
+            Route::get('/dashboard', [TimInklusiController::class, 'dashboard'])->name('dashboard');
+            Route::get('/siswa', [TimInklusiController::class, 'students'])->name('students.index');
+            Route::get('/siswa/{siswa}', [TimInklusiController::class, 'student'])->name('students.show');
+            Route::get('/siswa/{siswa}/rekomendasi', [TimInklusiController::class, 'recommendation'])->name('students.recommendation');
+            Route::get('/siswa/{siswa}/catatan/tambah', [TimInklusiController::class, 'createNote'])->name('notes.create');
+            Route::get('/siswa/{siswa}/perkembangan/{catatan}', [TimInklusiController::class, 'showDevelopmentNote'])->name('development-notes.show');
+            Route::post('/catatan', [TimInklusiController::class, 'storeNote'])->name('notes.store');
+            Route::get('/catatan', [TimInklusiController::class, 'notes'])->name('notes.index');
+            Route::get('/catatan/{catatan}', [TimInklusiController::class, 'showNote'])->name('notes.show');
+            Route::get('/catatan/{catatan}/ubah', [TimInklusiController::class, 'editNote'])->name('notes.edit');
+            Route::put('/catatan/{catatan}', [TimInklusiController::class, 'updateNote'])->name('notes.update');
+        });
+
         Route::get('/{role}', function (Request $request, string $role) use ($roles) {
             abort_unless(array_key_exists($role, $roles), 404);
 
@@ -151,10 +202,24 @@ if (app()->environment(['local', 'testing'])) {
                 return redirect()->route('dev.preview', $selectedRole);
             }
 
+            if ($role === 'tim-inklusi') {
+                $pendamping = Pengguna::query()
+                    ->when($request->session()->get('dev_pengguna_id'), fn ($query, $id) => $query->whereKey($id))
+                    ->where('status_akun', 'Aktif')
+                    ->whereHas('role', fn ($query) => $query->where('nama_role', 'Tim Inklusi'))
+                    ->orderBy('id_pengguna')
+                    ->first();
+
+                if ($pendamping) {
+                    $request->session()->put('dev_pengguna_id', $pendamping->getKey());
+
+                    return redirect()->route('dev.tim-inklusi.dashboard');
+                }
+            }
+
             $view = match ($role) {
                 'admin' => 'dev.admin-dashboard',
                 'guru-mapel' => 'dev.guru-mapel-dashboard',
-                'orang-tua' => 'dev.orang-tua-dashboard',
                 default => 'dev.role-preview',
             };
             $data = [
@@ -185,28 +250,7 @@ if (app()->environment(['local', 'testing'])) {
                 }
 
                 if ($authenticatedParent) {
-                    $data['children'] = Siswa::query()
-                        ->with('kelas')
-                        ->whereHas('relasiOrangTuaSiswa.orangTua', fn ($parents) => $parents
-                            ->where('id_pengguna', $authenticatedParent->getKey()))
-                        ->orderBy('nama_siswa')
-                        ->get();
-                    $data['profile'] = [
-                        'label' => 'Orang Tua',
-                        'name' => $authenticatedParent->nama,
-                        'initials' => collect(explode(' ', $authenticatedParent->nama))
-                            ->filter()
-                            ->take(2)
-                            ->map(fn ($part) => strtoupper(substr($part, 0, 1)))
-                            ->join(''),
-                    ];
-                } else {
-                    // Pemilih role development tetap menampilkan seluruh data demo.
-                    $data['children'] = Siswa::query()
-                        ->with('kelas')
-                        ->whereHas('relasiOrangTuaSiswa')
-                        ->orderBy('nama_siswa')
-                        ->get();
+                    return redirect()->route('dev.parent.dashboard');
                 }
             }
 

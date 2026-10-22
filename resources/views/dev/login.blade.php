@@ -15,7 +15,7 @@
         <form method="POST" action="{{ route('dev.login.store') }}">
             @csrf
             <label class="abk-login-label" for="role">Masuk sebagai</label>
-            <select class="form-select @error('role') is-invalid @enderror" id="role" name="role">
+            <select class="form-select @error('role') is-invalid @enderror" id="role" name="role" data-development-role>
                 @foreach ($roles as $key => $profile)
                     <option value="{{ $key }}" @selected(old('role', 'admin') === $key)>{{ $profile['label'] }}</option>
                 @endforeach
@@ -23,9 +23,23 @@
             @error('role')
                 <div class="invalid-feedback">{{ $message }}</div>
             @enderror
+            <div class="mt-3" data-tim-inklusi-account @if (old('role', 'admin') !== 'tim-inklusi') hidden @endif>
+                <label class="abk-login-label" for="pendamping_id">Pilih nama Tim Inklusi</label>
+                @if ($timInklusiAccounts->isNotEmpty())
+                    <select class="form-select" id="pendamping_id" name="pendamping_id">
+                        @foreach ($timInklusiAccounts as $account)
+                            <option value="{{ $account->getKey() }}" @selected((string) old('pendamping_id') === (string) $account->getKey())>{{ $account->nama }}</option>
+                        @endforeach
+                    </select>
+                    @error('pendamping_id')<div class="invalid-feedback d-block">{{ $message }}</div>@enderror
+                    <small class="text-muted">Hanya akun aktif dengan role Tim Inklusi yang dapat masuk.</small>
+                @else
+                    <div class="alert alert-warning small mb-0">Belum ada akun Tim Inklusi aktif. Tambahkan melalui halaman Admin terlebih dahulu.</div>
+                @endif
+            </div>
             <button class="abk-login-submit" type="submit">Masuk</button>
         </form>
-        <a class="d-inline-block mt-3 small" href="{{ route('dev.parent.login') }}">Masuk dengan akun Orang Tua/Wali</a>
+        <div class="abk-login-parent-link"><span>Anda orang tua/wali?</span><a href="{{ route('dev.parent.login') }}">Buka login Orang Tua</a></div>
     </main>
 </body>
 </html>

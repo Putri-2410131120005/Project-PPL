@@ -2,6 +2,8 @@
 
 namespace Tests\Feature;
 
+use App\Models\Pengguna;
+use App\Models\Role;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Tests\TestCase;
 
@@ -20,21 +22,52 @@ class DevRoleSelectorTest extends TestCase
                 'Tim Inklusi',
                 'GPK',
                 'Kepala Sekolah',
-                'Orang Tua',
-            ]);
+            ])
+            ->assertDontSee('<option value="orang-tua"', false)
+            ->assertSee('Buka login Orang Tua');
     }
 
     public function test_each_role_can_be_selected_and_open_its_own_dashboard(): void
     {
-        foreach (['admin', 'guru-mapel', 'tim-inklusi', 'gpk', 'kepala-sekolah', 'orang-tua'] as $role) {
-            $this->post(route('dev.login.store'), ['role' => $role])
+        $timInklusiRole = Role::create(['nama_role' => 'Tim Inklusi']);
+        $timInklusi = Pengguna::create([
+            'id_role' => $timInklusiRole->getKey(),
+            'nama' => 'Pendamping Development',
+            'username' => 'pendamping-development',
+            'email' => 'pendamping-development@example.test',
+            'password' => 'password',
+            'status_akun' => 'Aktif',
+        ]);
+
+        foreach (['admin', 'guru-mapel', 'tim-inklusi', 'gpk', 'kepala-sekolah'] as $role) {
+            $payload = ['role' => $role];
+            if ($role === 'tim-inklusi') {
+                $payload['pendamping_id'] = $timInklusi->getKey();
+            }
+
+            $this->post(route('dev.login.store'), $payload)
                 ->assertRedirect(route('dev.preview', $role))
                 ->assertSessionHas('dev_role', $role);
 
-            $this->withSession(['dev_role' => $role])
-                ->get(route('dev.preview', $role))
-                ->assertOk();
+            $preview = $this->withSession(['dev_role' => $role])
+                ->get(route('dev.preview', $role));
+
+            if ($role === 'tim-inklusi') {
+                $preview->assertRedirect(route('dev.tim-inklusi.dashboard'));
+                $this->get(route('dev.tim-inklusi.dashboard'))->assertOk();
+            } else {
+                $preview->assertOk();
+            }
         }
+    }
+
+    public function test_parent_role_cannot_be_selected_from_development_login(): void
+    {
+        $this->from(route('dev.login'))
+            ->post(route('dev.login.store'), ['role' => 'orang-tua'])
+            ->assertRedirect(route('dev.login'))
+            ->assertSessionHasErrors('role')
+            ->assertSessionMissing('dev_role');
     }
 
     public function test_dashboard_requires_a_selected_role(): void
