@@ -1,86 +1,26 @@
-<x-layouts.preview :role="$role" :roles="$roles" title="Detail Siswa Guru Mata Pelajaran" active="students">
-    <x-preview.topbar title="Detail Siswa"
-        subtitle="Profil ringkas dan riwayat perkembangan sebagai referensi pembelajaran." :profile="$profile" />
-
-    <div class="abk-breadcrumb mb-3">
-        <a href="{{ route('dev.guru-mapel.students.index') }}">
-            Data Siswa
-        </a>
-        / Detail Siswa
-    </div>
-
-    <section class="abk-panel p-4 mb-4">
-
-        <div class="d-flex justify-content-between align-items-start gap-3">
-            <div>
-                <h2 class="h4 fw-bold">
-                    {{ $student['nama'] }}
-                </h2>
-
-                <p class="text-muted">
-                    {{ $student['kelas'] }}
-                </p>
-
-                <span class="badge text-bg-secondary">
-                    DATA DEMO
-                </span>
-            </div>
-
-            <a href="{{ route('dev.guru-mapel.students.index') }}" class="btn btn-outline-secondary">
-                Kembali
-            </a>
+<x-guru.layout :profile="$profile" title="Detail Siswa" subtitle="Profil ringkas dan riwayat perkembangan sebagai referensi pembelajaran." active="students" :detail="true">
+    @include('dev.guru-mapel.partials.student-profile', ['actions' => true])
+    <h2 class="gm-section-title">Riwayat perkembangan</h2>
+    <p class="gm-section-subtitle">Catatan yang dipublikasikan GPK sebagai referensi pembelajaran.</p>
+    <section class="abk-panel gm-card">
+        <div class="table-responsive">
+            <table class="table abk-table gm-student-history">
+                <thead><tr><th>Tanggal</th><th>Sumber</th><th>Status</th><th>Aksi</th></tr></thead>
+                <tbody>
+                    @forelse($history as $item)
+                        <tr>
+                            <td>{{ $item['note']->tanggal_catatan->format('d M Y') }}</td>
+                            <td>{{ $item['source'] === 'perkembangan' ? 'Guru Mata Pelajaran' : 'Tim Inklusi' }}</td>
+                            <td><x-guru.status status="Terverifikasi" /></td>
+                            <td><a class="abk-button" href="{{ route('dev.guru-mapel.history.show', ['source' => $item['source'], 'id' => $item['note']->getKey()]) }}">Lihat Riwayat</a></td>
+                        </tr>
+                    @empty
+                        <tr><td colspan="4" class="gm-empty">Belum ada riwayat yang dapat ditampilkan.</td></tr>
+                    @endforelse
+                </tbody>
+            </table>
         </div>
-
-        <hr>
-
-        <div class="row g-4">
-
-            <div class="col-md-6">
-                <p class="text-muted small mb-1">Nama Siswa</p>
-                <strong>{{ $student['nama'] }}</strong>
-            </div>
-
-            <div class="col-md-6">
-                <p class="text-muted small mb-1">Kelas</p>
-                <strong>{{ $student['kelas'] }}</strong>
-            </div>
-
-            <div class="col-md-6">
-                <p class="text-muted small mb-1">Jenis Disabilitas</p>
-                <strong>{{ $student['jenis'] }}</strong>
-            </div>
-
-            <div class="col-md-6">
-                <p class="text-muted small mb-1">Guru Pendamping</p>
-                <strong>{{ $student['pendamping'] }}</strong>
-            </div>
-
-        </div>
-
-        <hr>
-
-        <div class="d-flex flex-wrap gap-2">
-            <a href="{{ route('dev.guru-mapel.notes.create', ['slug' => request()->route('slug')]) }}"
-                class="btn btn-primary">
-                Tambah Catatan
-            </a>
-
-            <a href="{{ route('dev.guru-mapel.recommendations.show', ['slug' => request()->route('slug')]) }}"
-                class="btn btn-outline-primary">
-                Lihat Rekomendasi
-            </a>
-        </div>
-
+        <a class="gm-button gm-outline mt-3" href="{{ route('dev.guru-mapel.history.index', ['siswa' => $student->getKey()]) }}">Lihat seluruh riwayat siswa</a>
     </section>
-
-    <section class="abk-panel p-4">
-        <h3 class="h5 fw-bold">
-            Riwayat Perkembangan
-        </h3>
-
-        <p class="text-muted mb-0">
-            Belum ada riwayat pada data demo ini.
-        </p>
-    </section>
-
-</x-layouts.preview>
+    <a class="gm-button gm-outline" href="{{ route('dev.guru-mapel.students.index') }}">Kembali ke Data Siswa</a>
+</x-guru.layout>

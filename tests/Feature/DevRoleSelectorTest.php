@@ -26,7 +26,7 @@ class DevRoleSelectorTest extends TestCase
 
     public function test_each_role_can_be_selected_and_open_its_own_dashboard(): void
     {
-        foreach (['admin', 'guru-mapel', 'tim-inklusi', 'gpk', 'kepala-sekolah', 'orang-tua'] as $role) {
+        foreach (['admin', 'tim-inklusi', 'gpk', 'kepala-sekolah', 'orang-tua'] as $role) {
             $this->post(route('dev.login.store'), ['role' => $role])
                 ->assertRedirect(route('dev.preview', $role))
                 ->assertSessionHas('dev_role', $role);

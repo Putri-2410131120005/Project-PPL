@@ -1,76 +1,52 @@
-<x-layouts.preview :role="$role" :roles="$roles" title="Data Siswa Guru Mata Pelajaran" active="students">
-    <x-preview.topbar title="Data Siswa yang Diajar" subtitle="Daftar siswa ABK pada kelas yang Anda ajar."
-        :profile="$profile" />
-
-    <div class="abk-breadcrumb">Data Siswa</div>
-
-    <section class="abk-panel p-3">
-        <div class="d-flex justify-content-between
-                    align-items-center flex-wrap gap-3 mb-3">
-            <h2 class="h6 mb-0">Daftar Siswa</h2>
-            <span class="badge text-bg-secondary">DATA DEMO</span>
-        </div>
-
-        <form method="GET" action="{{ route('dev.guru-mapel.students.index') }}" class="d-flex flex-wrap gap-2 mb-3">
-
-            <input type="search" name="q" class="form-control" style="max-width: 300px" placeholder="Cari nama siswa..."
-                value="{{ request('q') }}">
-
-            <select name="tingkat" class="form-select" style="max-width: 160px">
-                @foreach (['Semua', 'X', 'XI', 'XII'] as $tingkat)
-                    <option value="{{ $tingkat }}" @selected(request('tingkat', 'Semua') === $tingkat)>
-                        {{ $tingkat === 'Semua' ? 'Semua Kelas' : 'Kelas ' . $tingkat }}
-                    </option>
-                @endforeach
-            </select>
-
-            <button type="submit" class="btn btn-primary">
-                Cari / Filter
-            </button>
-        </form>
-
-        <div class="table-responsive">
-            <table class="table abk-table align-middle">
-                <thead>
-                    <tr>
-                        <th>Nama Siswa</th>
-                        <th>Kelas</th>
-                        <th>Jenis Disabilitas</th>
-                        <th>Guru Pendamping</th>
-                        <th>Catatan Terakhir</th>
-                        <th>Aksi</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    @forelse ($students as $student)
-                        <tr>
-                            <td class="abk-data-name">
-                                {{ $student['nama'] }}
-                            </td>
-                            <td>{{ $student['kelas'] }}</td>
-                            <td>{{ $student['jenis'] }}</td>
-                            <td>{{ $student['pendamping'] }}</td>
-                            <td>{{ $student['terakhir'] }}</td>
-                            <td>
-                                <a href="{{ route('dev.guru-mapel.students.show', ['slug' => $student['slug']]) }}"
-                                    class="abk-button d-inline-block text-decoration-none">
-                                    Lihat Profil
-                                </a>
-                            </td>
-                        </tr>
-                    @empty
-                        <tr>
-                            <td colspan="6" class="text-center py-4">
-                                Tidak ada data siswa yang cocok.
-                            </td>
-                        </tr>
-                    @endforelse
-                </tbody>
-            </table>
-        </div>
-
-        <p class="text-muted small mt-3 mb-0">
-            Menampilkan {{ $students->count() }} siswa demo.
-        </p>
-    </section>
-</x-layouts.preview>
+<x-guru.layout :profile="$profile" title="Data Siswa yang Diajar" subtitle="Daftar siswa pada kelas yang Anda ajar." active="students">
+<form class="gm-filters abk-panel" method="get">
+<input name="q" type="search" placeholder="Cari nama siswa..." aria-label="Cari nama siswa" value="{{ request('q') }}">
+@foreach(['Semua','X','XI','XII'] as $level)<button name="tingkat" value="{{ $level }}" class="gm-chip {{ request('tingkat','Semua') === $level ? 'active' : '' }}">{{ $level }}</button>@endforeach
+<span class="gm-count">Total {{ $students->total() }} siswa terdaftar</span>
+</form>
+<section class="abk-panel gm-table">
+<div class="table-responsive">
+<table class="table abk-table gm-students-table">
+<colgroup>
+<col style="width:19.283%">
+<col style="width:12.457%">
+<col style="width:14.164%">
+<col style="width:17.577%">
+<col style="width:11.604%">
+<col style="width:24.915%">
+</colgroup>
+<thead>
+<tr>
+<th>Nama Siswa</th>
+<th>Kelas</th>
+<th>Jenis Disabilitas</th>
+<th>Guru Pendamping</th>
+<th>Catatan Terakhir</th>
+<th>Aksi</th>
+</tr>
+</thead>
+<tbody>
+@forelse($students as $student)<tr>
+<td class="abk-data-name">{{ $student->nama_siswa }}</td>
+<td>{{ $student->kelas->nama_kelas }}</td>
+<td>
+<span class="gm-pill">{{ $student->kebutuhan_khusus ?: 'Belum tersedia' }}</span>
+</td>
+<td>{{ $student->relasiPendampingSiswa->map->pendamping->filter(fn($p) => $p && $p->status_akun === 'Aktif' && in_array($p->role?->nama_role, ['Tim Inklusi','GPK']))->pluck('nama')->join(', ') ?: 'Belum tersedia' }}</td>
+<td>{{ $student->terakhir ? \Illuminate\Support\Carbon::parse($student->terakhir)->format('d M Y') : 'Belum ada' }}</td>
+<td>
+<div class="gm-actions">
+<a class="abk-button gm-profile-button" href="{{ route('dev.guru-mapel.students.show',$student->getKey()) }}">Lihat Profil</a>
+<a class="gm-button gm-navy" href="{{ route('dev.guru-mapel.notes.create',$student->getKey()) }}">Tambah Catatan</a>
+</div>
+</td>
+</tr>
+@empty<tr>
+<td colspan="6" class="gm-empty">Tidak ada data yang cocok. Coba pilihan lain atau <a href="{{ route('dev.guru-mapel.students.index') }}">tampilkan semua data</a>.</td>
+</tr>@endforelse
+</tbody>
+</table>
+</div>
+</section>
+<x-guru.pagination :paginator="$students" />
+</x-guru.layout>
