@@ -31,9 +31,13 @@ class DevRoleSelectorTest extends TestCase
                 ->assertRedirect(route('dev.preview', $role))
                 ->assertSessionHas('dev_role', $role);
 
-            $this->withSession(['dev_role' => $role])
-                ->get(route('dev.preview', $role))
-                ->assertOk();
+            $response = $this->withSession(['dev_role' => $role])->get(route('dev.preview', $role));
+            if ($role === 'kepala-sekolah') {
+                $response->assertRedirect(route('dev.principal.dashboard'));
+                $this->get(route('dev.principal.dashboard'))->assertOk();
+            } else {
+                $response->assertOk();
+            }
         }
     }
 

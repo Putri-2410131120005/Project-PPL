@@ -115,6 +115,9 @@ class A16DemoSeederTest extends TestCase
             if ($role === 'guru-mapel') {
                 $this->get(route('dev.preview', $role))->assertRedirect(route('dev.guru-mapel.dashboard'));
                 $this->get(route('dev.guru-mapel.dashboard'))->assertOk()->assertSee('DATA DEMO Guru Satu')->assertDontSee('type="password"', false);
+            } elseif ($role === 'kepala-sekolah') {
+                $this->get(route('dev.preview', $role))->assertRedirect(route('dev.principal.dashboard'));
+                $this->get(route('dev.principal.dashboard'))->assertOk();
             } else {
                 $this->get(route('dev.preview', $role))->assertOk();
                 $this->assertGuest('guru_dev');

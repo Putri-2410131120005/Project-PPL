@@ -149,6 +149,7 @@ if (app()->environment(['local', 'testing'])) {
 
 
         require __DIR__.'/guru-mapel.php';
+        require __DIR__.'/principal.php';
 
         Route::get('/{role}', function (Request $request, string $role) use ($roles) {
             abort_unless(array_key_exists($role, $roles), 404);
@@ -165,6 +166,9 @@ if (app()->environment(['local', 'testing'])) {
 
             if ($role === 'guru-mapel') {
                 return redirect()->route('dev.guru-mapel.dashboard');
+            }
+            if ($role === 'kepala-sekolah') {
+                return redirect()->route('dev.principal.dashboard');
             }
 
             $view = match ($role) {
