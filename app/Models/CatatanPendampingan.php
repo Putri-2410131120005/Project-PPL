@@ -49,14 +49,12 @@ class CatatanPendampingan extends Model
         return $this->hasMany(SumberRekapCatatan::class, 'id_catatan_pendampingan', 'id_catatan_pendampingan');
     }
 
-    /** Hanya catatan dengan verifikasi versi terkini yang telah dipublikasikan. */
+    /** Catatan langsung tersedia bagi orang tua setelah versi terkini diverifikasi GPK. */
     public function scopeDipublikasikan($query)
     {
         return $query->where('status_pengajuan', 'Terverifikasi')
             ->whereHas('verifikasi', function ($q) {
                 $q->where('status_verifikasi', 'Terverifikasi')
-                  ->whereNotNull('id_publikator')
-                  ->whereNotNull('tanggal_publikasi')
                   ->whereColumn('verifikasi_catatan.versi_pengajuan', 'catatan_pendampingan.versi_pengajuan');
             });
     }

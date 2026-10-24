@@ -8,6 +8,7 @@
         <form class="abk-search-form" method="GET" action="{{ route('dev.admin.students.index') }}">
             @if (! empty($filters['kelas']))<input type="hidden" name="kelas" value="{{ $filters['kelas'] }}">@endif
             @if (! empty($filters['status']))<input type="hidden" name="status" value="{{ $filters['status'] }}">@endif
+            @if (! empty($filters['tahun_ajaran']))<input type="hidden" name="tahun_ajaran" value="{{ $filters['tahun_ajaran'] }}">@endif
             @if (($filters['urut_nama'] ?? 'az') !== 'az')<input type="hidden" name="urut_nama" value="{{ $filters['urut_nama'] }}">@endif
             <input class="form-control abk-search-input" name="cari" value="{{ $filters['cari'] ?? '' }}" placeholder="Cari nama atau NIS siswa...">
         </form>
@@ -18,6 +19,7 @@
     <section class="abk-panel abk-filter-bar">
         <form class="abk-student-filter-form" method="GET" action="{{ route('dev.admin.students.index') }}">
             <input type="hidden" name="cari" value="{{ $filters['cari'] ?? '' }}">
+            <div class="abk-filter-field"><label for="tahun_ajaran">Tahun ajaran</label><select class="form-select abk-filter-select" id="tahun_ajaran" name="tahun_ajaran"><option value="">Semua tahun ajaran</option>@foreach($academicYears as $year)<option value="{{ $year->id_tahun_ajaran }}" @selected((string)($filters['tahun_ajaran'] ?? '') === (string)$year->id_tahun_ajaran)>{{ $year->nama }}{{ $year->status === 'Aktif' ? ' — Aktif' : '' }}</option>@endforeach</select></div>
             <div class="abk-filter-field">
                 <label for="kelas">Kelas</label>
                 <select class="form-select abk-filter-select" id="kelas" name="kelas">
@@ -38,7 +40,7 @@
             </div>
             <div class="abk-filter-actions">
                 <button class="abk-button" type="submit">Terapkan</button>
-                @if (! empty($filters['cari']) || ! empty($filters['kelas']) || ! empty($filters['status']) || ($filters['urut_nama'] ?? 'az') !== 'az')
+                @if (! empty($filters['cari']) || ! empty($filters['kelas']) || ! empty($filters['status']) || ! empty($filters['tahun_ajaran']) || ($filters['urut_nama'] ?? 'az') !== 'az')
                     <a class="abk-filter" href="{{ route('dev.admin.students.index') }}">Reset</a>
                 @endif
             </div>

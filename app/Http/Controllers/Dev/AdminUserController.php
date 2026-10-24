@@ -11,6 +11,7 @@ use App\Models\RelasiOrangTuaSiswa;
 use App\Models\RelasiPendampingSiswa;
 use App\Models\Role;
 use App\Models\Siswa;
+use App\Models\TahunAjaran;
 use App\Support\ParentCredentials;
 use Illuminate\Database\QueryException;
 use Illuminate\Http\RedirectResponse;
@@ -379,7 +380,9 @@ class AdminUserController extends AdminController
                 ->where('status_mapel', 'Aktif')
                 ->orderBy('nama_mapel')
                 ->get(),
-            'classes' => Kelas::query()->where('status_kelas', 'Aktif')->orderBy('tingkat')->orderBy('nama_kelas')->get(),
+            'classes' => Kelas::query()->where('status_kelas', 'Aktif')
+                ->when(TahunAjaran::aktif(), fn ($classes, $year) => $classes->where('id_tahun_ajaran', $year->getKey()))
+                ->orderBy('tingkat')->orderBy('nama_kelas')->get(),
             'students' => Siswa::query()->where('status_siswa', 'Aktif')->orderBy('nama_siswa')->get(),
             'initialAssignment' => $initialAssignment,
             'initialTeachingClassIds' => $initialAssignment

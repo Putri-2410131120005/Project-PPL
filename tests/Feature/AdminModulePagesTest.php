@@ -13,6 +13,8 @@ class AdminModulePagesTest extends TestCase
     {
         $urls = [
             route('dev.preview', 'admin'),
+            route('dev.admin.academic-years.index'),
+            route('dev.admin.academic-years.create'),
             route('dev.admin.users.index'),
             route('dev.admin.users.create'),
             route('dev.admin.staff.index'),

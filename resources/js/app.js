@@ -93,8 +93,9 @@ const initialiseConfirmationModal = () => {
 const initialiseDevelopmentRoleSelector = () => {
     const role = document.querySelector('[data-development-role]');
     const account = document.querySelector('[data-tim-inklusi-account]');
+    const gpkAccount = document.querySelector('[data-gpk-account]');
 
-    if (! (role instanceof HTMLSelectElement) || ! (account instanceof HTMLElement)) {
+    if (! (role instanceof HTMLSelectElement) || ! (account instanceof HTMLElement) || ! (gpkAccount instanceof HTMLElement)) {
         return;
     }
 
@@ -103,6 +104,11 @@ const initialiseDevelopmentRoleSelector = () => {
         account.hidden = ! isTimInklusi;
         account.querySelectorAll('select, input').forEach((field) => {
             field.disabled = ! isTimInklusi;
+        });
+        const isGpk = role.value === 'gpk';
+        gpkAccount.hidden = ! isGpk;
+        gpkAccount.querySelectorAll('select, input').forEach((field) => {
+            field.disabled = ! isGpk;
         });
     };
 

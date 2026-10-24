@@ -20,6 +20,7 @@
         @foreach ($classStatuses as $status)
             <a class="abk-filter {{ ($filters['status'] ?? '') === $status ? 'active' : '' }}" href="{{ route('dev.admin.classes.index', array_filter(['cari' => $filters['cari'] ?? null, 'status' => $status])) }}">{{ $status }}</a>
         @endforeach
+        <form class="ms-auto d-flex gap-2" method="GET"><input type="hidden" name="cari" value="{{ $filters['cari'] ?? '' }}"><input type="hidden" name="status" value="{{ $filters['status'] ?? '' }}"><select class="form-select abk-filter-select" name="tahun_ajaran" onchange="this.form.submit()"><option value="">Semua tahun ajaran</option>@foreach($academicYears as $year)<option value="{{ $year->id_tahun_ajaran }}" @selected((string)($filters['tahun_ajaran'] ?? '') === (string)$year->id_tahun_ajaran)>{{ $year->nama }}</option>@endforeach</select></form>
     </section>
 
     <section class="abk-panel overflow-hidden">

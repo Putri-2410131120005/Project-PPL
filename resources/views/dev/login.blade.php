@@ -37,6 +37,20 @@
                     <div class="alert alert-warning small mb-0">Belum ada akun Tim Inklusi aktif. Tambahkan melalui halaman Admin terlebih dahulu.</div>
                 @endif
             </div>
+            <div class="mt-3" data-gpk-account @if (old('role', 'admin') !== 'gpk') hidden @endif>
+                <label class="abk-login-label" for="gpk_id">Pilih nama GPK</label>
+                @if ($gpkAccounts->isNotEmpty())
+                    <select class="form-select" id="gpk_id" name="gpk_id">
+                        @foreach ($gpkAccounts as $account)
+                            <option value="{{ $account->getKey() }}" @selected((string) old('gpk_id') === (string) $account->getKey())>{{ $account->nama }}</option>
+                        @endforeach
+                    </select>
+                    @error('gpk_id')<div class="invalid-feedback d-block">{{ $message }}</div>@enderror
+                    <small class="text-muted">Hanya akun aktif dengan role GPK yang dapat masuk.</small>
+                @else
+                    <div class="alert alert-warning small mb-0">Belum ada akun GPK aktif. Tambahkan melalui halaman Admin terlebih dahulu.</div>
+                @endif
+            </div>
             <button class="abk-login-submit" type="submit">Masuk</button>
         </form>
         <div class="abk-login-parent-link"><span>Anda orang tua/wali?</span><a href="{{ route('dev.parent.login') }}">Buka login Orang Tua</a></div>

@@ -38,11 +38,23 @@ class DevRoleSelectorTest extends TestCase
             'password' => 'password',
             'status_akun' => 'Aktif',
         ]);
+        $gpkRole = Role::create(['nama_role' => 'GPK']);
+        $gpk = Pengguna::create([
+            'id_role' => $gpkRole->getKey(),
+            'nama' => 'GPK Development',
+            'username' => 'gpk-development',
+            'email' => 'gpk-development@example.test',
+            'password' => 'password',
+            'status_akun' => 'Aktif',
+        ]);
 
         foreach (['admin', 'guru-mapel', 'tim-inklusi', 'gpk', 'kepala-sekolah'] as $role) {
             $payload = ['role' => $role];
             if ($role === 'tim-inklusi') {
                 $payload['pendamping_id'] = $timInklusi->getKey();
+            }
+            if ($role === 'gpk') {
+                $payload['gpk_id'] = $gpk->getKey();
             }
 
             $this->post(route('dev.login.store'), $payload)
@@ -55,6 +67,9 @@ class DevRoleSelectorTest extends TestCase
             if ($role === 'tim-inklusi') {
                 $preview->assertRedirect(route('dev.tim-inklusi.dashboard'));
                 $this->get(route('dev.tim-inklusi.dashboard'))->assertOk();
+            } elseif ($role === 'gpk') {
+                $preview->assertRedirect(route('dev.gpk.dashboard'));
+                $this->get(route('dev.gpk.dashboard'))->assertOk();
             } else {
                 $preview->assertOk();
             }

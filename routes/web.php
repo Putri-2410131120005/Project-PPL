@@ -1,9 +1,11 @@
 <?php
 
 use App\Http\Controllers\Dev\AdminMappingController;
+use App\Http\Controllers\Dev\AdminAcademicYearController;
 use App\Http\Controllers\Dev\AdminMasterDataController;
 use App\Http\Controllers\Dev\AdminStudentController;
 use App\Http\Controllers\Dev\AdminUserController;
+use App\Http\Controllers\Dev\GpkController;
 use App\Http\Controllers\Dev\ParentAuthController;
 use App\Http\Controllers\Dev\ParentPortalController;
 use App\Http\Controllers\Dev\TimInklusiController;
@@ -49,12 +51,18 @@ if (app()->environment(['local', 'testing'])) {
                 ->whereHas('role', fn ($query) => $query->where('nama_role', 'Tim Inklusi'))
                 ->orderBy('nama')
                 ->get(['id_pengguna', 'nama']),
+            'gpkAccounts' => Pengguna::query()
+                ->where('status_akun', 'Aktif')
+                ->whereHas('role', fn ($query) => $query->where('nama_role', 'GPK'))
+                ->orderBy('nama')
+                ->get(['id_pengguna', 'nama']),
         ]))->name('login');
 
         Route::post('/login', function (Request $request) use ($developmentRoles) {
             $validated = $request->validate([
                 'role' => ['required', 'string', Rule::in(array_keys($developmentRoles))],
                 'pendamping_id' => [Rule::requiredIf($request->input('role') === 'tim-inklusi'), 'nullable', 'integer'],
+                'gpk_id' => [Rule::requiredIf($request->input('role') === 'gpk'), 'nullable', 'integer'],
             ]);
 
             $pendamping = null;
@@ -72,11 +80,29 @@ if (app()->environment(['local', 'testing'])) {
                 }
             }
 
+            $gpk = null;
+            if ($validated['role'] === 'gpk') {
+                $gpk = Pengguna::query()
+                    ->whereKey($validated['gpk_id'])
+                    ->where('status_akun', 'Aktif')
+                    ->whereHas('role', fn ($query) => $query->where('nama_role', 'GPK'))
+                    ->first();
+
+                if (! $gpk) {
+                    return back()->withInput()->withErrors([
+                        'gpk_id' => 'Akun yang dipilih bukan GPK aktif.',
+                    ]);
+                }
+            }
+
             $request->session()->regenerate();
             $request->session()->forget('dev_pengguna_id');
             $request->session()->put('dev_role', $validated['role']);
             if ($pendamping !== null) {
                 $request->session()->put('dev_pengguna_id', $pendamping->getKey());
+            }
+            if ($gpk !== null) {
+                $request->session()->put('dev_pengguna_id', $gpk->getKey());
             }
 
             return redirect()->route('dev.preview', $validated['role']);
@@ -111,6 +137,15 @@ if (app()->environment(['local', 'testing'])) {
         });
 
         Route::middleware('dev.admin')->group(function () {
+            Route::prefix('admin/tahun-ajaran')->name('admin.academic-years.')->group(function () {
+                Route::get('/', [AdminAcademicYearController::class, 'index'])->name('index');
+                Route::get('/tambah', [AdminAcademicYearController::class, 'create'])->name('create');
+                Route::post('/', [AdminAcademicYearController::class, 'store'])->name('store');
+                Route::get('/{tahunAjaran}/ubah', [AdminAcademicYearController::class, 'edit'])->name('edit');
+                Route::put('/{tahunAjaran}', [AdminAcademicYearController::class, 'update'])->name('update');
+                Route::patch('/{tahunAjaran}/aktifkan', [AdminAcademicYearController::class, 'activate'])->name('activate');
+            });
+
             Route::prefix('admin/pengguna')->name('admin.users.')->group(function () {
                 Route::get('/', [AdminUserController::class, 'index'])->name('index');
                 Route::get('/tambah', [AdminUserController::class, 'create'])->name('create');
@@ -189,6 +224,30 @@ if (app()->environment(['local', 'testing'])) {
             Route::put('/catatan/{catatan}', [TimInklusiController::class, 'updateNote'])->name('notes.update');
         });
 
+        Route::middleware('dev.gpk')->prefix('gpk')->name('gpk.')->group(function () {
+            Route::get('/dashboard', [GpkController::class, 'dashboard'])->name('dashboard');
+            Route::get('/siswa', [GpkController::class, 'students'])->name('students.index');
+            Route::get('/siswa/{siswa}', [GpkController::class, 'student'])->name('students.show');
+            Route::get('/catatan', [GpkController::class, 'notes'])->name('notes.index');
+            Route::get('/catatan/{type}/{id}', [GpkController::class, 'note'])
+                ->whereIn('type', ['perkembangan', 'pendampingan'])->whereNumber('id')->name('notes.show');
+            Route::post('/catatan/{type}/{id}/verifikasi', [GpkController::class, 'verify'])
+                ->whereIn('type', ['perkembangan', 'pendampingan'])->whereNumber('id')->name('notes.verify');
+            Route::get('/riwayat', [GpkController::class, 'history'])->name('history.index');
+            Route::get('/rekap', [GpkController::class, 'recaps'])->name('recaps.index');
+            Route::get('/rekap/unduh-zip', [GpkController::class, 'downloadRecapsZip'])->name('recaps.zip.download');
+            Route::get('/rekap/siswa/{siswa}', [GpkController::class, 'recap'])->name('recaps.show');
+            Route::get('/rekap/siswa/{siswa}/excel', [GpkController::class, 'exportRecap'])->name('recaps.export');
+            Route::get('/rekap/siswa/{siswa}/pratinjau-pdf', [GpkController::class, 'previewRecapPdf'])->name('recaps.pdf.preview');
+            Route::get('/rekap/siswa/{siswa}/unduh-pdf', [GpkController::class, 'downloadRecapPdf'])->name('recaps.pdf.download');
+            Route::get('/laporan', [GpkController::class, 'reports'])->name('reports.index');
+            Route::get('/laporan/{laporan}', [GpkController::class, 'report'])->name('reports.show');
+            Route::get('/laporan/{laporan}/pratinjau-pdf', [GpkController::class, 'previewReportPdf'])->name('reports.pdf.preview');
+            Route::get('/laporan/{laporan}/unduh-pdf', [GpkController::class, 'downloadReportPdf'])->name('reports.pdf.download');
+            Route::post('/laporan/{laporan}/publikasi', [GpkController::class, 'publishReport'])->name('reports.publish');
+            Route::get('/orang-tua', [GpkController::class, 'parents'])->name('parents.index');
+        });
+
         Route::get('/{role}', function (Request $request, string $role) use ($roles) {
             abort_unless(array_key_exists($role, $roles), 404);
 
@@ -214,6 +273,20 @@ if (app()->environment(['local', 'testing'])) {
                     $request->session()->put('dev_pengguna_id', $pendamping->getKey());
 
                     return redirect()->route('dev.tim-inklusi.dashboard');
+                }
+            }
+
+            if ($role === 'gpk') {
+                $gpk = Pengguna::query()
+                    ->when($request->session()->get('dev_pengguna_id'), fn ($query, $id) => $query->whereKey($id))
+                    ->where('status_akun', 'Aktif')
+                    ->whereHas('role', fn ($query) => $query->where('nama_role', 'GPK'))
+                    ->first();
+
+                if ($gpk) {
+                    $request->session()->put('dev_pengguna_id', $gpk->getKey());
+
+                    return redirect()->route('dev.gpk.dashboard');
                 }
             }
 

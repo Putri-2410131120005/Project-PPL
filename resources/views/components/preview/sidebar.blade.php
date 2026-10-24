@@ -3,6 +3,7 @@
     $menus = match ($role) {
         'admin' => [
             ['key' => 'dashboard', 'label' => 'Dashboard', 'href' => route('dev.preview', 'admin')],
+            ['key' => 'academic-years', 'label' => 'Tahun Ajaran', 'href' => route('dev.admin.academic-years.index')],
             ['key' => 'users', 'label' => 'Kelola Pengguna', 'href' => route('dev.admin.users.index')],
             ['key' => 'students', 'label' => 'Siswa ABK', 'href' => route('dev.admin.students.index')],
             ['key' => 'classes-mapel', 'label' => 'Kelas & Mata Pelajaran', 'children' => [
@@ -25,6 +26,15 @@
             ['key' => 'dashboard', 'label' => 'Dashboard', 'href' => route('dev.tim-inklusi.dashboard')],
             ['key' => 'students', 'label' => 'Data Siswa', 'href' => route('dev.tim-inklusi.students.index')],
             ['key' => 'history', 'label' => 'Riwayat Catatan', 'href' => route('dev.tim-inklusi.notes.index')],
+        ],
+        'gpk' => [
+            ['key' => 'dashboard', 'label' => 'Dashboard', 'href' => route('dev.gpk.dashboard')],
+            ['key' => 'students', 'label' => 'Data Siswa', 'href' => route('dev.gpk.students.index')],
+            ['key' => 'notes', 'label' => 'Verifikasi Catatan', 'href' => route('dev.gpk.notes.index')],
+            ['key' => 'history', 'label' => 'Riwayat Verifikasi', 'href' => route('dev.gpk.history.index')],
+            ['key' => 'recaps', 'label' => 'Rekap', 'href' => route('dev.gpk.recaps.index')],
+            ['key' => 'reports', 'label' => 'Laporan', 'href' => route('dev.gpk.reports.index')],
+            ['key' => 'parents', 'label' => 'Data Orang Tua / Wali', 'href' => route('dev.gpk.parents.index')],
         ],
         'orang-tua' => [
             ['key' => 'dashboard', 'label' => 'Dashboard', 'href' => route('dev.parent.dashboard')],

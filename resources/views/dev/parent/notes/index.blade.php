@@ -1,5 +1,5 @@
 <x-layouts.preview :role="$role" :roles="$previewRoles" active="progress" title="Catatan Perkembangan">
-    <x-preview.topbar title="Catatan Perkembangan" :subtitle="$student ? 'Riwayat catatan '.$student->nama_siswa.' yang diverifikasi dan dipublikasikan GPK.' : 'Riwayat catatan anak yang dipublikasikan GPK.'" :profile="$profile" />
+    <x-preview.topbar title="Catatan Perkembangan" :subtitle="$student ? 'Riwayat catatan '.$student->nama_siswa.' yang telah diverifikasi GPK.' : 'Riwayat catatan anak yang telah diverifikasi GPK.'" :profile="$profile" />
     <div class="abk-breadcrumb"><a href="{{ route('dev.parent.dashboard') }}">Dashboard</a> <span>/</span> Catatan Perkembangan</div>
 
     <section class="abk-panel abk-parent-date-filter">
@@ -17,7 +17,7 @@
         @forelse ($notes as $note)
             <tr><td>{{ $note['date']->locale('id')->translatedFormat('d M Y') }}</td><td>{{ $note['source_short'] }}@if ($note['author']) <small class="d-block text-muted mt-1">{{ $note['author'] }}</small>@endif</td><td><a class="abk-button text-decoration-none" href="{{ route('dev.parent.notes.show', [$note['type'], $note['id']]) }}">Lihat Catatan</a></td></tr>
         @empty
-            <tr><td colspan="3"><div class="abk-parent-table-empty"><strong>Belum ada catatan yang dapat ditampilkan</strong><p>{{ $filters['tanggal'] || $filters['bulan'] ? 'Tidak ada catatan terpublikasi pada tanggal atau bulan yang dipilih.' : 'Catatan akan tersedia setelah diverifikasi dan dipublikasikan oleh GPK.' }}</p></div></td></tr>
+            <tr><td colspan="3"><div class="abk-parent-table-empty"><strong>Belum ada catatan yang dapat ditampilkan</strong><p>{{ $filters['tanggal'] || $filters['bulan'] ? 'Tidak ada catatan terverifikasi pada tanggal atau bulan yang dipilih.' : 'Catatan akan langsung tersedia setelah diverifikasi oleh GPK.' }}</p></div></td></tr>
         @endforelse
         </tbody></table></div>
     </section>

@@ -1,5 +1,5 @@
 <x-layouts.preview :role="$role" :roles="$previewRoles" active="dashboard" title="Dashboard Orang Tua">
-    <x-preview.topbar title="Dashboard Orang Tua" subtitle="Lihat perkembangan anak yang telah diverifikasi dan dipublikasikan oleh GPK." :profile="$profile" />
+    <x-preview.topbar title="Dashboard Orang Tua" subtitle="Lihat perkembangan anak yang telah diverifikasi oleh GPK." :profile="$profile" />
     <div class="abk-breadcrumb">Dashboard</div>
     <x-preview.flash-messages />
 
@@ -15,22 +15,22 @@
 
             <section class="abk-panel abk-parent-latest-info">
                 <h2>Informasi Terbaru</h2>
-                <small>Catatan terakhir dipublikasikan GPK</small>
+                <small>Catatan terakhir diverifikasi GPK</small>
                 @if ($latestNote)
                     <strong>{{ $latestNote['date']->locale('id')->translatedFormat('d F Y') }}</strong>
-                    <span>Sudah diterbitkan GPK</span>
+                    <span>Sudah diverifikasi GPK</span>
                 @else
                     <strong>Belum tersedia</strong><span class="is-empty">Belum ada catatan yang diterbitkan</span>
                 @endif
             </section>
 
             <section class="abk-panel abk-parent-timeline-card">
-                <h2>Perkembangan Terbaru</h2><p>Catatan yang sudah diverifikasi dan dipublikasikan GPK.</p>
+                <h2>Perkembangan Terbaru</h2><p>Catatan yang sudah diverifikasi GPK.</p>
                 <div class="abk-parent-timeline">
                     @forelse ($latestNotes as $note)
                         <article><div><strong>{{ $note['source_short'] }} <span>•</span> {{ $note['date']->locale('id')->translatedFormat('d M Y') }}</strong><p>{{ \Illuminate\Support\Str::limit($note['summary'], 115) }}</p></div><a href="{{ route('dev.parent.notes.show', [$note['type'], $note['id']]) }}">Baca</a></article>
                     @empty
-                        <div class="abk-parent-inline-empty">Belum ada catatan perkembangan yang dipublikasikan GPK.</div>
+                        <div class="abk-parent-inline-empty">Belum ada catatan perkembangan yang diverifikasi GPK.</div>
                     @endforelse
                 </div>
                 <a class="abk-parent-wide-link" href="{{ route('dev.parent.notes.index') }}">Lihat Semua Catatan</a>

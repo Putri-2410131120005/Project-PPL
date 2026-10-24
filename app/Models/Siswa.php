@@ -58,4 +58,9 @@ class Siswa extends Model
     {
         return $this->hasMany(RelasiPendampingSiswa::class, 'id_siswa', 'id_siswa');
     }
+
+    public function riwayatKelas(): HasMany
+    {
+        return $this->hasMany(RiwayatKelasSiswa::class, 'id_siswa', 'id_siswa');
+    }
 }

@@ -11,7 +11,7 @@ use Illuminate\Support\Facades\DB;
 use InvalidArgumentException;
 
 /**
- * Business logic for GPK's verification and publication.
+ * Business logic for GPK's verification.
  * Do not expose this through a role-selector route: the authenticated GPK ID
  * must be resolved server-side when real authentication is implemented.
  */
@@ -59,45 +59,12 @@ class GpkVerifikasiService
                 'status_verifikasi' => $keputusan,
                 'catatan_verifikasi' => $alasan,
                 'tanggal_verifikasi' => now(),
-                'id_publikator' => null,
-                'tanggal_publikasi' => null,
+                // Catatan yang disetujui langsung tersedia bagi orang tua.
+                'id_publikator' => $keputusan === 'Terverifikasi' ? $idGpk : null,
+                'tanggal_publikasi' => $keputusan === 'Terverifikasi' ? now() : null,
             ])->save();
 
             $catatan->forceFill(['status_pengajuan' => $keputusan])->save();
-
-            return $verifikasi;
-        });
-    }
-
-    public function publikasikan(int $idVerifikasi, int $idGpk): VerifikasiCatatan
-    {
-        return DB::transaction(function () use ($idVerifikasi, $idGpk) {
-            $this->pastikanGpkAktif($idGpk);
-            $verifikasi = VerifikasiCatatan::query()->lockForUpdate()->findOrFail($idVerifikasi);
-
-            if ($verifikasi->status_verifikasi !== 'Terverifikasi') {
-                throw new DomainException('Catatan harus terverifikasi sebelum dipublikasikan.');
-            }
-            if ($verifikasi->id_publikator !== null || $verifikasi->tanggal_publikasi !== null) {
-                throw new DomainException('Catatan sudah dipublikasikan atau data publikasi tidak konsisten.');
-            }
-
-            if ($verifikasi->id_catatan_perkembangan !== null && $verifikasi->id_catatan_pendampingan === null) {
-                $catatan = CatatanPerkembangan::query()->lockForUpdate()->findOrFail($verifikasi->id_catatan_perkembangan);
-            } elseif ($verifikasi->id_catatan_pendampingan !== null && $verifikasi->id_catatan_perkembangan === null) {
-                $catatan = CatatanPendampingan::query()->lockForUpdate()->findOrFail($verifikasi->id_catatan_pendampingan);
-            } else {
-                throw new DomainException('Verifikasi harus mengacu ke tepat satu jenis catatan.');
-            }
-            if ($catatan->status_pengajuan !== 'Terverifikasi' ||
-                (int) $catatan->versi_pengajuan !== (int) $verifikasi->versi_pengajuan) {
-                throw new DomainException('Hanya versi catatan terbaru yang telah diverifikasi boleh dipublikasikan.');
-            }
-
-            $verifikasi->forceFill([
-                'id_publikator' => $idGpk,
-                'tanggal_publikasi' => now(),
-            ])->save();
 
             return $verifikasi;
         });

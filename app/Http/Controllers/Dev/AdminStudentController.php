@@ -3,10 +3,13 @@
 namespace App\Http\Controllers\Dev;
 
 use App\Models\Kelas;
+use App\Models\RiwayatKelasSiswa;
 use App\Models\Siswa;
+use App\Models\TahunAjaran;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Storage;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Validation\Rule;
 use Illuminate\Validation\ValidationException;
 use Illuminate\View\View;
@@ -38,6 +41,9 @@ class AdminStudentController extends AdminController
         if ($kelasId = $request->integer('kelas')) {
             $query->where('id_kelas', $kelasId);
         }
+        if ($academicYearId = $request->integer('tahun_ajaran')) {
+            $query->whereHas('kelas', fn ($classes) => $classes->where('id_tahun_ajaran', $academicYearId));
+        }
 
         if (($status = $request->string('status')->toString()) && in_array($status, self::STATUSES, true)) {
             $query->where('status_siswa', $status);
@@ -46,9 +52,10 @@ class AdminStudentController extends AdminController
         return view('dev.admin.students.index', [
             'students' => $query->paginate($this->perPage($request))->withQueryString(),
             'classes' => Kelas::query()->orderBy('tingkat')->orderBy('nama_kelas')->get(),
+            'academicYears' => TahunAjaran::query()->orderByDesc('mulai_ganjil')->get(),
             'statuses' => self::STATUSES,
             'filters' => [
-                ...$request->only(['cari', 'kelas', 'status']),
+                ...$request->only(['cari', 'kelas', 'status', 'tahun_ajaran']),
                 'urut_nama' => $nameOrder,
             ],
             ...$this->viewContext(),
@@ -70,7 +77,10 @@ class AdminStudentController extends AdminController
         }
 
         try {
-            Siswa::create($data);
+            DB::transaction(function () use ($data): void {
+                $student = Siswa::create($data);
+                $this->openClassHistory($student, (int) $data['id_kelas']);
+            }, 3);
         } catch (Throwable $exception) {
             if ($photoPath) {
                 Storage::disk('public')->delete($photoPath);
@@ -98,7 +108,17 @@ class AdminStudentController extends AdminController
         }
 
         try {
-            $siswa->update($data);
+            DB::transaction(function () use ($siswa, $data): void {
+                $oldClassId = (int) $siswa->id_kelas;
+                $siswa->update($data);
+                if ($oldClassId !== (int) $data['id_kelas']) {
+                    $changeDate = now('Asia/Makassar')->toDateString();
+                    $siswa->riwayatKelas()->where('status', 'Aktif')->update([
+                        'status' => 'Selesai', 'tanggal_selesai' => $changeDate, 'updated_at' => now(),
+                    ]);
+                    $this->openClassHistory($siswa, (int) $data['id_kelas'], $changeDate);
+                }
+            }, 3);
         } catch (Throwable $exception) {
             if ($newPhotoPath) {
                 Storage::disk('public')->delete($newPhotoPath);
@@ -116,11 +136,14 @@ class AdminStudentController extends AdminController
 
     private function formView(Siswa $siswa, string $title): View
     {
+        $activeAcademicYearId = TahunAjaran::aktif()?->getKey();
+
         return view('dev.admin.students.form', [
             'student' => $siswa,
             'classes' => Kelas::query()
-                ->where(function ($classes) use ($siswa): void {
-                    $classes->where('status_kelas', 'Aktif');
+                ->where(function ($classes) use ($siswa, $activeAcademicYearId): void {
+                    $classes->where('status_kelas', 'Aktif')
+                        ->when($activeAcademicYearId, fn ($query) => $query->where('id_tahun_ajaran', $activeAcademicYearId));
 
                     if ($siswa->exists) {
                         $classes->orWhere('id_kelas', $siswa->id_kelas);
@@ -175,5 +198,17 @@ class AdminStudentController extends AdminController
         return $request->hasFile('foto')
             ? $request->file('foto')->store('foto-siswa', 'public')
             : null;
+    }
+
+    private function openClassHistory(Siswa $student, int $classId, ?string $date = null): void
+    {
+        $class = Kelas::query()->with('tahunAjaran')->findOrFail($classId);
+        RiwayatKelasSiswa::query()->create([
+            'id_siswa' => $student->getKey(),
+            'id_kelas' => $classId,
+            'tanggal_mulai' => $date ?: ($class->tahunAjaran?->mulai_ganjil?->toDateString() ?: now('Asia/Makassar')->toDateString()),
+            'tanggal_selesai' => null,
+            'status' => 'Aktif',
+        ]);
     }
 }
