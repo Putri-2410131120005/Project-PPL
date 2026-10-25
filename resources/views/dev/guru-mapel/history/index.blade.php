@@ -1,4 +1,4 @@
-<x-guru.layout :profile="$profile" title="Riwayat Perkembangan Siswa" subtitle="Lihat riwayat yang dipublikasikan GPK sebagai referensi pembelajaran." active="history">
+<x-guru.layout :breadcrumbs="[['Riwayat Perkembangan', null]]" :profile="$profile" title="Riwayat Perkembangan Siswa" subtitle="Lihat riwayat yang dipublikasikan GPK sebagai referensi pembelajaran." active="history">
 <form method="get" class="gm-filters abk-panel">
 <input type="search" name="q" aria-label="Cari nama siswa" placeholder="Cari nama siswa..." value="{{ request('q') }}">@if(request('siswa'))<input type="hidden" name="siswa" value="{{ request('siswa') }}">@endif @foreach(['Semua'=>'Semua','perkembangan'=>'Guru Mata Pelajaran','pendampingan'=>'Tim Inklusi'] as $value=>$label)<button class="gm-chip {{ request('sumber','Semua') === $value ? 'active' : '' }}" name="sumber" value="{{ $value }}">{{ $label }}</button>@endforeach<span class="gm-count">Total {{ $history->total() }} catatan</span>
 </form>

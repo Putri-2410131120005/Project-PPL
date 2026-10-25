@@ -56,7 +56,7 @@ try {
             if (file === 'recap-preview.html') {
                 await command('Runtime.evaluate', {expression: `document.querySelector('iframe').src=${JSON.stringify(pathToFileURL(resolve(folder, 'report.pdf')).href)}`});
             }
-            const geometry = await command('Runtime.evaluate', { expression: `JSON.stringify({viewport:innerWidth,scroll:document.documentElement.scrollWidth,assets:[...document.querySelectorAll('nav img')].map(i=>({loaded:i.complete&&i.naturalWidth>0,width:i.getBoundingClientRect().width,height:i.getBoundingClientRect().height})),buttons:[...document.querySelectorAll('.ks-button')].map(b=>({label:b.textContent.trim(),width:b.getBoundingClientRect().width,height:b.getBoundingClientRect().height}))})`, returnByValue: true });
+            const geometry = await command('Runtime.evaluate', { expression: `JSON.stringify({viewport:innerWidth,scroll:document.documentElement.scrollWidth,assets:[...document.querySelectorAll('nav img')].map(i=>({loaded:i.complete&&i.naturalWidth>0,width:i.getBoundingClientRect().width,height:i.getBoundingClientRect().height})),breadcrumb:(()=>{const n=document.querySelector('.ks-breadcrumbs');const h=document.querySelector('.abk-main>.abk-topbar');const c=n?.nextElementSibling;const nr=n?.getBoundingClientRect();const hr=h?.getBoundingClientRect();const cr=c?.getBoundingClientRect();const f=document.querySelector('.ks-sidebar-footer');const side=f?.closest('aside');return {order:!h||(h.nextElementSibling===n&&nr.top>=hr.bottom&&(!c||cr.top>=nr.bottom)),aligned:!h||!c||Math.abs(nr.left-cr.left)<1,count:document.querySelectorAll('.ks-breadcrumbs').length,present:!!n,current:n?.querySelectorAll('[aria-current="page"]').length,overflow:n?n.scrollWidth>n.clientWidth:false,bottomGap:f?Math.round(side.getBoundingClientRect().bottom-f.getBoundingClientRect().bottom):null,footerAfterMenu:f?f.getBoundingClientRect().top>=side.querySelector('nav').getBoundingClientRect().bottom:true}})(),buttons:[...document.querySelectorAll('.ks-button')].map(b=>({label:b.textContent.trim(),width:b.getBoundingClientRect().width,height:b.getBoundingClientRect().height}))})`, returnByValue: true });
             const value = JSON.parse(geometry.result.value);
             const { data } = await command('Page.captureScreenshot', { format: 'png', captureBeyondViewport: false });
             await writeFile(resolve(folder, file.replace('.html', `-${width}.png`)), Buffer.from(data, 'base64'));
@@ -118,7 +118,7 @@ try {
         console.log('Live MariaDB browser: dropdown login, five pages, cancel, month auto-submit and logout passed.');
     }
     await writeFile(resolve(folder, 'geometry.json'), JSON.stringify(results, null, 2));
-    const failures = results.filter(r => r.scroll > r.viewport || r.assets.some(a => !a.loaded || a.width !== 8 || a.height !== 8));
+    const failures = results.filter(r => r.scroll > r.viewport || !r.breadcrumb.order || !r.breadcrumb.aligned || r.breadcrumb.count!==1 || !r.breadcrumb.present || r.breadcrumb.current!==1 || r.breadcrumb.overflow || (r.breadcrumb.bottomGap!==null && r.breadcrumb.bottomGap!==24) || !r.breadcrumb.footerAfterMenu || r.assets.some(a => !a.loaded || a.width !== 8 || a.height !== 8));
     console.log(JSON.stringify({ renders: results.length, failures }, null, 2));
     if (failures.length) process.exitCode = 1;
     await send('Browser.close');

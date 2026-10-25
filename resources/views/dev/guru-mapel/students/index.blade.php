@@ -1,4 +1,4 @@
-<x-guru.layout :profile="$profile" title="Data Siswa yang Diajar" subtitle="Daftar siswa pada kelas yang Anda ajar." active="students">
+<x-guru.layout :breadcrumbs="[['Data Siswa', null]]" :profile="$profile" title="Data Siswa yang Diajar" subtitle="Daftar siswa pada kelas yang Anda ajar." active="students">
 <form class="gm-filters abk-panel" method="get">
 <input name="q" type="search" placeholder="Cari nama siswa..." aria-label="Cari nama siswa" value="{{ request('q') }}">
 @foreach(['Semua','X','XI','XII'] as $level)<button name="tingkat" value="{{ $level }}" class="gm-chip {{ request('tingkat','Semua') === $level ? 'active' : '' }}">{{ $level }}</button>@endforeach

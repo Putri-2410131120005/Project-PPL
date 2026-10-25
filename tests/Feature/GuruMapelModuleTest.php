@@ -70,6 +70,16 @@ class GuruMapelModuleTest extends TestCase
     /** Optional private HTML artifacts contain only isolated synthetic test fixtures. */
     private function review(string $name, $response): void
     {
+        $dom = new \DOMDocument;
+        @$dom->loadHTML('<?xml encoding="utf-8" ?>'.$response->getContent());
+        $xpath = new \DOMXPath($dom);
+        $nav = '//nav[@aria-label="Breadcrumb"]';
+        $this->assertCount(1, $xpath->query($nav), $name);
+        $this->assertCount(1, $xpath->query($nav.'//li[last()]/span[@aria-current="page"]'), $name);
+        $this->assertCount(1, $xpath->query($nav.'/preceding-sibling::*[1][contains(@class,"abk-topbar")]'), $name);
+        foreach ($xpath->query($nav.'//a') as $link) {
+            $this->get($link->getAttribute('href'))->assertOk();
+        }
         if (! getenv('A16_VISUAL_EXPORT')) {
             return;
         }
@@ -103,6 +113,26 @@ class GuruMapelModuleTest extends TestCase
             ->assertRedirect(route('dev.preview', 'guru-mapel'))->assertSessionHas('dev_guru_demo', 'guru-1');
         $this->assertAuthenticatedAs($this->guru, 'guru_dev');
         $this->post(route('dev.change-role'))->assertRedirect()->assertSessionMissing('dev_guru_demo');
+        $this->assertGuest('guru_dev');
+    }
+
+    public function test_sidebar_forms_keep_logout_role_change_and_demo_switch_working(): void
+    {
+        DB::table('relasi_guru_mapel_kelas')->insert(['id_pengguna' => $this->other->getKey(), 'id_mapel' => $this->subject, 'id_kelas' => $this->class]);
+        $this->loginGuru();
+        $response = $this->get(route('dev.guru-mapel.dashboard'))->assertOk();
+        foreach (['dev.logout', 'dev.change-role', 'dev.guru-mapel.demo.switch'] as $route) {
+            $response->assertSee('action="'.route($route).'"', false);
+        }
+        $this->post(route('dev.guru-mapel.demo.switch'))
+            ->assertRedirect(route('dev.guru-mapel.dashboard'))->assertSessionHas('dev_guru_demo', 'guru-2');
+        $this->assertAuthenticatedAs($this->other, 'guru_dev');
+        $this->post(route('dev.guru-mapel.demo.switch'))->assertSessionHas('dev_guru_demo', 'guru-1');
+        $this->assertAuthenticatedAs($this->guru, 'guru_dev');
+        $this->post(route('dev.change-role'))->assertRedirect(route('dev.login'))->assertSessionMissing('dev_role');
+        $this->assertGuest('guru_dev');
+        $this->loginGuru();
+        $this->post(route('dev.logout'))->assertRedirect(route('dev.login'))->assertSessionMissing('dev_role');
         $this->assertGuest('guru_dev');
     }
 

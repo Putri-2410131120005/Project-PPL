@@ -1,4 +1,4 @@
-<x-principal.layout :profile="$profile" :title="'Rekap Perkembangan Semester — '.$recap->siswa->nama_siswa" subtitle="Ringkasan resmi perkembangan siswa sebagai bahan pendukung rapor." active="recaps" :detail="true">
+<x-principal.layout :breadcrumbs="[['Rekap', route('dev.principal.recaps')], ['Laporan Perkembangan Siswa - '.$recap->siswa->nama_siswa.' - '.$recap->periode, route('dev.principal.recap', $recap->getKey())], ['Rekap Semester', null]]" :profile="$profile" :title="'Rekap Perkembangan Semester — '.$recap->siswa->nama_siswa" subtitle="Ringkasan resmi perkembangan siswa sebagai bahan pendukung rapor." active="recaps" :detail="true">
 <x-principal.exports :recap="$recap" />
 <p class="ks-section-description">Menampilkan periode resmi {{ $recap->periode }}. Rincian aspek semester dan kalender semester belum tersedia dalam kontrak data GPK.</p>
 <section class="abk-panel ks-meta"><div><small>Periode Rekap</small><strong>{{ $recap->periode }}</strong></div><div><small>Tahun Ajaran Kelas Saat Ini</small><strong>{{ $recap->siswa->kelas->tahun_ajaran }}</strong></div><div><small>Siswa</small><strong>{{ $recap->siswa->nama_siswa }}</strong></div></section>

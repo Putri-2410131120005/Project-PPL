@@ -1,4 +1,4 @@
-@props(['profile','title','subtitle'=>'','active'=>'dashboard','detail'=>false])
+@props(['profile','title','subtitle'=>'','active'=>'dashboard','detail'=>false,'breadcrumbs'=>[]])
 <!doctype html>
 <html lang="id"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"><title>{{ $title }} — SMART-ABK</title>
 @vite(['resources/css/app.css','resources/css/principal.css','resources/js/app.js','resources/js/principal.js'])</head>
@@ -10,7 +10,9 @@
 @endforeach</nav>
 <div class="ks-sidebar-footer"><div>Kepala Sekolah</div><a href="{{ route('dev.principal.logout') }}">Keluar</a><form method="post" action="{{ route('dev.change-role') }}">@csrf<button>Ganti Peran</button></form></div>
 </aside>
-<main class="abk-main {{ $detail?'ks-detail':'' }}"><x-preview.topbar :title="$title" :subtitle="$subtitle" :profile="$profile" />
+<main class="abk-main {{ $detail?'ks-detail':'' }}">
+<x-preview.topbar :title="$title" :subtitle="$subtitle" :profile="$profile" />
+<x-principal.breadcrumbs :items="$breadcrumbs" />
 @if($errors->any())<div class="ks-error" role="alert">@foreach($errors->all() as $error)<p>{{ $error }}</p>@endforeach</div>@endif
 {{ $slot }}
 </main></div>

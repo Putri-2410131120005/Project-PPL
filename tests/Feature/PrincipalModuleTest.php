@@ -297,6 +297,36 @@ class PrincipalModuleTest extends TestCase
         $this->assertSame($before, $this->snapshot());
     }
 
+    public function test_breadcrumbs_cover_principal_pages_and_link_to_existing_pages(): void
+    {
+        $f = $this->official();
+        $pages = [
+            'dashboard' => [], 'students' => [], 'student' => [$this->student->getKey()],
+            'recaps' => [], 'recap' => [$f['recap']->getKey()],
+            'semester' => [$f['recap']->getKey()],
+            'note' => ['rekap' => $f['recap']->getKey(), 'link' => $f['link']->getKey()],
+            'recap.preview' => [$f['recap']->getKey()], 'archives' => [],
+            'period' => ['periode' => 'September 2026'],
+            'period.preview' => ['periode' => 'September 2026'], 'logout' => [],
+        ];
+        foreach ($pages as $page => $parameters) {
+            $response = $this->get(route('dev.principal.'.$page, $parameters))->assertOk();
+            $dom = new \DOMDocument;
+            @$dom->loadHTML('<?xml encoding="utf-8" ?>'.$response->getContent());
+            $xpath = new \DOMXPath($dom);
+            $nav = '//nav[@aria-label="Breadcrumb"]';
+            $this->assertCount(1, $xpath->query($nav), $page);
+            $this->assertCount(1, $xpath->query($nav.'//li[last()]/span[@aria-current="page"]'), $page);
+            foreach ($xpath->query($nav.'//a') as $link) {
+                $this->get($link->getAttribute('href'))->assertOk();
+            }
+            if (in_array($page, ['student', 'recap', 'semester', 'recap.preview', 'note'])) {
+                $this->assertStringContainsString($this->student->nama_siswa, $xpath->query($nav)->item(0)->textContent);
+            }
+            $this->review(str_replace('.', '-', $page), $response);
+        }
+    }
+
     private function review(string $name, $response): void
     {
         if (! getenv('A19_VISUAL_EXPORT')) {

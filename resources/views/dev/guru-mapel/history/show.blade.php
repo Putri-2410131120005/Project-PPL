@@ -1,4 +1,4 @@
-<x-guru.layout :profile="$profile" title="Detail Riwayat Perkembangan" subtitle="Catatan yang sudah dipublikasikan GPK." active="history" :detail="true">
+<x-guru.layout :breadcrumbs="[['Riwayat Perkembangan', route('dev.guru-mapel.history.index')], ['Detail Riwayat - '.$note->siswa->nama_siswa.' - '.$note->tanggal_catatan->format('d M Y'), null]]" :profile="$profile" title="Detail Riwayat Perkembangan" subtitle="Catatan yang sudah dipublikasikan GPK." active="history" :detail="true">
 <section class="abk-panel gm-card">
 <div class="gm-card-heading">
 <div>

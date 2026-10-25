@@ -41,7 +41,7 @@ try {
     const { sessionId } = await send('Target.attachToTarget', { targetId, flatten: true });
     const command = (method, params) => send(method, params, sessionId);
     await command('Page.enable');
-    const files = (await readdir(folder)).filter(file => file.endsWith('.html'));
+    const files = (await readdir(folder)).filter(file => file.endsWith('.html') && file !== 'login.html');
     const results = [];
     for (const [width, height] of [[1440, 900], [768, 1024], [390, 844]]) {
         await command('Emulation.setDeviceMetricsOverride', { width, height, deviceScaleFactor: 1, mobile: false });
@@ -53,7 +53,7 @@ try {
                 if (ready.result.value === 'complete') break;
                 await new Promise(ok => setTimeout(ok, 30));
             }
-            const geometry = await command('Runtime.evaluate', { expression: `JSON.stringify({viewport:innerWidth,scroll:document.documentElement.scrollWidth,assets:[...document.querySelectorAll('nav img')].map(i=>({loaded:i.complete&&i.naturalWidth>0,width:i.getBoundingClientRect().width,height:i.getBoundingClientRect().height}))})`, returnByValue: true });
+            const geometry = await command('Runtime.evaluate', { expression: `JSON.stringify({viewport:innerWidth,scroll:document.documentElement.scrollWidth,navigation:(()=>{const n=document.querySelector('.gm-breadcrumbs');const h=document.querySelector('.abk-main>.abk-topbar');const c=n?.nextElementSibling;const f=document.querySelector('.gm-footer');const side=f?.closest('aside');const nr=n?.getBoundingClientRect();const hr=h?.getBoundingClientRect();const cr=c?.getBoundingClientRect();return {count:document.querySelectorAll('.gm-breadcrumbs').length,current:n?.querySelectorAll('[aria-current="page"]').length,order:!!n&&h?.nextElementSibling===n&&nr.top>=hr.bottom&&(!c||cr.top>=nr.bottom),aligned:!!c&&Math.abs(nr.left-cr.left)<1,overflow:!n||n.scrollWidth>n.clientWidth,footerGap:f?Math.round(side.getBoundingClientRect().bottom-f.getBoundingClientRect().bottom):null,footerAfterMenu:!!f&&f.getBoundingClientRect().top>=side.querySelector('nav').getBoundingClientRect().bottom,forms:[...f.querySelectorAll('form')].map(f=>({method:f.method,action:new URL(f.action).pathname,csrf:!!f.querySelector('input[name="_token"]')}))}})(),assets:[...document.querySelectorAll('nav img')].map(i=>({loaded:i.complete&&i.naturalWidth>0,width:i.getBoundingClientRect().width,height:i.getBoundingClientRect().height}))})`, returnByValue: true });
             const value = JSON.parse(geometry.result.value);
             const { data } = await command('Page.captureScreenshot', { format: 'png', captureBeyondViewport: false });
             await writeFile(resolve(folder, file.replace('.html', `-${width}.png`)), Buffer.from(data, 'base64'));
@@ -61,7 +61,7 @@ try {
         }
     }
     await writeFile(resolve(folder, 'geometry.json'), JSON.stringify(results, null, 2));
-    const failures = results.filter(r => r.scroll > r.viewport || r.assets.some(a => !a.loaded || a.width !== 8 || a.height !== 8));
+    const failures = results.filter(r => r.scroll > r.viewport || r.navigation.count!==1 || r.navigation.current!==1 || !r.navigation.order || !r.navigation.aligned || r.navigation.overflow || r.navigation.footerGap!==24 || !r.navigation.footerAfterMenu || r.navigation.forms.length!==3 || r.navigation.forms.some(f=>f.method!=='post'||!f.csrf) || r.assets.some(a => !a.loaded || a.width !== 8 || a.height !== 8));
     console.log(JSON.stringify({ renders: results.length, failures }, null, 2));
     if (failures.length) process.exitCode = 1;
     await send('Browser.close');

@@ -1,4 +1,4 @@
-<x-guru.layout :profile="$profile" title="Detail Siswa" subtitle="Profil ringkas dan riwayat perkembangan sebagai referensi pembelajaran." active="students" :detail="true">
+<x-guru.layout :breadcrumbs="[['Data Siswa', route('dev.guru-mapel.students.index')], ['Detail Siswa - '.$student->nama_siswa, null]]" :profile="$profile" title="Detail Siswa" subtitle="Profil ringkas dan riwayat perkembangan sebagai referensi pembelajaran." active="students" :detail="true">
     @include('dev.guru-mapel.partials.student-profile', ['actions' => true])
     <h2 class="gm-section-title">Riwayat perkembangan</h2>
     <p class="gm-section-subtitle">Catatan yang dipublikasikan GPK sebagai referensi pembelajaran.</p>

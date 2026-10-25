@@ -1,4 +1,4 @@
-<x-guru.layout :profile="$profile" title="Rekomendasi Pembelajaran" subtitle="Lihat rekomendasi pembelajaran siswa sebagai acuan penyesuaian kegiatan belajar." active="students" :detail="true">
+<x-guru.layout :breadcrumbs="[['Data Siswa', route('dev.guru-mapel.students.index')], ['Detail Siswa - '.$student->nama_siswa, route('dev.guru-mapel.students.show', $student->getKey())], ['Rekomendasi Pembelajaran', null]]" :profile="$profile" title="Rekomendasi Pembelajaran" subtitle="Lihat rekomendasi pembelajaran siswa sebagai acuan penyesuaian kegiatan belajar." active="students" :detail="true">
 @include('dev.guru-mapel.partials.student-profile')
 <section class="abk-panel gm-card">
 <p role="status">Rekomendasi resmi belum tersedia. Sumber rekomendasi dan persetujuan GPK belum tersedia pada database.</p>

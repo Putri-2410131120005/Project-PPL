@@ -1,4 +1,4 @@
-<x-guru.layout :profile="$profile" title="Detail Catatan Perkembangan" subtitle="Lihat peristiwa, tindakan guru, dan respons siswa." active="verification" :detail="true">
+<x-guru.layout :breadcrumbs="[['Status Verifikasi', route('dev.guru-mapel.notes.status')], ['Detail Catatan - '.$note->siswa->nama_siswa.' - '.$note->tanggal_catatan->format('d M Y'), null]]" :profile="$profile" title="Detail Catatan Perkembangan" subtitle="Lihat peristiwa, tindakan guru, dan respons siswa." active="verification" :detail="true">
 <section class="abk-panel gm-card">
 <div class="gm-card-heading">
 <div>
