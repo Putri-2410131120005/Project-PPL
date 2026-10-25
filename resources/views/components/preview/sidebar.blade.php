@@ -17,9 +17,9 @@
         ],
         'guru-mapel' => [
             ['key' => 'dashboard', 'label' => 'Dashboard', 'href' => route('dev.preview', $role)],
-            ['key' => 'students', 'label' => 'Data Siswa', 'href' => route('dev.preview', $role)],
-            ['key' => 'verification', 'label' => 'Status Verifikasi', 'href' => route('dev.preview', $role)],
-            ['key' => 'history', 'label' => 'Riwayat Perkembangan', 'href' => route('dev.preview', $role)],
+            ['key' => 'students', 'label' => 'Data Siswa', 'href' => route('dev.guru-mapel.students.index')],
+            ['key' => 'verification', 'label' => 'Status Verifikasi', 'href' => route('dev.guru-mapel.notes.status')],
+            ['key' => 'history', 'label' => 'Riwayat Perkembangan', 'href' => route('dev.guru-mapel.history.index')],
         ],
         'tim-inklusi' => [
             ['key' => 'dashboard', 'label' => 'Dashboard', 'href' => route('dev.tim-inklusi.dashboard')],
