@@ -16,6 +16,7 @@ use App\Models\RelasiGuruMapelKelas;
 use App\Models\RelasiOrangTuaSiswa;
 use App\Models\RelasiPendampingSiswa;
 use App\Models\Siswa;
+use App\Services\GuruMapelDemoIdentity;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Route;
@@ -46,6 +47,12 @@ if (app()->environment(['local', 'testing'])) {
 
         Route::get('/login', fn () => view('dev.login', [
             'roles' => $developmentRoles,
+            'guruMapelAccounts' => Pengguna::query()
+                ->whereIn('username', collect(GuruMapelDemoIdentity::ACCOUNTS)->pluck('username'))
+                ->where('status_akun', 'Aktif')
+                ->whereHas('role', fn ($query) => $query->where('nama_role', 'Guru Mapel'))
+                ->orderBy('nama')
+                ->get(['id_pengguna', 'nama']),
             'timInklusiAccounts' => Pengguna::query()
                 ->where('status_akun', 'Aktif')
                 ->whereHas('role', fn ($query) => $query->where('nama_role', 'Tim Inklusi'))
@@ -61,6 +68,7 @@ if (app()->environment(['local', 'testing'])) {
         Route::post('/login', function (Request $request) use ($developmentRoles) {
             $validated = $request->validate([
                 'role' => ['required', 'string', Rule::in(array_keys($developmentRoles))],
+                'guru_mapel_id' => [Rule::requiredIf($request->input('role') === 'guru-mapel'), 'nullable', 'integer'],
                 'pendamping_id' => [Rule::requiredIf($request->input('role') === 'tim-inklusi'), 'nullable', 'integer'],
                 'gpk_id' => [Rule::requiredIf($request->input('role') === 'gpk'), 'nullable', 'integer'],
             ]);
@@ -96,8 +104,25 @@ if (app()->environment(['local', 'testing'])) {
             }
 
             if ($validated['role'] === 'guru-mapel') {
+                $guru = Pengguna::query()
+                    ->whereKey($validated['guru_mapel_id'])
+                    ->where('status_akun', 'Aktif')
+                    ->whereHas('role', fn ($query) => $query->where('nama_role', 'Guru Mapel'))
+                    ->first();
+                $guruKey = $guru
+                    ? collect(GuruMapelDemoIdentity::ACCOUNTS)->search(
+                        fn ($account) => $account['username'] === $guru->username
+                    )
+                    : false;
+
+                if ($guruKey === false) {
+                    return back()->withInput()->withErrors([
+                        'guru_mapel_id' => 'Akun yang dipilih bukan Guru Mata Pelajaran DATA DEMO aktif.',
+                    ]);
+                }
+
                 $request->session()->forget('dev_pengguna_id');
-                app(\App\Services\GuruMapelDemoIdentity::class)->start($request);
+                app(GuruMapelDemoIdentity::class)->start($request, $guruKey);
                 return redirect()->route('dev.preview', 'guru-mapel');
             }
             Auth::guard('guru_dev')->logout();

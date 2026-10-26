@@ -58,10 +58,8 @@ class A16DemoSeederTest extends TestCase
         $this->assertCount(1, $idsTwo);
         $this->assertSame([], array_intersect($idsOne, $idsTwo));
         foreach ([$one, $two] as $teacher) {
-            $this->post(route('dev.login.store'), ['role' => 'guru-mapel'])->assertRedirect(route('dev.preview', 'guru-mapel'));
-            if ($teacher->is($two)) {
-                $this->post(route('dev.guru-mapel.demo.switch'))->assertRedirect(route('dev.guru-mapel.dashboard'));
-            }
+            $this->post(route('dev.login.store'), ['role' => 'guru-mapel', 'guru_mapel_id' => $teacher->getKey()])
+                ->assertRedirect(route('dev.preview', 'guru-mapel'));
             $own = $access->students($teacher)->firstOrFail();
             $foreign = $access->students($teacher->is($one) ? $two : $one)->firstOrFail();
             $this->get(route('dev.guru-mapel.students.index'))->assertOk()->assertSee($own->nama_siswa)->assertDontSee($foreign->nama_siswa);
@@ -116,11 +114,15 @@ class A16DemoSeederTest extends TestCase
             'password' => bin2hex(random_bytes(16)), 'status_akun' => 'Aktif',
         ]);
         $gpk = Pengguna::where('username', 'demo.a16.gpk')->sole();
+        $guruMapel = Pengguna::where('username', 'demo.a16.guru1')->sole();
         $this->get(route('dev.parent.login'))->assertOk();
         foreach (['admin', 'guru-mapel', 'tim-inklusi', 'gpk', 'kepala-sekolah'] as $role) {
             $payload = ['role' => $role];
             if ($role === 'tim-inklusi') {
                 $payload['pendamping_id'] = $pendamping->getKey();
+            }
+            if ($role === 'guru-mapel') {
+                $payload['guru_mapel_id'] = $guruMapel->getKey();
             }
             if ($role === 'gpk') {
                 $payload['gpk_id'] = $gpk->getKey();
@@ -149,22 +151,22 @@ class A16DemoSeederTest extends TestCase
     public function test_missing_demo_configuration_and_legacy_login_do_not_allow_access(): void
     {
         $this->from(route('dev.login'))->post(route('dev.login.store'), ['role' => 'guru-mapel'])
-            ->assertRedirect(route('dev.login'))->assertSessionHasErrors('role');
-        $this->get(route('dev.login'))->assertSee('Konfigurasi development');
+            ->assertRedirect(route('dev.login'))->assertSessionHasErrors('guru_mapel_id');
+        $this->get(route('dev.login'))->assertSee('Belum ada akun Guru Mata Pelajaran DATA DEMO aktif');
         $this->assertGuest('guru_dev');
         $this->get('/_dev/guru-mapel/masuk')->assertRedirect(route('dev.login'));
         $this->post('/_dev/guru-mapel/masuk', ['identity' => 'anything', 'password' => 'anything'])->assertStatus(405);
         $this->get(route('dev.guru-mapel.students.index'))->assertRedirect(route('dev.login'));
     }
 
-    public function test_dropdown_actor_owns_draft_and_submission_and_switch_clears_form_tokens(): void
+    public function test_dropdown_actor_owns_draft_and_relogin_selects_another_teacher(): void
     {
         $this->seed(A16DemoSeeder::class);
         $one = Pengguna::where('username', 'demo.a16.guru1')->firstOrFail();
         $two = Pengguna::where('username', 'demo.a16.guru2')->firstOrFail();
         $assignment = $one->relasiGuruMapelKelas()->firstOrFail();
         $student = Siswa::where('id_kelas', $assignment->id_kelas)->firstOrFail();
-        $this->post(route('dev.login.store'), ['role' => 'guru-mapel', 'id_pengguna' => $two->getKey()])->assertRedirect();
+        $this->post(route('dev.login.store'), ['role' => 'guru-mapel', 'guru_mapel_id' => $one->getKey()])->assertRedirect();
         $this->get(route('dev.guru-mapel.notes.create', $student->getKey()))->assertOk();
         $data = ['aksi' => 'draft', 'creation_token' => session('guru_note_creation_token'), 'id_pembuat' => $two->getKey(), 'id_mapel' => $assignment->id_mapel, 'tanggal_catatan' => '2026-01-10', 'materi_kegiatan' => 'Materi demo', 'kendala_peristiwa' => 'Pengamatan demo', 'tindakan' => 'Tindakan demo', 'hasil_tindakan' => 'Respons demo'];
         $this->post(route('dev.guru-mapel.notes.store', $student->getKey()), $data)->assertRedirect();
@@ -177,7 +179,9 @@ class A16DemoSeederTest extends TestCase
         $this->assertSame('Dikirim', $note->fresh()->status_pengajuan);
         $this->assertNotNull($note->fresh()->tanggal_kirim);
         $this->withSession(['guru_note_creation_token' => 'old-form']);
-        $this->post(route('dev.guru-mapel.demo.switch'), ['id_pengguna' => 999999])->assertRedirect()->assertSessionHas('dev_guru_demo', 'guru-2')->assertSessionMissing('guru_note_creation_token');
+        $this->post(route('dev.change-role'))->assertRedirect(route('dev.login'));
+        $this->post(route('dev.login.store'), ['role' => 'guru-mapel', 'guru_mapel_id' => $two->getKey()])
+            ->assertRedirect()->assertSessionHas('dev_guru_demo', 'guru-2')->assertSessionMissing('guru_note_creation_token');
         $this->assertAuthenticatedAs($two, 'guru_dev');
         $this->get(route('dev.guru-mapel.students.show', $student->getKey()))->assertNotFound();
         $this->get(route('dev.guru-mapel.notes.show', $note->getKey()))->assertNotFound();
@@ -193,7 +197,7 @@ class A16DemoSeederTest extends TestCase
         $real = Siswa::create(['id_kelas' => $assignment->id_kelas, 'nis' => 'REAL-NON-DEMO', 'nama_siswa' => 'Restricted Student', 'status_siswa' => 'Aktif']);
         $realSubject = MataPelajaran::create(['nama_mapel' => 'Restricted Subject', 'status_mapel' => 'Aktif']);
         $one->relasiGuruMapelKelas()->create(['id_kelas' => $assignment->id_kelas, 'id_mapel' => $realSubject->getKey()]);
-        $this->post(route('dev.login.store'), ['role' => 'guru-mapel'])->assertRedirect();
+        $this->post(route('dev.login.store'), ['role' => 'guru-mapel', 'guru_mapel_id' => $one->getKey()])->assertRedirect();
         $this->get(route('dev.guru-mapel.students.index'))->assertOk()->assertDontSee('Restricted Student');
         $this->get(route('dev.guru-mapel.students.show', $real->getKey()))->assertNotFound();
         $this->get(route('dev.guru-mapel.notes.create', $real->getKey()))->assertNotFound();
@@ -206,9 +210,9 @@ class A16DemoSeederTest extends TestCase
     public function test_demo_endpoints_are_denied_in_production_even_with_a_stale_session(): void
     {
         $this->seed(A16DemoSeeder::class);
-        $this->post(route('dev.login.store'), ['role' => 'guru-mapel'])->assertRedirect();
+        $one = Pengguna::where('username', 'demo.a16.guru1')->sole();
+        $this->post(route('dev.login.store'), ['role' => 'guru-mapel', 'guru_mapel_id' => $one->getKey()])->assertRedirect();
         $this->app['env'] = 'production';
         $this->get(route('dev.guru-mapel.dashboard'))->assertNotFound();
-        $this->withSession(['_token' => 'production-csrf'])->post(route('dev.guru-mapel.demo.switch'), ['_token' => 'production-csrf'])->assertNotFound();
     }
 }

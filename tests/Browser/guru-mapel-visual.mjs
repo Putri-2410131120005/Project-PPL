@@ -61,7 +61,7 @@ try {
         }
     }
     await writeFile(resolve(folder, 'geometry.json'), JSON.stringify(results, null, 2));
-    const failures = results.filter(r => r.scroll > r.viewport || r.navigation.count!==1 || r.navigation.current!==1 || !r.navigation.order || !r.navigation.aligned || r.navigation.overflow || r.navigation.footerGap!==24 || !r.navigation.footerAfterMenu || r.navigation.forms.length!==3 || r.navigation.forms.some(f=>f.method!=='post'||!f.csrf) || r.assets.some(a => !a.loaded || a.width !== 8 || a.height !== 8));
+    const failures = results.filter(r => r.scroll > r.viewport || r.navigation.count!==1 || r.navigation.current!==1 || !r.navigation.order || !r.navigation.aligned || r.navigation.overflow || r.navigation.footerGap!==24 || !r.navigation.footerAfterMenu || r.navigation.forms.length!==2 || r.navigation.forms.some(f=>f.method!=='post'||!f.csrf) || r.assets.some(a => !a.loaded || a.width !== 8 || a.height !== 8));
     console.log(JSON.stringify({ renders: results.length, failures }, null, 2));
     if (failures.length) process.exitCode = 1;
     await send('Browser.close');

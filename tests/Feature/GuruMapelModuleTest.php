@@ -109,26 +109,22 @@ class GuruMapelModuleTest extends TestCase
 
     public function test_dropdown_resolves_server_demo_and_clears_identity_on_role_change(): void
     {
-        $this->post(route('dev.login.store'), ['role' => 'guru-mapel', 'id_pengguna' => $this->other->getKey()])
-            ->assertRedirect(route('dev.preview', 'guru-mapel'))->assertSessionHas('dev_guru_demo', 'guru-1');
-        $this->assertAuthenticatedAs($this->guru, 'guru_dev');
+        DB::table('relasi_guru_mapel_kelas')->insert(['id_pengguna' => $this->other->getKey(), 'id_mapel' => $this->subject, 'id_kelas' => $this->class]);
+        $this->post(route('dev.login.store'), ['role' => 'guru-mapel', 'guru_mapel_id' => $this->other->getKey()])
+            ->assertRedirect(route('dev.preview', 'guru-mapel'))->assertSessionHas('dev_guru_demo', 'guru-2');
+        $this->assertAuthenticatedAs($this->other, 'guru_dev');
         $this->post(route('dev.change-role'))->assertRedirect()->assertSessionMissing('dev_guru_demo');
         $this->assertGuest('guru_dev');
     }
 
-    public function test_sidebar_forms_keep_logout_role_change_and_demo_switch_working(): void
+    public function test_sidebar_only_keeps_logout_and_role_change_actions(): void
     {
-        DB::table('relasi_guru_mapel_kelas')->insert(['id_pengguna' => $this->other->getKey(), 'id_mapel' => $this->subject, 'id_kelas' => $this->class]);
         $this->loginGuru();
         $response = $this->get(route('dev.guru-mapel.dashboard'))->assertOk();
-        foreach (['dev.logout', 'dev.change-role', 'dev.guru-mapel.demo.switch'] as $route) {
+        foreach (['dev.logout', 'dev.change-role'] as $route) {
             $response->assertSee('action="'.route($route).'"', false);
         }
-        $this->post(route('dev.guru-mapel.demo.switch'))
-            ->assertRedirect(route('dev.guru-mapel.dashboard'))->assertSessionHas('dev_guru_demo', 'guru-2');
-        $this->assertAuthenticatedAs($this->other, 'guru_dev');
-        $this->post(route('dev.guru-mapel.demo.switch'))->assertSessionHas('dev_guru_demo', 'guru-1');
-        $this->assertAuthenticatedAs($this->guru, 'guru_dev');
+        $response->assertDontSee('Ganti Guru Demo');
         $this->post(route('dev.change-role'))->assertRedirect(route('dev.login'))->assertSessionMissing('dev_role');
         $this->assertGuest('guru_dev');
         $this->loginGuru();

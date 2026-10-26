@@ -75,14 +75,8 @@
         @endforeach
     </nav>
     <div class="mt-4 pt-3 border-top border-secondary-subtle abk-session-controls">
-        @if ($role === 'guru-mapel')
-        <form method="POST" action="{{ route('dev.guru-mapel.demo.switch') }}">
-            @csrf
-            <button type="submit" class="abk-dev-button abk-dev-button-muted">Ganti Guru Demo</button>
-        </form>
-        @endif
         @if ($role !== 'orang-tua')
-        <form method="POST" action="{{ route('dev.change-role') }}" class="mt-2" data-confirm-form data-confirm-title="Ganti peran?" data-confirm-message="Sesi saat ini akan diakhiri. Anda dapat memilih peran lain pada halaman berikutnya." data-confirm-button="Ganti Peran">
+        <form method="POST" action="{{ route('dev.change-role') }}" data-confirm-form data-confirm-title="Ganti peran?" data-confirm-message="Sesi saat ini akan diakhiri. Anda dapat memilih peran lain pada halaman berikutnya." data-confirm-button="Ganti Peran">
             @csrf
             <button type="submit" class="abk-dev-button">Ganti Peran</button>
         </form>

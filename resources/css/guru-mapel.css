@@ -88,7 +88,7 @@
 @media(min-width:768px){
     .gm .abk-shell{padding-right:16px}
     .gm .abk-main,.gm .gm-detail{height:calc(100vh - 32px);overflow-x:hidden;overflow-y:auto;padding:9px 0 34px;scrollbar-gutter:stable}
-    .gm .abk-topbar,.gm .gm-detail .abk-topbar{align-items:center;gap:20px;min-height:78px;padding:0 20px}
+    .gm .abk-main .abk-topbar,.gm .gm-detail .abk-topbar{align-items:center;gap:20px;min-height:78px;padding:0 20px}
     .gm .abk-title{letter-spacing:-.03em;line-height:normal}
     .gm .abk-profile{min-height:0}
     .gm-detail .abk-profile{position:static}

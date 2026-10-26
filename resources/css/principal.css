@@ -46,7 +46,7 @@
 @media(min-width:768px){
     .ks .abk-shell{padding-right:16px}
     .ks .abk-main,.ks .ks-detail{height:calc(100vh - 32px);overflow-x:hidden;overflow-y:auto;padding:9px 0 34px;scrollbar-gutter:stable}
-    .ks .abk-topbar,.ks .ks-detail .abk-topbar,.ks .ks-detail:has(.ks-profile) .abk-topbar,.ks .ks-detail:has(.ks-filters) .abk-topbar{align-items:center;gap:20px;min-height:78px;padding:0 20px}
+    .ks .abk-main .abk-topbar,.ks .ks-detail .abk-topbar,.ks .ks-detail:has(.ks-profile) .abk-topbar,.ks .ks-detail:has(.ks-filters) .abk-topbar{align-items:center;gap:20px;min-height:78px;padding:0 20px}
     .ks .abk-title{letter-spacing:-.03em;line-height:normal}
     .ks .abk-profile{min-height:0}
     .ks-detail .abk-profile{position:static}

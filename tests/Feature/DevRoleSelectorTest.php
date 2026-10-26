@@ -51,11 +51,15 @@ class DevRoleSelectorTest extends TestCase
             'status_akun' => 'Aktif',
         ]);
         $gpk = Pengguna::where('username', 'demo.a16.gpk')->sole();
+        $guruMapel = Pengguna::where('username', 'demo.a16.guru1')->sole();
 
         foreach (['admin', 'guru-mapel', 'tim-inklusi', 'gpk', 'kepala-sekolah'] as $role) {
             $payload = ['role' => $role];
             if ($role === 'tim-inklusi') {
                 $payload['pendamping_id'] = $timInklusi->getKey();
+            }
+            if ($role === 'guru-mapel') {
+                $payload['guru_mapel_id'] = $guruMapel->getKey();
             }
             if ($role === 'gpk') {
                 $payload['gpk_id'] = $gpk->getKey();
