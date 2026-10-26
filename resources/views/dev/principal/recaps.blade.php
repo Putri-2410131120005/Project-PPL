@@ -1,0 +1,6 @@
+<x-principal.layout :breadcrumbs="[['Rekap', null]]" :profile="$profile" title="Laporan Perkembangan per Siswa" subtitle="Pilih siswa untuk membaca laporan perkembangan individu yang sudah dipublikasikan GPK." active="recaps" :detail="true">
+<x-principal.filters mode="recaps" :school-years="$schoolYears" :periods="$periods" :zip-available="$recaps->total()>0" />
+<section class="abk-panel ks-table"><div class="table-responsive"><table class="table abk-table ks-recap-table"><thead><tr><th>Nama Siswa</th><th>Kelas Saat Ini</th><th>Periode</th><th>Catatan Dipublikasikan</th><th>Aksi</th></tr></thead><tbody>
+@forelse($recaps as $recap)<tr><td class="abk-data-name">{{ $recap->siswa->nama_siswa }}<br><a class="ks-note-link" href="{{ route('dev.principal.semester',$recap->getKey()) }}">Rekap Semester</a></td><td>{{ $recap->siswa->kelas->nama_kelas }}</td><td>{{ $recap->periode }}</td><td><span class="ks-pill">{{ $recap->sumber_catatan_count }} catatan</span></td><td><a class="ks-button ks-secondary ks-report-button" href="{{ route('dev.principal.recap',$recap->getKey()) }}">Lihat Laporan</a></td></tr>
+@empty<tr><td colspan="5" class="ks-empty">Belum ada rekap resmi yang dipublikasikan GPK untuk pilihan ini.</td></tr>@endforelse
+</tbody></table></div></section><x-principal.paging :data="$recaps" /></x-principal.layout>

@@ -29,7 +29,19 @@ class DevRoleSelectorTest extends TestCase
 
     public function test_each_role_can_be_selected_and_open_its_own_dashboard(): void
     {
-        $timInklusiRole = Role::create(['nama_role' => 'Tim Inklusi']);
+        $this->seed(\Database\Seeders\RoleSeeder::class);
+        $credentialsFile = tempnam(sys_get_temp_dir(), 'integration-a16-');
+        file_put_contents($credentialsFile, json_encode(array_fill_keys(
+            ['demo.a16.guru1', 'demo.a16.guru2', 'demo.a16.gpk'], bin2hex(random_bytes(16))
+        )));
+        putenv('A16_DEMO_CREDENTIALS_FILE='.$credentialsFile);
+        try {
+            $this->seed(\Database\Seeders\A16DemoSeeder::class);
+        } finally {
+            putenv('A16_DEMO_CREDENTIALS_FILE');
+            unlink($credentialsFile);
+        }
+        $timInklusiRole = Role::where('nama_role', 'Tim Inklusi')->sole();
         $timInklusi = Pengguna::create([
             'id_role' => $timInklusiRole->getKey(),
             'nama' => 'Pendamping Development',
@@ -38,15 +50,7 @@ class DevRoleSelectorTest extends TestCase
             'password' => 'password',
             'status_akun' => 'Aktif',
         ]);
-        $gpkRole = Role::create(['nama_role' => 'GPK']);
-        $gpk = Pengguna::create([
-            'id_role' => $gpkRole->getKey(),
-            'nama' => 'GPK Development',
-            'username' => 'gpk-development',
-            'email' => 'gpk-development@example.test',
-            'password' => 'password',
-            'status_akun' => 'Aktif',
-        ]);
+        $gpk = Pengguna::where('username', 'demo.a16.gpk')->sole();
 
         foreach (['admin', 'guru-mapel', 'tim-inklusi', 'gpk', 'kepala-sekolah'] as $role) {
             $payload = ['role' => $role];
@@ -70,6 +74,12 @@ class DevRoleSelectorTest extends TestCase
             } elseif ($role === 'gpk') {
                 $preview->assertRedirect(route('dev.gpk.dashboard'));
                 $this->get(route('dev.gpk.dashboard'))->assertOk();
+            } elseif ($role === 'guru-mapel') {
+                $preview->assertRedirect(route('dev.guru-mapel.dashboard'));
+                $this->get(route('dev.guru-mapel.dashboard'))->assertOk();
+            } elseif ($role === 'kepala-sekolah') {
+                $preview->assertRedirect(route('dev.principal.dashboard'));
+                $this->get(route('dev.principal.dashboard'))->assertOk();
             } else {
                 $preview->assertOk();
             }

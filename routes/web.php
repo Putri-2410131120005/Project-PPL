@@ -95,6 +95,14 @@ if (app()->environment(['local', 'testing'])) {
                 }
             }
 
+            if ($validated['role'] === 'guru-mapel') {
+                $request->session()->forget('dev_pengguna_id');
+                app(\App\Services\GuruMapelDemoIdentity::class)->start($request);
+                return redirect()->route('dev.preview', 'guru-mapel');
+            }
+            Auth::guard('guru_dev')->logout();
+            $request->session()->forget(['dev_guru_demo', 'guru_note_creation_token']);
+
             $request->session()->regenerate();
             $request->session()->forget('dev_pengguna_id');
             $request->session()->put('dev_role', $validated['role']);
@@ -110,14 +118,16 @@ if (app()->environment(['local', 'testing'])) {
 
         Route::post('/change-role', function (Request $request) {
             Auth::guard('parent')->logout();
-            $request->session()->forget(['dev_role', 'dev_pengguna_id']);
+            Auth::guard('guru_dev')->logout();
+            $request->session()->forget(['dev_role', 'dev_pengguna_id', 'dev_guru_demo', 'guru_note_creation_token']);
 
             return redirect()->route('dev.login');
         })->name('change-role');
 
         Route::post('/logout', function (Request $request) {
             Auth::guard('parent')->logout();
-            $request->session()->forget(['dev_role', 'dev_pengguna_id']);
+            Auth::guard('guru_dev')->logout();
+            $request->session()->forget(['dev_role', 'dev_pengguna_id', 'dev_guru_demo', 'guru_note_creation_token']);
 
             return redirect()->route('dev.login');
         })->name('logout');
@@ -248,12 +258,15 @@ if (app()->environment(['local', 'testing'])) {
             Route::get('/orang-tua', [GpkController::class, 'parents'])->name('parents.index');
         });
 
+        require __DIR__.'/guru-mapel.php';
+        require __DIR__.'/principal.php';
+
         Route::get('/{role}', function (Request $request, string $role) use ($roles) {
             abort_unless(array_key_exists($role, $roles), 404);
 
             $selectedRole = $request->session()->get('dev_role');
 
-            if (! $selectedRole) {
+            if (!$selectedRole) {
                 return redirect()->route('dev.login');
             }
 
@@ -290,6 +303,13 @@ if (app()->environment(['local', 'testing'])) {
                 }
             }
 
+            if ($role === 'guru-mapel') {
+                return redirect()->route('dev.guru-mapel.dashboard');
+            }
+            if ($role === 'kepala-sekolah') {
+                return redirect()->route('dev.principal.dashboard');
+            }
+
             $view = match ($role) {
                 'admin' => 'dev.admin-dashboard',
                 'guru-mapel' => 'dev.guru-mapel-dashboard',
@@ -304,9 +324,9 @@ if (app()->environment(['local', 'testing'])) {
             if ($role === 'admin') {
                 $data['dashboardStats'] = [
                     'users' => Pengguna::query()->count(),
-                    'staff' => Pengguna::query()->whereHas('role', fn ($query) => $query->whereIn('nama_role', ['Guru Mapel', 'Tim Inklusi', 'GPK', 'Kepala Sekolah']))->count(),
+                    'staff' => Pengguna::query()->whereHas('role', fn($query) => $query->whereIn('nama_role', ['Guru Mapel', 'Tim Inklusi', 'GPK', 'Kepala Sekolah']))->count(),
                     'students' => Siswa::query()->count(),
-                    'parents' => Pengguna::query()->whereHas('role', fn ($query) => $query->where('nama_role', 'Orang Tua'))->count(),
+                    'parents' => Pengguna::query()->whereHas('role', fn($query) => $query->where('nama_role', 'Orang Tua'))->count(),
                     'classes' => Kelas::query()->count(),
                     'subjects' => MataPelajaran::query()->count(),
                     'guruMappings' => RelasiGuruMapelKelas::query()->count(),
