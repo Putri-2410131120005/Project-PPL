@@ -124,7 +124,9 @@ class GuruMapelModuleTest extends TestCase
         foreach (['dev.logout', 'dev.change-role'] as $route) {
             $response->assertSee('action="'.route($route).'"', false);
         }
-        $response->assertDontSee('Ganti Guru Demo');
+        $response->assertDontSee('Ganti Guru Demo')
+            ->assertSee('data-confirm-title="Keluar?"', false)
+            ->assertSee('id="abkConfirmationModal"', false);
         $this->post(route('dev.change-role'))->assertRedirect(route('dev.login'))->assertSessionMissing('dev_role');
         $this->assertGuest('guru_dev');
         $this->loginGuru();

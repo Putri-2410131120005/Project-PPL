@@ -19,5 +19,4 @@ Route::prefix('kepala-sekolah')->name('principal.')->middleware(EnsureDevelopmen
     Route::get('laporan', [PrincipalController::class, 'period'])->name('period');
     Route::get('laporan/pratinjau', [PrincipalController::class, 'preview'])->name('period.preview');
     Route::get('laporan/ekspor/{format}', [PrincipalController::class, 'exportPeriod'])->name('period.export');
-    Route::get('konfirmasi-keluar', [PrincipalController::class, 'logout'])->name('logout');
 });

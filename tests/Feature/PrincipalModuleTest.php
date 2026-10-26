@@ -88,10 +88,15 @@ class PrincipalModuleTest extends TestCase
     {
         $this->post(route('dev.login.store'), ['role' => 'kepala-sekolah'])->assertRedirect(route('dev.preview', 'kepala-sekolah'));
         $this->get(route('dev.preview', 'kepala-sekolah'))->assertRedirect(route('dev.principal.dashboard'));
-        foreach (['dashboard', 'students', 'recaps', 'archives', 'logout'] as $page) {
+        foreach (['dashboard', 'students', 'recaps', 'archives'] as $page) {
             $response = $this->get(route('dev.principal.'.$page))->assertOk()->assertSee('DATA DEMO');
             $this->review('empty-'.$page, $response);
         }
+        $this->get(route('dev.principal.dashboard'))
+            ->assertSee('action="'.route('dev.logout').'"', false)
+            ->assertSee('data-confirm-title="Keluar?"', false)
+            ->assertSee('id="abkConfirmationModal"', false);
+        $this->get('/_dev/kepala-sekolah/konfirmasi-keluar')->assertNotFound();
         $this->get(route('dev.principal.dashboard'))->assertSee('Belum ada laporan resmi');
         $this->get(route('dev.principal.recaps.export', 'zip'))->assertNotFound();
         $this->get(route('dev.principal.period', ['periode' => 'September 2026']))->assertNotFound();
@@ -100,6 +105,9 @@ class PrincipalModuleTest extends TestCase
         foreach (['post', 'put', 'patch', 'delete'] as $method) {
             $this->$method(route('dev.principal.recaps'))->assertStatus(405);
         }
+        $this->post(route('dev.logout'))
+            ->assertRedirect(route('dev.login'))
+            ->assertSessionMissing('dev_role');
     }
 
     public function test_role_guard_also_protects_exports_and_is_disabled_in_production(): void
@@ -152,7 +160,7 @@ class PrincipalModuleTest extends TestCase
         $this->get(route('dev.principal.note', ['rekap' => $f['recap']->getKey(), 'link' => $other['link']->getKey()]))->assertNotFound();
         $this->get(route('dev.principal.recaps', ['periode' => 'September 2026', 'tahun_ajaran' => '2026/2027', 'tingkat' => 'X']))->assertSee($this->student->nama_siswa)->assertDontSee($other['recap']->siswa->nama_siswa);
         $this->get(route('dev.principal.recaps', ['tahun_ajaran' => '1999/2000']))->assertDontSee($this->student->nama_siswa);
-        foreach (['dashboard', 'students', 'recaps', 'archives', 'logout'] as $page) {
+        foreach (['dashboard', 'students', 'recaps', 'archives'] as $page) {
             $this->review($page, $this->get(route('dev.principal.'.$page))->assertOk());
         }
         $this->review('student', $this->get(route('dev.principal.student', $this->student->getKey()))->assertOk());
@@ -305,7 +313,7 @@ class PrincipalModuleTest extends TestCase
             'note' => ['rekap' => $f['recap']->getKey(), 'link' => $f['link']->getKey()],
             'recap.preview' => [$f['recap']->getKey()], 'archives' => [],
             'period' => ['periode' => 'September 2026'],
-            'period.preview' => ['periode' => 'September 2026'], 'logout' => [],
+            'period.preview' => ['periode' => 'September 2026'],
         ];
         foreach ($pages as $page => $parameters) {
             $response = $this->get(route('dev.principal.'.$page, $parameters))->assertOk();

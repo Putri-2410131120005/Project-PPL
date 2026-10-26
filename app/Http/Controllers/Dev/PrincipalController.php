@@ -198,8 +198,4 @@ class PrincipalController extends Controller
             'Cache-Control' => 'private, no-store', 'X-Content-Type-Options' => 'nosniff']);
     }
 
-    public function logout()
-    {
-        return $this->page('logout');
-    }
 }

@@ -97,25 +97,27 @@ try {
         await command('Runtime.evaluate',{expression:`document.querySelector('select[name="role"]').value='kepala-sekolah';document.querySelector('select[name="role"]').form.requestSubmit()`});
         await until(`location.pathname==='/_dev/kepala-sekolah/dashboard'&&!!document.querySelector('.ks-welcome')`);
         const live=[];
-        for(const page of ['dashboard','siswa','rekap','arsip','konfirmasi-keluar']) {
+        for(const page of ['dashboard','siswa','rekap','arsip']) {
             await command('Page.navigate',{url:base+'/_dev/kepala-sekolah/'+page});
             await until(`document.readyState==='complete'&&location.pathname.endsWith('/${page}')&&document.body.classList.contains('ks')`);
             const {data}=await command('Page.captureScreenshot',{format:'png',captureBeyondViewport:false});
             await writeFile(resolve(folder,'live-'+page+'.png'),Buffer.from(data,'base64'));
             live.push(page);
         }
-        await command('Runtime.evaluate',{expression:`document.querySelector('a.ks-button').click()`});
-        await until(`location.pathname.endsWith('/dashboard')&&!!document.querySelector('.ks-welcome')`);
         await command('Page.navigate',{url:base+'/_dev/kepala-sekolah/arsip'});
         await until(`document.readyState==='complete'&&!!document.querySelector('select[name="bulan"]')`);
         await command('Runtime.evaluate',{expression:`const s=document.querySelector('select[name="bulan"]');s.value='1';s.dispatchEvent(new Event('change',{bubbles:true}))`});
         await until(`location.search.includes('bulan=1')&&document.readyState==='complete'`);
-        await command('Page.navigate',{url:base+'/_dev/kepala-sekolah/konfirmasi-keluar'});
-        await until(`!!document.querySelector('.ks-logout-actions form')`);
-        await command('Runtime.evaluate',{expression:`document.querySelector('.ks-logout-actions form').requestSubmit()`});
+        await command('Runtime.evaluate',{expression:`[...document.querySelectorAll('form')].find(f=>new URL(f.action).pathname==='/_dev/logout').requestSubmit()`});
+        await until(`document.querySelector('#abkConfirmationModal')?.classList.contains('show')`);
+        await command('Runtime.evaluate',{expression:`document.querySelector('#abkConfirmationModal [data-bs-dismiss="modal"]').click()`});
+        await until(`!document.querySelector('#abkConfirmationModal')?.classList.contains('show')&&location.pathname.endsWith('/arsip')`);
+        await command('Runtime.evaluate',{expression:`[...document.querySelectorAll('form')].find(f=>new URL(f.action).pathname==='/_dev/logout').requestSubmit()`});
+        await until(`document.querySelector('#abkConfirmationModal')?.classList.contains('show')`);
+        await command('Runtime.evaluate',{expression:`document.querySelector('#abkConfirmationModalConfirm').click()`});
         await until(`location.pathname==='/_dev/login'&&!!document.querySelector('select[name="role"]')`);
         await writeFile(resolve(folder,'live-browser.json'),JSON.stringify({live,login:true,cancel:true,monthAutoSubmit:true,logout:true},null,2));
-        console.log('Live MariaDB browser: dropdown login, five pages, cancel, month auto-submit and logout passed.');
+        console.log('Live MariaDB browser: dropdown login, four pages, modal cancel, month auto-submit and logout passed.');
     }
     await writeFile(resolve(folder, 'geometry.json'), JSON.stringify(results, null, 2));
     const failures = results.filter(r => r.scroll > r.viewport || !r.breadcrumb.order || !r.breadcrumb.aligned || r.breadcrumb.count!==1 || !r.breadcrumb.present || r.breadcrumb.current!==1 || r.breadcrumb.overflow || (r.breadcrumb.bottomGap!==null && r.breadcrumb.bottomGap!==24) || !r.breadcrumb.footerAfterMenu || r.assets.some(a => !a.loaded || a.width !== 8 || a.height !== 8));
