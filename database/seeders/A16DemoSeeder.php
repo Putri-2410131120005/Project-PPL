@@ -25,8 +25,9 @@ class A16DemoSeeder extends Seeder
         $connection = DB::connection();
         if (app()->environment('local')) {
             $server = $connection->selectOne('SELECT DATABASE() AS db, @@port AS port');
+            $configuredPort = (int) $connection->getConfig('port');
             if ($connection->getDriverName() !== 'mysql' || $connection->getConfig('host') !== '127.0.0.1'
-                || $server->db !== 'smart_abk' || (int) $server->port !== 3307) {
+                || $server->db !== 'smart_abk' || (int) $server->port !== $configuredPort) {
                 throw new RuntimeException('Target database A16 tidak sesuai audit.');
             }
         } elseif ($connection->getDriverName() !== 'sqlite' || $connection->getDatabaseName() !== ':memory:') {
