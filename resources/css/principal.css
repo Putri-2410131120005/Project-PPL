@@ -38,3 +38,18 @@
 .ks .abk-nav-link.active{gap:12px}
 .ks .abk-nav-link.active::before{content:''}
 @media(min-width:768px){.ks .abk-nav{width:auto;margin-top:0}}
+
+/* Keep role pages on the same content grid as Admin, GPK, and Tim Inklusi. */
+.ks-breadcrumbs{margin:0 20px;padding:3px 0 4px;min-height:23px;font-weight:600}
+.ks .abk-role-content{margin:0 20px;min-width:0}
+.ks .abk-role-content>.ks-export-toolbar{margin:0 0 24px}
+@media(min-width:768px){
+    .ks .abk-shell{padding-right:16px}
+    .ks .abk-main,.ks .ks-detail{height:calc(100vh - 32px);overflow-x:hidden;overflow-y:auto;padding:9px 0 34px;scrollbar-gutter:stable}
+    .ks .abk-topbar,.ks .ks-detail .abk-topbar,.ks .ks-detail:has(.ks-profile) .abk-topbar,.ks .ks-detail:has(.ks-filters) .abk-topbar{align-items:center;gap:20px;min-height:78px;padding:0 20px}
+    .ks .abk-title{letter-spacing:-.03em;line-height:normal}
+    .ks .abk-profile{min-height:0}
+    .ks-detail .abk-profile{position:static}
+    .ks-detail .abk-topbar>div:first-child{max-width:100%}
+}
+@media(max-width:767px){.ks-breadcrumbs,.ks .abk-role-content{margin-left:0;margin-right:0}}

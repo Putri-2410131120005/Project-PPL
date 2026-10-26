@@ -7,9 +7,10 @@
 <main class="abk-main {{ $detail?'ks-detail':'' }}">
 <x-preview.topbar :title="$title" :subtitle="$subtitle" :profile="$profile" />
 <x-principal.breadcrumbs :items="$breadcrumbs" />
+<div class="abk-role-content">
 @if($errors->any())<div class="ks-error" role="alert">@foreach($errors->all() as $error)<p>{{ $error }}</p>@endforeach</div>@endif
 {{ $slot }}
-</main></div>
+</div></main></div>
 <x-preview.confirmation-modal />
 <div class="ks-toast" role="status" hidden><span class="ks-success-icon" aria-hidden="true">✓</span><div><strong data-download-title>Unduhan siap</strong><p data-download-message>File berhasil disiapkan untuk diunduh.</p></div><button type="button" aria-label="Tutup notifikasi" data-toast-close>×</button></div>
 </body></html>

@@ -5,7 +5,8 @@
 <main class="abk-main {{ $detail ? 'gm-detail' : '' }}">
 <x-preview.topbar :title="$title" :subtitle="$subtitle" :profile="$profile" />
 <x-guru.breadcrumbs :items="$breadcrumbs" />
+<div class="abk-role-content">
 @if(session('success') && session('success') !== 'Draft Tersimpan')<div class="gm-notice" role="status">{{ session('success') }}</div>@endif
 @if($errors->any())<div class="gm-errors" role="alert"><ul>@foreach($errors->all() as $error)<li>{{ $error }}</li>@endforeach</ul></div>@endif
 {{ $slot }}
-</main></div><x-preview.confirmation-modal /></body></html>
+</div></main></div><x-preview.confirmation-modal /></body></html>
