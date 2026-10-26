@@ -17,10 +17,16 @@
             ]],
         ],
         'guru-mapel' => [
-            ['key' => 'dashboard', 'label' => 'Dashboard', 'href' => route('dev.preview', $role)],
+            ['key' => 'dashboard', 'label' => 'Dashboard', 'href' => route('dev.guru-mapel.dashboard')],
             ['key' => 'students', 'label' => 'Data Siswa', 'href' => route('dev.guru-mapel.students.index')],
             ['key' => 'verification', 'label' => 'Status Verifikasi', 'href' => route('dev.guru-mapel.notes.status')],
             ['key' => 'history', 'label' => 'Riwayat Perkembangan', 'href' => route('dev.guru-mapel.history.index')],
+        ],
+        'kepala-sekolah' => [
+            ['key' => 'dashboard', 'label' => 'Dashboard', 'href' => route('dev.principal.dashboard')],
+            ['key' => 'students', 'label' => 'Data Siswa', 'href' => route('dev.principal.students')],
+            ['key' => 'recaps', 'label' => 'Rekap', 'href' => route('dev.principal.recaps')],
+            ['key' => 'archives', 'label' => 'Arsip Laporan', 'href' => route('dev.principal.archives')],
         ],
         'tim-inklusi' => [
             ['key' => 'dashboard', 'label' => 'Dashboard', 'href' => route('dev.tim-inklusi.dashboard')],
@@ -69,8 +75,14 @@
         @endforeach
     </nav>
     <div class="mt-4 pt-3 border-top border-secondary-subtle abk-session-controls">
+        @if ($role === 'guru-mapel')
+        <form method="POST" action="{{ route('dev.guru-mapel.demo.switch') }}">
+            @csrf
+            <button type="submit" class="abk-dev-button abk-dev-button-muted">Ganti Guru Demo</button>
+        </form>
+        @endif
         @if ($role !== 'orang-tua')
-        <form method="POST" action="{{ route('dev.change-role') }}" data-confirm-form data-confirm-title="Ganti peran?" data-confirm-message="Sesi saat ini akan diakhiri. Anda dapat memilih peran lain pada halaman berikutnya." data-confirm-button="Ganti Peran">
+        <form method="POST" action="{{ route('dev.change-role') }}" class="mt-2" data-confirm-form data-confirm-title="Ganti peran?" data-confirm-message="Sesi saat ini akan diakhiri. Anda dapat memilih peran lain pada halaman berikutnya." data-confirm-button="Ganti Peran">
             @csrf
             <button type="submit" class="abk-dev-button">Ganti Peran</button>
         </form>

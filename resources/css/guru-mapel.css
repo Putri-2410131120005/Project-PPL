@@ -76,3 +76,8 @@
 .gm .gm-footer{padding-top:24px}
 .gm-footer button{min-height:32px;display:flex;align-items:center;cursor:pointer}
 @media(max-width:767px){.gm-footer button{min-height:44px}.gm-breadcrumbs{padding-top:0}}
+
+/* Use the same sidebar geometry and active marker as the shared application shell. */
+.gm .abk-nav-link.active{gap:12px}
+.gm .abk-nav-link.active::before{content:''}
+@media(min-width:768px){.gm .abk-nav{width:auto;margin-top:0}}

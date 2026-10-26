@@ -32,3 +32,9 @@
 /* Keep header, breadcrumb and first content in separate, consistent rows. */
 .ks .abk-main .abk-topbar{min-height:0;padding-bottom:24px}
 .ks .abk-main>.ks-export-toolbar{margin:0 0 24px}
+
+/* Use the same sidebar geometry and active marker as the shared application shell. */
+.ks .abk-nav{margin-left:0}
+.ks .abk-nav-link.active{gap:12px}
+.ks .abk-nav-link.active::before{content:''}
+@media(min-width:768px){.ks .abk-nav{width:auto;margin-top:0}}
