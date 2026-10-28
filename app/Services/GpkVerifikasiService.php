@@ -4,6 +4,7 @@ namespace App\Services;
 
 use App\Models\CatatanPendampingan;
 use App\Models\CatatanPerkembangan;
+use App\Models\AktivitasGpk;
 use App\Models\Pengguna;
 use App\Models\VerifikasiCatatan;
 use DomainException;
@@ -17,6 +18,37 @@ use InvalidArgumentException;
  */
 class GpkVerifikasiService
 {
+    public function mulaiMeninjau(string $jenis, int $idCatatan, int $idGpk): void
+    {
+        DB::transaction(function () use ($jenis, $idCatatan, $idGpk): void {
+            $this->pastikanGpkAktif($idGpk);
+            [$modelClass, $kolomId] = $this->jenisCatatan($jenis);
+            $catatan = $modelClass::query()->lockForUpdate()->findOrFail($idCatatan);
+            if ($catatan->status_pengajuan !== 'Dikirim') {
+                throw new DomainException('Catatan ini sudah diputuskan atau tidak lagi menunggu verifikasi.');
+            }
+            if (VerifikasiCatatan::query()->where($kolomId, $catatan->getKey())->where('versi_pengajuan', $catatan->versi_pengajuan)->exists()) {
+                throw new DomainException('Versi pengajuan ini sudah pernah diverifikasi.');
+            }
+            if ($catatan->versi_ditinjau === $catatan->versi_pengajuan && $catatan->id_peninjau_gpk && (int) $catatan->id_peninjau_gpk !== $idGpk) {
+                $peninjau = Pengguna::query()->find($catatan->id_peninjau_gpk);
+                throw new DomainException('Catatan sedang ditinjau oleh '.($peninjau?->nama ?: 'GPK lain').'.');
+            }
+
+            $catatan->forceFill([
+                'id_peninjau_gpk' => $idGpk,
+                'versi_ditinjau' => $catatan->versi_pengajuan,
+                'tanggal_mulai_tinjau' => $catatan->tanggal_mulai_tinjau ?: now(),
+            ])->save();
+            AktivitasGpk::query()->firstOrCreate([
+                'id_gpk' => $idGpk,
+                $kolomId => $catatan->getKey(),
+                'versi_pengajuan' => $catatan->versi_pengajuan,
+                'jenis_aktivitas' => 'Mulai Meninjau',
+            ], ['tanggal_aktivitas' => now()]);
+        });
+    }
+
     /**
      * @param string $jenis 'perkembangan' (Guru Mapel) or 'pendampingan' (Tim Inklusi)
      * @param string $keputusan 'Terverifikasi' or 'Perlu Revisi'
@@ -44,6 +76,19 @@ class GpkVerifikasiService
                 throw new DomainException('Hanya catatan berstatus Dikirim yang dapat diverifikasi.');
             }
 
+            if ($catatan->versi_ditinjau === $catatan->versi_pengajuan && $catatan->id_peninjau_gpk && (int) $catatan->id_peninjau_gpk !== $idGpk) {
+                $peninjau = Pengguna::query()->find($catatan->id_peninjau_gpk);
+                throw new DomainException('Catatan sudah diambil untuk ditinjau oleh '.($peninjau?->nama ?: 'GPK lain').'.');
+            }
+
+            if ((int) $catatan->id_peninjau_gpk !== $idGpk || (int) $catatan->versi_ditinjau !== (int) $catatan->versi_pengajuan) {
+                $catatan->forceFill(['id_peninjau_gpk' => $idGpk, 'versi_ditinjau' => $catatan->versi_pengajuan, 'tanggal_mulai_tinjau' => now()])->save();
+                AktivitasGpk::query()->create([
+                    'id_gpk' => $idGpk, $kolomId => $catatan->getKey(), 'versi_pengajuan' => $catatan->versi_pengajuan,
+                    'jenis_aktivitas' => 'Mulai Meninjau', 'tanggal_aktivitas' => now(),
+                ]);
+            }
+
             // Each version may have exactly one decision. Previous versions remain as history.
             if (VerifikasiCatatan::query()->where($kolomId, $catatan->getKey())
                 ->where('versi_pengajuan', $catatan->versi_pengajuan)->exists()) {
@@ -65,6 +110,14 @@ class GpkVerifikasiService
             ])->save();
 
             $catatan->forceFill(['status_pengajuan' => $keputusan])->save();
+            AktivitasGpk::query()->create([
+                'id_gpk' => $idGpk,
+                $kolomId => $catatan->getKey(),
+                'versi_pengajuan' => $catatan->versi_pengajuan,
+                'jenis_aktivitas' => $keputusan === 'Terverifikasi' ? 'Terverifikasi' : 'Dikembalikan',
+                'keterangan' => $alasan,
+                'tanggal_aktivitas' => now(),
+            ]);
 
             return $verifikasi;
         });

@@ -194,6 +194,13 @@ class AdminUserController extends AdminController
 
     public function toggleStatus(Pengguna $pengguna): RedirectResponse
     {
+        if ($pengguna->is_super_admin) {
+            return back()->with('error', 'Akun Super Admin sekolah tidak dapat dinonaktifkan.');
+        }
+        if ($this->isAdminRoleId((int) $pengguna->id_role) && $pengguna->status_akun === 'Nonaktif') {
+            return back()->with('error', 'Akun admin lama tidak dapat diaktifkan. Super Admin hanya disiapkan oleh developer.');
+        }
+
         try {
             $updated = DB::transaction(function () use ($pengguna): ?array {
                 $target = Pengguna::query()
@@ -373,6 +380,7 @@ class AdminUserController extends AdminController
             'user' => $pengguna,
             'roles' => Role::query()
                 ->when($staffOnly, fn ($roles) => $roles->whereIn('nama_role', self::STAFF_ROLE_NAMES))
+                ->when(! $pengguna->is_super_admin, fn ($roles) => $roles->whereNotIn('nama_role', self::ADMIN_ROLE_NAMES))
                 ->orderBy('nama_role')
                 ->get(),
             'subjects' => MataPelajaran::query()
@@ -539,11 +547,27 @@ class AdminUserController extends AdminController
             'email' => ['required', 'email', 'max:100', Rule::unique('pengguna', 'email')->ignore($pengguna)],
             'id_role' => ['required', 'integer', Rule::exists('role', 'id_role')],
             'nip' => ['nullable', 'string', 'max:30', Rule::unique('pengguna', 'nip')->ignore($pengguna)],
+            'jabatan_gpk' => [
+                Rule::requiredIf(fn (): bool => $this->roleHasName($request->integer('id_role'), ['GPK'])),
+                'nullable', Rule::in(['Ketua', 'Sekretaris', 'Bendahara']),
+                Rule::unique('pengguna', 'jabatan_gpk')->ignore($pengguna),
+            ],
             'status_akun' => ['required', Rule::in(['Aktif', 'Nonaktif'])],
+            'password_baru' => [
+                $pengguna?->is_super_admin ? 'nullable' : 'prohibited',
+                'string', 'min:12', 'confirmed',
+            ],
         ]);
 
         if ($this->isParentRole((int) $data['id_role'])) {
             abort(422, 'Akun Orang Tua/Wali harus dibuat melalui alur Buat Akun Orang Tua.');
+        }
+
+        if ($this->isAdminRoleId((int) $data['id_role'])
+            && ($pengguna === null || ! $this->isAdminRoleId((int) $pengguna->id_role))) {
+            throw ValidationException::withMessages([
+                'id_role' => 'Akun Super Admin hanya dapat dibuat oleh developer melalui server.',
+            ]);
         }
 
         if ($staffOnly && ! $this->isStaffRole((int) $data['id_role'])) {
@@ -561,6 +585,13 @@ class AdminUserController extends AdminController
         if (! $this->isStaffRole((int) $data['id_role'])) {
             $data['nip'] = null;
         }
+        if (! $this->roleHasName((int) $data['id_role'], ['GPK'])) {
+            $data['jabatan_gpk'] = null;
+        }
+        if ($pengguna?->is_super_admin && filled($data['password_baru'] ?? null)) {
+            $data['password'] = Hash::make($data['password_baru']);
+        }
+        unset($data['password_baru']);
 
         return $data;
     }
@@ -607,6 +638,21 @@ class AdminUserController extends AdminController
 
         DB::transaction(function () use ($pengguna, $data, $assignments, $companionAssignments): void {
             $account = Pengguna::query()->with('role')->lockForUpdate()->findOrFail($pengguna->getKey());
+
+            if ($account->is_super_admin && ($data['status_akun'] !== 'Aktif' || ! $this->isAdminRoleId((int) $data['id_role']))) {
+                throw ValidationException::withMessages([
+                    $data['status_akun'] !== 'Aktif' ? 'status_akun' : 'id_role' => 'Role dan status akun Super Admin sekolah tidak dapat diubah.',
+                ]);
+            }
+
+            if (! $account->is_super_admin
+                && $this->isAdminRoleId((int) $account->id_role)
+                && $this->isAdminRoleId((int) $data['id_role'])
+                && $data['status_akun'] === 'Aktif') {
+                throw ValidationException::withMessages([
+                    'status_akun' => 'Akun admin lama tidak dapat diaktifkan. Super Admin hanya disiapkan oleh developer.',
+                ]);
+            }
 
             if ($this->isLastActiveAdmin($account) && (
                 $data['status_akun'] !== 'Aktif' || ! $this->isAdminRoleId((int) $data['id_role'])

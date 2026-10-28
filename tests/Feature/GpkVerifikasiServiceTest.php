@@ -122,4 +122,34 @@ class GpkVerifikasiServiceTest extends TestCase
         $this->expectException(DomainException::class);
         $svc->verifikasi('perkembangan', $id, $this->idGpk, 'Terverifikasi');
     }
+
+    public function test_first_gpk_claim_locks_review_and_records_complete_audit(): void
+    {
+        $id = $this->perkembangan();
+        $roleGpk = DB::table('role')->where('nama_role', 'GPK')->value('id_role');
+        $secondGpk = DB::table('pengguna')->insertGetId([
+            'id_role' => $roleGpk, 'nama' => 'GPK Kedua', 'email' => 'gpk-kedua@example.test',
+            'password' => bcrypt('password-testing'), 'status_akun' => 'Aktif', 'jabatan_gpk' => 'Sekretaris',
+        ], 'id_pengguna');
+        $svc = app(GpkVerifikasiService::class);
+
+        $svc->mulaiMeninjau('perkembangan', $id, $this->idGpk);
+        $this->assertDatabaseHas('aktivitas_gpk', [
+            'id_gpk' => $this->idGpk, 'id_catatan_perkembangan' => $id,
+            'versi_pengajuan' => 1, 'jenis_aktivitas' => 'Mulai Meninjau',
+        ]);
+
+        try {
+            $svc->mulaiMeninjau('perkembangan', $id, $secondGpk);
+            $this->fail('GPK kedua tidak boleh mengambil catatan yang sudah diklaim.');
+        } catch (DomainException) {
+            $this->assertTrue(true);
+        }
+
+        $svc->verifikasi('perkembangan', $id, $this->idGpk, 'Terverifikasi', 'Lanjutkan bantuan visual.');
+        $this->assertDatabaseHas('aktivitas_gpk', [
+            'id_gpk' => $this->idGpk, 'id_catatan_perkembangan' => $id,
+            'jenis_aktivitas' => 'Terverifikasi', 'keterangan' => 'Lanjutkan bantuan visual.',
+        ]);
+    }
 }

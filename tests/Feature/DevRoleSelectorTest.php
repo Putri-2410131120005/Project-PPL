@@ -4,7 +4,9 @@ namespace Tests\Feature;
 
 use App\Models\Pengguna;
 use App\Models\Role;
+use Database\Seeders\RoleSeeder;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Support\Facades\DB;
 use Tests\TestCase;
 
 class DevRoleSelectorTest extends TestCase
@@ -17,7 +19,7 @@ class DevRoleSelectorTest extends TestCase
             ->assertOk()
             ->assertSee('Pilih peran untuk membuka area kerja SMART-ABK')
             ->assertSeeInOrder([
-                'Admin / Pengelola',
+                'Super Admin',
                 'Guru Mata Pelajaran',
                 'Tim Inklusi',
                 'GPK',
@@ -29,19 +31,24 @@ class DevRoleSelectorTest extends TestCase
 
     public function test_each_role_can_be_selected_and_open_its_own_dashboard(): void
     {
-        $this->seed(\Database\Seeders\RoleSeeder::class);
-        $credentialsFile = tempnam(sys_get_temp_dir(), 'integration-a16-');
-        file_put_contents($credentialsFile, json_encode(array_fill_keys(
-            ['demo.a16.guru1', 'demo.a16.guru2', 'demo.a16.gpk'], bin2hex(random_bytes(16))
-        )));
-        putenv('A16_DEMO_CREDENTIALS_FILE='.$credentialsFile);
-        try {
-            $this->seed(\Database\Seeders\A16DemoSeeder::class);
-        } finally {
-            putenv('A16_DEMO_CREDENTIALS_FILE');
-            unlink($credentialsFile);
-        }
+        $this->seed(RoleSeeder::class);
+        $adminRole = Role::whereIn('nama_role', ['Admin', 'Admin / Pengelola'])->sole();
+        $guruRole = Role::where('nama_role', 'Guru Mapel')->sole();
         $timInklusiRole = Role::where('nama_role', 'Tim Inklusi')->sole();
+        $gpkRole = Role::where('nama_role', 'GPK')->sole();
+        $classId = DB::table('kelas')->insertGetId([
+            'nama_kelas' => 'X-A', 'tingkat' => 'X', 'tahun_ajaran' => '2026/2027', 'status_kelas' => 'Aktif',
+        ], 'id_kelas');
+        $subjectId = DB::table('mata_pelajaran')->insertGetId([
+            'nama_mapel' => 'Matematika', 'status_mapel' => 'Aktif',
+        ], 'id_mapel');
+        $guruMapel = Pengguna::create([
+            'id_role' => $guruRole->getKey(), 'nama' => 'Budi Santoso', 'username' => 'budi_santoso',
+            'email' => 'budi.santoso@sekolah.test', 'password' => 'password', 'status_akun' => 'Aktif',
+        ]);
+        DB::table('relasi_guru_mapel_kelas')->insert([
+            'id_pengguna' => $guruMapel->getKey(), 'id_mapel' => $subjectId, 'id_kelas' => $classId,
+        ]);
         $timInklusi = Pengguna::create([
             'id_role' => $timInklusiRole->getKey(),
             'nama' => 'Pendamping Development',
@@ -50,8 +57,15 @@ class DevRoleSelectorTest extends TestCase
             'password' => 'password',
             'status_akun' => 'Aktif',
         ]);
-        $gpk = Pengguna::where('username', 'demo.a16.gpk')->sole();
-        $guruMapel = Pengguna::where('username', 'demo.a16.guru1')->sole();
+        $gpk = Pengguna::create([
+            'id_role' => $gpkRole->getKey(), 'nama' => 'Dedi Kurniawan', 'username' => 'dedi_kurniawan',
+            'email' => 'dedi.kurniawan@sekolah.test', 'password' => 'password', 'status_akun' => 'Aktif',
+        ]);
+        $superAdmin = Pengguna::create([
+            'id_role' => $adminRole->getKey(), 'nama' => 'Super Admin Sekolah', 'username' => 'superadmin',
+            'email' => 'superadmin@sekolah.test', 'password' => 'password', 'status_akun' => 'Aktif',
+        ]);
+        $superAdmin->forceFill(['is_super_admin' => true])->save();
 
         foreach (['admin', 'guru-mapel', 'tim-inklusi', 'gpk', 'kepala-sekolah'] as $role) {
             $payload = ['role' => $role];

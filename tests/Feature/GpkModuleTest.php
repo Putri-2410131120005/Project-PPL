@@ -163,6 +163,12 @@ class GpkModuleTest extends TestCase
             'keputusan' => 'Perlu Revisi', 'alasan' => 'Perjelas tindak lanjut.',
         ])->assertRedirect();
         $note->refresh()->forceFill(['status_pengajuan' => 'Dikirim', 'versi_pengajuan' => 2])->save();
+        $this->get(route('dev.gpk.notes.show', ['type' => 'pendampingan', 'id' => $note->getKey()]))
+            ->assertOk()->assertSee('Tinjau Catatan');
+        $this->post(route('dev.gpk.notes.claim', ['type' => 'pendampingan', 'id' => $note->getKey()]))
+            ->assertRedirect()->assertSessionHasNoErrors();
+        $this->get(route('dev.gpk.notes.show', ['type' => 'pendampingan', 'id' => $note->getKey()]))
+            ->assertOk()->assertSee('Verifikasi')->assertSee('Kembalikan untuk Revisi');
         $this->asGpk($gpk)->post(route('dev.gpk.notes.verify', ['type' => 'pendampingan', 'id' => $note->getKey()]), [
             'keputusan' => 'Terverifikasi',
         ])->assertRedirect()->assertSessionHasNoErrors();
@@ -298,6 +304,10 @@ class GpkModuleTest extends TestCase
         $this->assertSame('Tersedia', $report->status_laporan);
         $this->assertSame($gpk->getKey(), $report->id_publikator);
         $this->assertNotNull($report->tanggal_publikasi);
+        $this->assertDatabaseHas('aktivitas_gpk', [
+            'id_gpk' => $gpk->getKey(), 'id_laporan_bulanan' => $report->getKey(),
+            'jenis_aktivitas' => 'Publikasi Laporan',
+        ]);
         $this->post(route('dev.gpk.reports.publish', $report))->assertSessionHasErrors('publikasi');
         $this->assertFalse(app('router')->has('dev.gpk.reports.store'));
         $this->assertFalse(app('router')->has('dev.gpk.reports.update'));

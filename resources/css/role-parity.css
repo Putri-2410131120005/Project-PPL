@@ -1,0 +1,425 @@
+/* Shared sizing for the role pages that keep their own components. */
+.gm,
+.ks {
+    font-family: Inter, ui-sans-serif, system-ui, sans-serif;
+}
+
+.gm .abk-topbar,
+.ks .abk-topbar {
+    align-items: center;
+    min-height: 76px;
+    padding: 0 20px;
+}
+
+.gm .abk-topbar > div:first-child,
+.ks .abk-topbar > div:first-child {
+    align-self: flex-start;
+}
+
+.gm .abk-title,
+.ks .abk-title {
+    font-size: 28px;
+    font-weight: 700;
+    letter-spacing: -.03em;
+    line-height: 1.2;
+    margin: 0 0 8px;
+}
+
+.gm .abk-subtitle,
+.ks .abk-subtitle {
+    color: var(--abk-muted);
+    font-size: 13px;
+    line-height: 1.5;
+    margin: 0;
+}
+
+.gm .abk-profile,
+.ks .abk-profile {
+    min-height: 0;
+}
+
+.gm .abk-role-content > .abk-panel,
+.ks .abk-role-content > .abk-panel {
+    border-radius: 18px;
+}
+
+.gm .gm-card {
+    border-radius: 18px;
+}
+
+.gm-breadcrumbs,
+.ks-breadcrumbs {
+    font-size: 12px;
+    font-weight: 600;
+    line-height: 16px;
+    margin: 0 20px;
+    margin-bottom: 16px;
+    min-height: 23px;
+    padding: 3px 0 4px;
+}
+
+.gm .abk-role-content,
+.ks .abk-role-content {
+    margin: 0 20px;
+    min-width: 0;
+}
+
+.gm-welcome,
+.ks-welcome {
+    align-items: center;
+    background: linear-gradient(90deg, var(--abk-navy), var(--abk-indigo));
+    border-radius: 22px;
+    color: #fff;
+    display: flex;
+    font-size: 20px;
+    font-weight: 700;
+    line-height: 1.5;
+    margin: 4px 0 24px;
+    min-height: 0;
+    padding: 24px;
+    box-shadow: 0 6px 18px rgb(0 0 0 / 8%);
+}
+
+.gm-stats,
+.ks-stats {
+    gap: 16px;
+    margin-bottom: 24px;
+}
+
+.gm-section-title,
+.ks-section-title {
+    font-size: 18px;
+    font-weight: 600;
+    line-height: 1.35;
+    margin: 24px 0 8px;
+}
+
+.gm-section-subtitle,
+.ks-section-description {
+    color: var(--abk-muted);
+    font-size: 12px;
+    line-height: 1.5;
+    margin: 0 0 16px;
+}
+
+.gm .abk-table,
+.ks .abk-table {
+    min-width: 0;
+    table-layout: auto;
+    width: 100%;
+}
+
+.gm .abk-table thead th,
+.ks .abk-table thead th {
+    font-size: 12px;
+    font-weight: 700;
+    height: 54px;
+    line-height: 1.3;
+    padding: 15px 18px;
+}
+
+.gm .abk-table tbody td,
+.ks .abk-table tbody td {
+    font-size: 12px;
+    height: 56px;
+    line-height: 1.45;
+    padding: 16px 18px;
+}
+
+.gm .abk-table .gm-empty,
+.ks .abk-table .ks-empty {
+    height: auto !important;
+    padding: 24px !important;
+}
+
+.gm .abk-table .abk-data-name,
+.ks .abk-table .abk-data-name {
+    font-size: 13px;
+    font-weight: 600;
+}
+
+.gm-status,
+.ks-status {
+    align-items: center;
+    border-radius: 10px;
+    display: inline-flex;
+    font-size: 12px;
+    font-weight: 600;
+    height: 30px;
+    justify-content: center;
+    line-height: 16px;
+    min-width: 88px;
+    padding: 6px 10px;
+    text-align: center;
+    white-space: nowrap;
+}
+
+.ks-stat-period {
+    font-size: 18px;
+    font-weight: 700;
+    line-height: 1.25;
+    overflow-wrap: anywhere;
+}
+
+.gm-pill,
+.ks-pill {
+    background: #f6f8fb;
+    border-radius: 15px;
+    color: var(--abk-text);
+    display: inline-block;
+    font-size: 12px;
+    font-weight: 600;
+    line-height: 1.4;
+    padding: 7px 14px;
+}
+
+.gm-paging,
+.ks-paging {
+    align-items: center;
+    background: #fff;
+    border: 1px solid var(--abk-line);
+    border-radius: 14px;
+    color: #526788;
+    display: flex;
+    flex-wrap: wrap;
+    font-size: 12px;
+    gap: 10px;
+    justify-content: space-between;
+    margin: 16px 0 0;
+    min-height: 64px;
+    padding: 12px 14px;
+}
+
+.gm-paging form,
+.ks-paging form {
+    align-items: center;
+    display: flex;
+    gap: 8px;
+}
+
+.gm-paging select,
+.gm-paging a,
+.gm-paging > span:not(:first-child),
+.ks-paging select,
+.ks-paging a,
+.ks-paging > span:not(:first-child) {
+    align-items: center;
+    background: #fff;
+    border: 1px solid var(--abk-line);
+    border-radius: 8px;
+    color: #4f5e7a;
+    display: inline-flex;
+    font-size: 12px;
+    height: 34px;
+    justify-content: center;
+    padding: 0 9px;
+    text-decoration: none;
+}
+
+.gm-paging [aria-disabled],
+.ks-paging [aria-disabled] {
+    background: #f6f7fa;
+    color: #a3adbd;
+    cursor: not-allowed;
+}
+
+.gm-button,
+.gm .abk-button,
+.ks-button,
+.ks .abk-button {
+    align-items: center;
+    border-radius: 9px;
+    display: inline-flex;
+    font-size: 12px;
+    font-weight: 600;
+    height: auto;
+    justify-content: center;
+    line-height: 1.25;
+    min-height: 36px;
+    min-width: 112px;
+    padding: 9px 14px;
+    white-space: nowrap;
+    width: auto;
+}
+
+.gm .gm-form-actions .gm-teal,
+.gm .gm-form-actions .gm-primary,
+.gm .gm-student-side .gm-button,
+.gm .gm-notes-table .abk-button,
+.ks .ks-export-toolbar .ks-button {
+    height: auto;
+    min-height: 36px;
+    min-width: 112px;
+    padding: 9px 14px;
+    width: auto;
+}
+
+.gm-filters,
+.ks-filters {
+    align-items: center;
+    gap: 9px;
+    margin-bottom: 16px;
+    min-height: 78px;
+    padding: 16px 18px;
+}
+
+.gm-filters input[type='search'],
+.ks-filters input[type='search'] {
+    flex: 1 1 250px;
+    height: 40px;
+    max-width: none;
+    width: auto;
+}
+
+.gm .gm-filters:has(button[name='status']) input[type='search'] {
+    flex: 1 1 250px;
+    width: auto;
+}
+
+.gm-filters select,
+.ks-filters select {
+    flex: 0 1 210px;
+    border-radius: 9px;
+    font-size: 12px;
+    height: 40px;
+    max-width: 250px;
+}
+
+.gm-chip,
+.ks-chip {
+    border-radius: 9px;
+    font-size: 12px;
+    height: 36px;
+    padding: 0 12px;
+}
+
+.ks-filters > .ks-button {
+    min-height: 40px;
+    padding: 10px 14px;
+}
+
+.ks .ks-filters .ks-apply {
+    background: var(--abk-navy);
+    border-color: var(--abk-navy);
+    clip-path: none;
+    color: #fff;
+    height: 40px;
+    overflow: visible;
+    padding: 10px 14px;
+    position: static;
+    width: auto;
+}
+
+.ks .ks-archive-filters label:first-child,
+.ks .ks-archive-filters label:nth-child(2) {
+    flex: 0 1 210px;
+    width: 210px;
+}
+
+.ks .ks-archive-filters label {
+    font-size: 0;
+    gap: 0;
+}
+
+.ks .ks-filters > .ks-outline {
+    background: var(--abk-navy);
+    border-color: var(--abk-navy);
+    color: #fff;
+}
+
+.gm .gm-note-form .gm-meta input,
+.gm .gm-note-form .gm-meta select {
+    font-size: 12px;
+    height: 40px;
+    padding: 6px 10px;
+}
+
+.ks .ks-meta select {
+    height: 40px;
+    padding: 6px 10px;
+}
+
+.gm .gm-notes-table td:first-child,
+.gm .gm-notes-table th:first-child {
+    padding-left: 18px;
+}
+
+.gm .gm-student-history {
+    min-width: 0 !important;
+}
+
+@media (min-width: 768px) {
+    .gm .abk-shell,
+    .ks .abk-shell {
+        padding-right: 16px;
+    }
+
+    .gm .abk-main,
+    .gm .gm-detail,
+    .ks .abk-main,
+    .ks .ks-detail {
+        height: calc(100vh - 32px);
+        overflow-x: hidden;
+        overflow-y: auto;
+        padding: 9px 0 34px;
+        scrollbar-gutter: stable;
+    }
+
+    .gm .abk-main .abk-topbar,
+    .gm .gm-detail .abk-topbar,
+    .ks .abk-main .abk-topbar,
+    .ks .ks-detail .abk-topbar {
+        align-items: center;
+        gap: 20px;
+        min-height: 76px;
+        padding: 0 20px;
+    }
+
+    .gm-detail .abk-topbar > div:first-child,
+    .ks-detail .abk-topbar > div:first-child {
+        max-width: 100%;
+        padding-right: 0;
+    }
+
+    .gm-detail .abk-profile,
+    .ks-detail .abk-profile {
+        position: static;
+    }
+}
+
+@media (max-width: 767.98px) {
+    .gm-breadcrumbs,
+    .ks-breadcrumbs,
+    .gm .abk-role-content,
+    .ks .abk-role-content {
+        margin-left: 0;
+        margin-right: 0;
+    }
+
+    .gm .abk-topbar,
+    .ks .abk-topbar {
+        min-height: 0;
+        padding: 0 0 20px;
+    }
+
+    .gm .abk-sidebar,
+    .ks .abk-sidebar {
+        overflow: visible;
+    }
+
+    .gm .abk-title,
+    .ks .abk-title {
+        font-size: 22px;
+        line-height: 1.3;
+        overflow-wrap: anywhere;
+    }
+
+    .gm .abk-table,
+    .ks .abk-table {
+        min-width: 700px;
+    }
+
+    .gm .gm-student-history {
+        min-width: 700px !important;
+    }
+}

@@ -5,18 +5,18 @@
     <section class="abk-panel abk-parent-report-filters">
         <form method="GET" action="{{ route('dev.parent.reports.index') }}">
             <label><span>Semester</span><select class="form-select" name="semester" onchange="this.form.submit()"><option value="Ganjil" @selected($semester === 'Ganjil')>Ganjil</option><option value="Genap" @selected($semester === 'Genap')>Genap</option></select></label>
-            <label><span>Periode</span><select class="form-select" name="periode" onchange="this.form.submit()"><option value="">Semua periode tersedia</option>@foreach ($periodOptions as $option)<option value="{{ $option }}" @selected($period === $option)>{{ $option }}</option>@endforeach</select></label>
+            <label><span>Periode</span><select class="form-select" name="periode" onchange="this.form.submit()"><option value="">Semua periode</option>@foreach ($periodOptions as $option)<option value="{{ $option }}" @selected($period === $option)>{{ $option }}</option>@endforeach</select></label>
         </form>
         <div><small>Siswa</small><strong>{{ $student?->nama_siswa ?: 'Belum terhubung' }}</strong></div>
     </section>
 
     @if ($report)
-        <section class="abk-panel abk-parent-report-summary"><small>Laporan yang dipublikasikan GPK • {{ $report->tanggal_publikasi->locale('id')->translatedFormat('d F Y') }}</small><h2>{{ $report->periode }}</h2><p>{{ $report->isi_laporan }}</p></section>
+        <section class="abk-panel abk-parent-report-summary"><small>Tanggal laporan • {{ $report->tanggal_publikasi->locale('id')->translatedFormat('d F Y') }}</small><h2>{{ $report->periode }}</h2><p>{{ $report->isi_laporan }}</p></section>
         <section class="abk-panel overflow-hidden abk-parent-report-table"><div class="table-responsive"><table class="table abk-table align-middle"><thead><tr><th>Tanggal</th><th>Sumber</th><th>Rekomendasi / Tindak Lanjut</th><th>Ringkasan Peristiwa</th></tr></thead><tbody>
             @forelse ($sources as $source)
                 <tr><td>{{ $source['date']->locale('id')->translatedFormat('d M Y') }}</td><td>{{ $source['source'] }}@if ($source['author'])<small class="d-block text-muted mt-1">{{ $source['author'] }}</small>@endif</td><td>{{ $source['recommendation'] ?: '—' }}</td><td>{{ $source['summary'] }}</td></tr>
             @empty
-                <tr><td colspan="4" class="text-center py-4 text-muted">Laporan tersedia, tetapi belum memiliki sumber catatan terpublikasi yang dapat ditampilkan.</td></tr>
+                <tr><td colspan="4" class="text-center py-4 text-muted">Belum ada sumber catatan yang dapat ditampilkan untuk laporan ini.</td></tr>
             @endforelse
         </tbody></table></div></section>
     @else

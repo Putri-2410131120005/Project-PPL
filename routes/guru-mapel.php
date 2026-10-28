@@ -19,7 +19,6 @@ Route::prefix('guru-mapel')->name('guru-mapel.')->group(function () {
         Route::get('catatan/{id}', [GuruMapelController::class, 'show'])->whereNumber('id')->name('notes.show');
         Route::get('catatan/{id}/perbaiki', [GuruMapelController::class, 'edit'])->whereNumber('id')->name('notes.revise');
         Route::put('catatan/{id}', [GuruMapelController::class, 'update'])->whereNumber('id')->name('notes.update');
-        Route::get('riwayat', [GuruMapelController::class, 'history'])->name('history.index');
-        Route::get('riwayat/{source}/{id}', [GuruMapelController::class, 'historyShow'])->whereNumber('id')->name('history.show');
+        Route::get('referensi/{source}/{id}', [GuruMapelController::class, 'referenceShow'])->whereNumber('id')->name('references.show');
     });
 });

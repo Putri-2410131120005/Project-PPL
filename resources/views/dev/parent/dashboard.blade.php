@@ -39,7 +39,7 @@
             <section class="abk-parent-report-card">
                 <h2>Laporan Semester Anak</h2>
                 @if ($latestReport)
-                    <h3>{{ $latestReport->periode }}</h3><p>Laporan sudah dipublikasikan GPK</p><span>Tersedia untuk dilihat</span><p>Lihat rangkuman perkembangan dan rekomendasi untuk {{ $student->nama_siswa }} selama semester ini.</p>
+                    <h3>{{ $latestReport->periode }}</h3><p>Lihat rangkuman perkembangan dan rekomendasi untuk {{ $student->nama_siswa }} selama semester ini.</p>
                 @else
                     <h3>Belum tersedia</h3><p>Belum ada laporan semester yang dipublikasikan GPK.</p><span class="is-empty">Menunggu publikasi GPK</span>
                 @endif

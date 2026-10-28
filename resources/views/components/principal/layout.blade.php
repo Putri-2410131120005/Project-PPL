@@ -1,7 +1,7 @@
 @props(['profile','title','subtitle'=>'','active'=>'dashboard','detail'=>false,'breadcrumbs'=>[]])
 <!doctype html>
 <html lang="id"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"><title>{{ $title }} — SMART-ABK</title>
-@vite(['resources/css/app.css','resources/css/principal.css','resources/js/app.js','resources/js/principal.js'])</head>
+@vite(['resources/css/app.css','resources/css/principal.css','resources/css/role-parity.css','resources/js/app.js','resources/js/principal.js'])</head>
 <body class="abk-preview ks"><div class="abk-shell">
 <x-preview.sidebar role="kepala-sekolah" :roles="['kepala-sekolah' => $profile]" :active="$active" />
 <main class="abk-main {{ $detail?'ks-detail':'' }}">

@@ -19,8 +19,7 @@
         'guru-mapel' => [
             ['key' => 'dashboard', 'label' => 'Dashboard', 'href' => route('dev.guru-mapel.dashboard')],
             ['key' => 'students', 'label' => 'Data Siswa', 'href' => route('dev.guru-mapel.students.index')],
-            ['key' => 'verification', 'label' => 'Status Verifikasi', 'href' => route('dev.guru-mapel.notes.status')],
-            ['key' => 'history', 'label' => 'Riwayat Perkembangan', 'href' => route('dev.guru-mapel.history.index')],
+            ['key' => 'history', 'label' => 'Riwayat Catatan', 'href' => route('dev.guru-mapel.notes.status')],
         ],
         'kepala-sekolah' => [
             ['key' => 'dashboard', 'label' => 'Dashboard', 'href' => route('dev.principal.dashboard')],

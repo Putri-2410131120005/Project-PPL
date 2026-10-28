@@ -19,6 +19,7 @@ class Pengguna extends Authenticatable
         'id_role',
         'nama',
         'nip',
+        'jabatan_gpk',
         'username',
         'email',
         'password',
@@ -35,6 +36,7 @@ class Pengguna extends Authenticatable
             'password' => 'hashed',
             'password_diubah_pada' => 'datetime',
             'wajib_ganti_password' => 'boolean',
+            'is_super_admin' => 'boolean',
         ];
     }
 

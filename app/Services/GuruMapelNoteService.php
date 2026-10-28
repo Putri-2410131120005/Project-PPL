@@ -27,11 +27,9 @@ class GuruMapelNoteService
             foreach (['kendala_peristiwa', 'tindakan', 'hasil_tindakan'] as $field) {
                 $rules[$field] = ($send ? 'required' : 'nullable').'|string|max:10000';
             }
-            if (! $noteId) {
-                $rules['id_mapel'] = 'required|integer';
-            }
             $data = Validator::make($input, $rules)->validate();
-            $mapel = $noteId ? (int) $note->id_mapel : (int) $data['id_mapel'];
+            // Subject identity is server-owned and comes from the Admin assignment.
+            $mapel = $noteId ? (int) $note->id_mapel : $access->assignedSubjectId($guru, $siswa);
             $access->writable($guru, $siswa, $mapel);
             // Explicit optimistic token prevents silent overwrites and duplicate submission.
             if ($noteId) {
@@ -39,7 +37,7 @@ class GuruMapelNoteService
                 abort_unless(is_string($input['revision_token'] ?? null) && hash_equals($expected, $input['revision_token']), 409, 'Catatan berubah. Muat ulang sebelum menyimpan.');
             }
             $revisi = $noteId && $note->status_pengajuan === 'Perlu Revisi';
-            $note->fill(collect($data)->except(['aksi', 'id_mapel'])->all());
+            $note->fill(collect($data)->except('aksi')->all());
             $note->forceFill([
                 'id_siswa' => $siswaId, 'id_pembuat' => $guru->getKey(), 'id_mapel' => $mapel,
                 'status_pengajuan' => $send ? 'Dikirim' : 'Draft',

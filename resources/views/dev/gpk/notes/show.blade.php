@@ -32,7 +32,16 @@
             </div>
         @endif
 
-        @if($note->status_pengajuan === 'Dikirim' && ! $latestVerification)
+        @if($note->status_pengajuan === 'Dikirim' && ! $latestVerification && ((int) $note->versi_ditinjau !== (int) $note->versi_pengajuan || ! $note->id_peninjau_gpk))
+            <form class="abk-gpk-decision" method="POST" action="{{ route('dev.gpk.notes.claim', ['type' => $type, 'id' => $note->getKey()]) }}">
+                @csrf
+                <strong>Catatan ini masih menunggu peninjau.</strong>
+                <p class="text-muted mt-2">Ambil catatan untuk mulai meninjau. Setelah diambil, GPK lain tetap dapat melihat tetapi tidak dapat memberikan keputusan.</p>
+                <button class="abk-dark-button mt-2" type="submit">Tinjau Catatan</button>
+            </form>
+        @elseif($note->status_pengajuan === 'Dikirim' && ! $latestVerification && (int) $note->id_peninjau_gpk !== (int) $gpk->getKey())
+            <div class="abk-verification-box"><strong>Sedang ditinjau oleh {{ $note->peninjauGpk?->nama ?: 'GPK lain' }} — {{ $note->peninjauGpk?->jabatan_gpk ?: 'GPK' }}</strong><p>Dimulai {{ $note->tanggal_mulai_tinjau ? \Illuminate\Support\Carbon::parse($note->tanggal_mulai_tinjau)->locale('id')->translatedFormat('d M Y H:i') : '—' }}.</p></div>
+        @elseif($note->status_pengajuan === 'Dikirim' && ! $latestVerification)
             <form class="abk-gpk-decision" method="POST" action="{{ route('dev.gpk.notes.verify',['type'=>$type,'id'=>$note->getKey()]) }}" data-confirm-form data-confirm-title="Simpan keputusan verifikasi?" data-confirm-message="Keputusan untuk versi ini tidak dapat dibuat dua kali." data-confirm-button="Simpan Keputusan">
                 @csrf
                 <label class="form-label" for="alasan">Alasan revisi <span class="text-muted">(wajib bila dikembalikan)</span></label>
@@ -43,5 +52,16 @@
                 </div>
             </form>
         @endif
+    </section>
+
+    <section class="abk-panel abk-gpk-editor">
+        <h2 class="h6 mb-3">Riwayat Tindakan GPK</h2>
+        <div class="abk-gpk-source-list">
+            @forelse($note->aktivitasGpk->sortByDesc('tanggal_aktivitas') as $activity)
+                <div class="abk-gpk-source-item"><span><strong>{{ $activity->jenis_aktivitas }}</strong><small>{{ $activity->tanggal_aktivitas->locale('id')->translatedFormat('d M Y H:i') }} · {{ $activity->gpk?->nama ?: '—' }} — {{ $activity->gpk?->jabatan_gpk ?: 'GPK' }}</small>@if($activity->keterangan)<p>{{ $activity->keterangan }}</p>@endif</span></div>
+            @empty
+                <p class="text-muted mb-0">Belum ada tindakan GPK untuk catatan ini.</p>
+            @endforelse
+        </div>
     </section>
 </x-layouts.preview>

@@ -1,7 +1,7 @@
 <x-layouts.preview :role="$role" :roles="$roles" title="Dashboard Orang Tua">
     <x-preview.topbar title="Dashboard Orang Tua" subtitle="Lihat identitas dan informasi anak yang terhubung dengan akun Anda." :profile="$profile" />
     <div class="abk-breadcrumb">Dashboard</div>
-    <div class="abk-welcome">Selamat datang, Orang Tua/Wali <span class="abk-demo-tag">DATA DEMO</span></div>
+    <div class="abk-welcome">Selamat datang, Orang Tua/Wali</div>
 
     <section class="abk-parent-section">
         <h2 class="abk-section-heading mt-0">Data Anak</h2>

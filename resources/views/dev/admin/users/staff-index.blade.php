@@ -22,7 +22,7 @@
 
     <section class="abk-panel overflow-hidden">
         <div class="table-responsive"><table class="table abk-table abk-users-table align-middle">
-            <thead><tr><th>Nama Guru</th><th>NIP / ID</th><th>Email</th><th>Peran</th><th>Status</th><th>Aksi</th></tr></thead>
+            <thead><tr><th>Nama Guru</th><th>NIP / ID</th><th>Email</th><th>Peran</th><th>Jabatan GPK</th><th>Status</th><th>Aksi</th></tr></thead>
             <tbody>
                 @forelse ($users as $user)
                     @php($willDeactivate = $user->status_akun === 'Aktif')
@@ -31,6 +31,7 @@
                         <td><code>{{ $user->nip }}</code></td>
                         <td>{{ $user->email }}</td>
                         <td>{{ $user->role->nama_role }}</td>
+                        <td>{{ $user->jabatan_gpk ?: '—' }}</td>
                         <td><span class="abk-status {{ $willDeactivate ? 'abk-status-verified' : 'abk-status-inactive' }}">{{ $user->status_akun }}</span></td>
                         <td><div class="d-flex flex-wrap gap-2">
                             <a class="abk-button text-decoration-none" href="{{ route('dev.admin.staff.edit', $user) }}">Ubah</a>
@@ -42,7 +43,7 @@
                         </div></td>
                     </tr>
                 @empty
-                    <tr><td colspan="6" class="text-center py-4 text-muted">Belum ada data guru. Tambahkan guru untuk pemetaan kelas, mata pelajaran, atau pendampingan.</td></tr>
+                    <tr><td colspan="7" class="text-center py-4 text-muted">Belum ada data guru. Tambahkan guru untuk pemetaan kelas, mata pelajaran, atau pendampingan.</td></tr>
                 @endforelse
             </tbody>
         </table></div>

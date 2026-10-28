@@ -49,6 +49,16 @@ class CatatanPendampingan extends Model
         return $this->hasMany(SumberRekapCatatan::class, 'id_catatan_pendampingan', 'id_catatan_pendampingan');
     }
 
+    public function peninjauGpk(): BelongsTo
+    {
+        return $this->belongsTo(Pengguna::class, 'id_peninjau_gpk', 'id_pengguna');
+    }
+
+    public function aktivitasGpk(): HasMany
+    {
+        return $this->hasMany(AktivitasGpk::class, 'id_catatan_pendampingan', 'id_catatan_pendampingan');
+    }
+
     /** Catatan langsung tersedia bagi orang tua setelah versi terkini diverifikasi GPK. */
     public function scopeDipublikasikan($query)
     {

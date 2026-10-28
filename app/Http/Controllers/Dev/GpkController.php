@@ -124,12 +124,28 @@ class GpkController extends Controller
         $note = $this->findNote($type, $id);
         $this->ensureReviewable($type, $note);
         $note->load($type === 'perkembangan'
-            ? ['siswa.kelas', 'pembuat.role', 'mataPelajaran', 'verifikasi.verifikator', 'verifikasi.publikator']
-            : ['siswa.kelas', 'pembuat.role', 'verifikasi.verifikator', 'verifikasi.publikator']);
+            ? ['siswa.kelas', 'pembuat.role', 'mataPelajaran', 'peninjauGpk', 'aktivitasGpk.gpk', 'verifikasi.verifikator', 'verifikasi.publikator']
+            : ['siswa.kelas', 'pembuat.role', 'peninjauGpk', 'aktivitasGpk.gpk', 'verifikasi.verifikator', 'verifikasi.publikator']);
 
-        $latestVerification = $note->verifikasi->sortByDesc('versi_pengajuan')->first();
+        $latestVerification = $note->verifikasi->first(
+            fn ($verification) => (int) $verification->versi_pengajuan === (int) $note->versi_pengajuan
+        );
 
         return view('dev.gpk.notes.show', $this->context($gpk) + compact('note', 'type', 'latestVerification'));
+    }
+
+    public function claimNote(Request $request, string $type, int $id): RedirectResponse
+    {
+        $gpk = $this->gpk($request);
+        $this->ensureReviewable($type, $this->findNote($type, $id));
+        try {
+            $this->verifikasiService->mulaiMeninjau($type, $id, $gpk->getKey());
+        } catch (DomainException $exception) {
+            return back()->withErrors(['verifikasi' => $exception->getMessage()]);
+        }
+
+        return redirect()->route('dev.gpk.notes.show', ['type' => $type, 'id' => $id])
+            ->with('success', 'Catatan berhasil diambil dan sekarang sedang Anda tinjau.');
     }
 
     public function verify(Request $request, string $type, int $id): RedirectResponse
@@ -165,7 +181,6 @@ class GpkController extends Controller
                 'catatanPerkembangan.siswa.kelas', 'catatanPerkembangan.pembuat', 'catatanPerkembangan.mataPelajaran',
                 'catatanPendampingan.siswa.kelas', 'catatanPendampingan.pembuat',
             ])
-            ->where('id_verifikator', $gpk->getKey())
             ->when($source === 'perkembangan', fn ($query) => $query->whereNotNull('id_catatan_perkembangan'))
             ->when($source === 'pendampingan', fn ($query) => $query->whereNotNull('id_catatan_pendampingan'))
             ->when($search !== '', fn ($query) => $query->where(fn ($nested) => $nested
@@ -369,8 +384,20 @@ class GpkController extends Controller
         $gpk = $this->gpk($request);
         $laporan->load('publikator');
         $students = collect($laporan->data_laporan['students'] ?? []);
+        $filters = $request->validate(['siswa' => 'nullable|integer|min:1']);
+        $selectedStudent = null;
+        if (! empty($filters['siswa'])) {
+            $selectedStudent = $students->first(fn (array $student) => (int) ($student['id_siswa'] ?? 0) === (int) $filters['siswa']);
+            abort_unless($selectedStudent, 404);
+            $student = Siswa::query()->findOrFail($filters['siswa']);
+            $periodStart = CarbonImmutable::parse($laporan->periode_bulan)->startOfMonth();
+            $selectedStudent['records'] = $this->laporanBulananService
+                ->recordsForStudent($student, $periodStart, $periodStart->endOfMonth())
+                ->map(fn (array $record) => [...$record, 'date' => $record['date']->toDateString()])
+                ->all();
+        }
 
-        return view('dev.gpk.reports.show', $this->context($gpk) + compact('laporan', 'students'));
+        return view('dev.gpk.reports.show', $this->context($gpk) + compact('laporan', 'students', 'selectedStudent'));
     }
 
     public function previewReportPdf(Request $request, LaporanBulanan $laporan): View
@@ -397,17 +424,7 @@ class GpkController extends Controller
         $gpk = $this->gpk($request);
 
         try {
-            DB::transaction(function () use ($laporan, $gpk) {
-                $locked = LaporanBulanan::query()->lockForUpdate()->findOrFail($laporan->getKey());
-                if ($locked->status_laporan !== 'Belum Tersedia' || $locked->id_publikator !== null || $locked->tanggal_publikasi !== null) {
-                    throw new DomainException('Laporan sudah dipublikasikan atau status publikasinya tidak konsisten.');
-                }
-                $locked->forceFill([
-                    'status_laporan' => 'Tersedia',
-                    'id_publikator' => $gpk->getKey(),
-                    'tanggal_publikasi' => now(),
-                ])->save();
-            });
+            $this->laporanBulananService->publish($laporan, $gpk);
         } catch (DomainException $exception) {
             return back()->withErrors(['publikasi' => $exception->getMessage()]);
         }
@@ -497,13 +514,13 @@ class GpkController extends Controller
     private function notesFor(?int $studentId = null): Collection
     {
         $development = CatatanPerkembangan::query()
-            ->with(['siswa.kelas', 'pembuat.role', 'mataPelajaran', 'verifikasi'])
+            ->with(['siswa.kelas', 'pembuat.role', 'mataPelajaran', 'peninjauGpk', 'verifikasi'])
             ->when($studentId !== null, fn ($query) => $query->where('id_siswa', $studentId))
             ->whereHas('pembuat.role', fn ($roles) => $roles->where('nama_role', 'Guru Mapel'))
             ->where('status_pengajuan', '!=', 'Draft')->get()
             ->map(fn ($note) => $this->presentNote('perkembangan', $note));
         $assistance = CatatanPendampingan::query()
-            ->with(['siswa.kelas', 'pembuat.role', 'verifikasi'])
+            ->with(['siswa.kelas', 'pembuat.role', 'peninjauGpk', 'verifikasi'])
             ->when($studentId !== null, fn ($query) => $query->where('id_siswa', $studentId))
             ->whereHas('pembuat.role', fn ($roles) => $roles->where('nama_role', 'Tim Inklusi'))
             ->where('status_pengajuan', '!=', 'Draft')->get()
@@ -529,7 +546,9 @@ class GpkController extends Controller
             'date' => $note->tanggal_catatan,
             'sort_date' => ($note->tanggal_catatan?->format('Y-m-d') ?? '').'-'.str_pad((string) $note->getKey(), 10, '0', STR_PAD_LEFT),
             'source' => $source,
-            'status' => $note->status_pengajuan,
+            'status' => $note->status_pengajuan === 'Dikirim' && (int) $note->versi_ditinjau === (int) $note->versi_pengajuan && $note->id_peninjau_gpk
+                ? 'Sedang Ditinjau · '.($note->peninjauGpk?->nama ?: 'GPK')
+                : $note->status_pengajuan,
             'decision' => $decision,
             'is_pending' => $note->status_pengajuan === 'Dikirim' && $decision === null && $sourceRoleIsValid,
         ];
@@ -663,9 +682,9 @@ class GpkController extends Controller
 
         return [
             'role' => 'gpk',
-            'profile' => ['label' => 'GPK', 'name' => $gpk->nama, 'initials' => $initials ?: 'GP'],
+            'profile' => ['label' => $gpk->jabatan_gpk ? $gpk->jabatan_gpk.' GPK' : 'GPK', 'name' => $gpk->nama, 'initials' => $initials ?: 'GP'],
             'previewRoles' => [
-                'admin' => ['label' => 'Admin / Pengelola'],
+                'admin' => ['label' => 'Super Admin'],
                 'guru-mapel' => ['label' => 'Guru Mata Pelajaran'],
                 'tim-inklusi' => ['label' => 'Tim Inklusi'],
                 'gpk' => ['label' => 'GPK'],

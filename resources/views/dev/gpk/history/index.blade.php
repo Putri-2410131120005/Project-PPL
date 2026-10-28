@@ -1,5 +1,5 @@
 <x-layouts.preview :role="$role" :roles="$previewRoles" active="history" title="Riwayat Verifikasi">
-    <x-preview.topbar title="Riwayat Verifikasi" subtitle="Arsip keputusan GPK untuk setiap versi catatan; catatan yang disetujui langsung tersedia bagi Orang Tua/Wali." :profile="$profile" />
+    <x-preview.topbar title="Riwayat Verifikasi" subtitle="Arsip keputusan seluruh GPK untuk setiap versi catatan." :profile="$profile" />
     <div class="abk-breadcrumb"><a href="{{ route('dev.gpk.dashboard') }}">Dashboard</a><span>/</span>Riwayat Verifikasi</div>
     <section class="abk-panel abk-gpk-filter-panel">
         <form method="GET" class="abk-gpk-filter-form">
@@ -9,7 +9,7 @@
         </form><div class="abk-users-count">Total {{ $history->total() }} keputusan</div>
     </section>
     <section class="abk-panel overflow-hidden"><div class="table-responsive"><table class="table abk-table align-middle">
-        <thead><tr><th>Nama Siswa</th><th>Kelas</th><th>Versi</th><th>Sumber</th><th>Keputusan</th><th>Verifikator & Tanggal</th><th>Ketersediaan</th><th>Aksi</th></tr></thead>
+        <thead><tr><th>Nama Siswa</th><th>Kelas</th><th>Versi</th><th>Sumber</th><th>Keputusan / Rekomendasi</th><th>GPK & Waktu</th><th>Aksi</th></tr></thead>
         <tbody>@forelse($history as $verification)
             @php
                 $type = $verification->id_catatan_perkembangan ? 'perkembangan' : 'pendampingan';
@@ -19,11 +19,10 @@
             <tr>
                 <td class="abk-data-name">{{ $note?->siswa?->nama_siswa ?: '—' }}</td><td>{{ $note?->siswa?->kelas?->nama_kelas ?: '—' }}</td><td>v{{ $verification->versi_pengajuan }}</td>
                 <td>{{ $source }}</td><td><x-preview.status-badge :status="$verification->status_verifikasi" />@if($verification->catatan_verifikasi)<small class="d-block mt-1 text-muted">{{ $verification->catatan_verifikasi }}</small>@endif</td>
-                <td>{{ $verification->verifikator?->nama ?: '—' }}<small class="d-block text-muted">{{ $verification->tanggal_verifikasi?->locale('id')->translatedFormat('d M Y H:i') }}</small></td>
-                <td>{{ $verification->status_verifikasi === 'Terverifikasi' ? 'Tersedia untuk Orang Tua' : 'Tidak ditampilkan' }}</td>
+                <td>{{ $verification->verifikator?->nama ?: '—' }}<small class="d-block text-muted">{{ $verification->verifikator?->jabatan_gpk ?: 'GPK' }} · {{ $verification->tanggal_verifikasi?->locale('id')->translatedFormat('d M Y H:i') }}</small></td>
                 <td><a class="abk-button text-decoration-none" href="{{ route('dev.gpk.notes.show',['type'=>$type,'id'=>$note->getKey()]) }}">Lihat Catatan</a></td>
             </tr>
-        @empty<tr><td colspan="8" class="abk-empty-cell">Belum ada riwayat verifikasi yang sesuai.</td></tr>@endforelse</tbody>
+        @empty<tr><td colspan="7" class="abk-empty-cell">Belum ada riwayat verifikasi yang sesuai.</td></tr>@endforelse</tbody>
     </table></div></section>
     <x-preview.pagination :paginator="$history" />
 </x-layouts.preview>

@@ -122,12 +122,43 @@ const initialiseDevelopmentRoleSelector = () => {
     updateAccountVisibility();
 };
 
+const initialiseReportSummaryModal = () => {
+    const backdrop = document.querySelector('[data-report-summary-modal]');
+    const dialog = backdrop?.querySelector('[role="dialog"]');
+
+    if (! (backdrop instanceof HTMLElement) || ! (dialog instanceof HTMLElement)) {
+        return;
+    }
+
+    const close = () => {
+        const closeUrl = backdrop.dataset.closeUrl;
+        if (closeUrl) {
+            window.location.assign(closeUrl);
+        }
+    };
+
+    dialog.focus();
+    backdrop.addEventListener('click', (event) => {
+        if (event.target === backdrop) {
+            close();
+        }
+    });
+    document.addEventListener('keydown', (event) => {
+        if (event.key === 'Escape') {
+            event.preventDefault();
+            close();
+        }
+    });
+};
+
 if (document.readyState === 'loading') {
     document.addEventListener('DOMContentLoaded', () => {
         initialiseConfirmationModal();
         initialiseDevelopmentRoleSelector();
+        initialiseReportSummaryModal();
     }, { once: true });
 } else {
     initialiseConfirmationModal();
     initialiseDevelopmentRoleSelector();
+    initialiseReportSummaryModal();
 }

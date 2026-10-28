@@ -53,11 +53,12 @@
                             </form>
                         </td>
                     @endif
-                    <td>{{ $user->role->nama_role }}</td>
+                    <td>{{ $user->is_super_admin ? 'Super Admin' : $user->role->nama_role }}</td>
                     <td><span class="abk-status {{ $user->status_akun === 'Aktif' ? 'abk-status-verified' : 'abk-status-inactive' }}">{{ $user->status_akun }}</span></td>
                     <td>
                         <div class="d-flex flex-wrap gap-2">
                             <a class="abk-button text-decoration-none" href="{{ route('dev.admin.users.edit', $user) }}">Ubah</a>
+                            @if (! $user->is_super_admin && ! in_array($user->role->nama_role, ['Admin', 'Admin / Pengelola'], true))
                             @php($willDeactivate = $user->status_akun === 'Aktif')
                             <form method="POST" action="{{ route('dev.admin.users.status', $user) }}"
                                 data-confirm-form
@@ -70,6 +71,11 @@
                                 @method('PATCH')
                                 <button class="abk-button {{ $willDeactivate ? 'abk-button-danger' : '' }}" type="submit">{{ $willDeactivate ? 'Nonaktifkan' : 'Aktifkan' }}</button>
                             </form>
+                            @elseif ($user->is_super_admin)
+                                <span class="abk-status abk-status-verified">Akun Sistem</span>
+                            @else
+                                <span class="abk-status abk-status-inactive">Dikelola Developer</span>
+                            @endif
                         </div>
                     </td>
                 </tr>

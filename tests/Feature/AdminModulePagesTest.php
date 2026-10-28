@@ -2,12 +2,28 @@
 
 namespace Tests\Feature;
 
+use App\Models\Pengguna;
+use App\Models\Role;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Tests\TestCase;
 
 class AdminModulePagesTest extends TestCase
 {
     use RefreshDatabase;
+
+    private Pengguna $superAdmin;
+
+    protected function setUp(): void
+    {
+        parent::setUp();
+
+        $role = Role::create(['nama_role' => 'Admin / Pengelola']);
+        $this->superAdmin = Pengguna::create([
+            'id_role' => $role->getKey(), 'nama' => 'Super Admin Sekolah', 'username' => 'superadmin',
+            'email' => 'superadmin@example.test', 'password' => 'password', 'status_akun' => 'Aktif',
+        ]);
+        $this->superAdmin->forceFill(['is_super_admin' => true])->save();
+    }
 
     public function test_admin_can_open_every_registered_admin_page(): void
     {
@@ -34,7 +50,7 @@ class AdminModulePagesTest extends TestCase
         ];
 
         foreach ($urls as $url) {
-            $this->withSession(['dev_role' => 'admin'])
+            $this->withSession(['dev_role' => 'admin', 'dev_pengguna_id' => $this->superAdmin->getKey()])
                 ->get($url)
                 ->assertOk()
                 ->assertSee('INKLUSI')

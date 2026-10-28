@@ -9,8 +9,6 @@ use App\Services\GuruMapelAccess;
 use App\Services\GuruMapelNoteService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
-use Illuminate\Support\Facades\DB;
-use Illuminate\Support\Facades\Schema;
 use Illuminate\Validation\Rule;
 
 class GuruMapelController extends Controller
@@ -32,7 +30,10 @@ class GuruMapelController extends Controller
 
     private function filters(Request $r): array
     {
-        return $r->validate(['q' => 'nullable|string|max:100', 'tingkat' => 'nullable|in:Semua,X,XI,XII', 'status' => ['nullable', Rule::in(array_merge(['Semua'], array_keys(GuruMapelNoteService::LABELS)))], 'sumber' => 'nullable|in:Semua,perkembangan,pendampingan', 'siswa' => 'nullable|integer', 'per_page' => 'nullable|integer|in:10,30,50,100']);
+        $filters = $r->validate(['q' => 'nullable|string|max:100', 'tingkat' => 'nullable|in:Semua,X,XI,XII', 'status' => ['nullable', Rule::in(array_merge(['Semua'], array_keys(GuruMapelNoteService::LABELS)))], 'sumber' => 'nullable|in:Semua,perkembangan,pendampingan', 'siswa' => 'nullable|integer', 'per_page' => 'nullable|integer|in:10,30,50,100', 'per_halaman' => 'nullable|integer|in:10,30,50,100']);
+        $filters['per_page'] = $filters['per_halaman'] ?? $filters['per_page'] ?? 10;
+
+        return $filters;
     }
 
     public function dashboard()
@@ -46,9 +47,8 @@ class GuruMapelController extends Controller
     public function students(Request $r)
     {
         $f = $this->filters($r);
-        $q = $this->access->students($this->guru())->with(['kelas', 'relasiPendampingSiswa' => fn ($q) => $q->whereHas('pendamping', fn ($p) => $p->where('nama', 'like', 'DATA DEMO %')->where('email', 'like', '%@example.test')), 'relasiPendampingSiswa.pendamping.role'])
-            ->withMax(['catatanPerkembangan as terakhir' => fn ($q) => $q->where('id_pembuat', $this->guru()->getKey())
-                ->whereHas('mataPelajaran', fn ($m) => $m->where('nama_mapel', 'like', 'DATA DEMO %'))], 'tanggal_catatan');
+        $q = $this->access->students($this->guru())->with(['kelas', 'relasiPendampingSiswa.pendamping.role'])
+            ->withMax(['catatanPerkembangan as terakhir' => fn ($q) => $q->where('id_pembuat', $this->guru()->getKey())], 'tanggal_catatan');
         if ($f['q'] ?? '') {
             $q->where('nama_siswa', 'like', '%'.$f['q'].'%');
         }
@@ -59,17 +59,23 @@ class GuruMapelController extends Controller
         return $this->page('students.index', ['students' => $q->orderBy('nama_siswa')->paginate($f['per_page'] ?? 10)->withQueryString()]);
     }
 
-    public function student(int $siswa)
+    public function student(Request $request, int $siswa)
     {
         $student = $this->access->student($this->guru(), $siswa);
+        $historySource = in_array($request->query('sumber'), ['perkembangan', 'pendampingan'], true)
+            ? $request->query('sumber')
+            : '';
         $history = collect();
         foreach (['perkembangan', 'pendampingan'] as $source) {
-            $history = $history->concat($this->historyQuery($source)->where('id_siswa', $siswa)
+            if ($historySource !== '' && $historySource !== $source) {
+                continue;
+            }
+            $history = $history->concat($this->referenceQuery($source)->where('id_siswa', $siswa)
                 ->orderByDesc('tanggal_catatan')->limit(5)->get()
                 ->map(fn ($note) => ['note' => $note, 'source' => $source]));
         }
 
-        return $this->page('students.show', ['student' => $student, 'history' => $history->sortByDesc(fn ($item) => $item['note']->tanggal_catatan)->take(5)]);
+        return $this->page('students.show', ['student' => $student, 'history' => $history->sortByDesc(fn ($item) => $item['note']->tanggal_catatan)->take(5), 'historySource' => $historySource]);
     }
 
     public function recommendations(int $siswa)
@@ -88,11 +94,16 @@ class GuruMapelController extends Controller
             session()->put('guru_note_creation_token', bin2hex(random_bytes(24)));
         }
         $student = $this->access->student($this->guru(), $siswa);
-        $subjects = $this->access->assignments($this->guru())->where('id_kelas', $student->id_kelas)
-            ->whereHas('kelas', fn ($q) => $q->when(Schema::hasColumn('kelas', 'status_kelas'), fn ($q) => $q->where('status_kelas', 'Aktif')))
-            ->whereHas('mataPelajaran', fn ($q) => $q->when(Schema::hasColumn('mata_pelajaran', 'status_mapel'), fn ($q) => $q->where('status_mapel', 'Aktif')))->with('mataPelajaran')->get();
+        $subjects = $this->access->activeAssignmentsForStudent($this->guru(), $student)
+            ->with('mataPelajaran')->get()->unique('id_mapel')->values();
+        $subject = $note?->mataPelajaran ?? ($subjects->count() === 1 ? $subjects->first()->mataPelajaran : null);
+        $assignmentIssue = $subjects->isEmpty()
+            ? 'Mata pelajaran belum ditugaskan Admin untuk guru dan kelas siswa ini.'
+            : ($subjects->count() > 1
+                ? 'Terdapat lebih dari satu mata pelajaran aktif. Hubungi Admin untuk memperbaiki penugasan guru pada kelas ini.'
+                : null);
 
-        return $this->page('notes.form', compact('student', 'subjects', 'note'));
+        return $this->page('notes.form', compact('student', 'subject', 'assignmentIssue', 'note'));
     }
 
     public function store(Request $r, int $siswa, GuruMapelNoteService $service)
@@ -146,12 +157,11 @@ class GuruMapelController extends Controller
         return redirect()->route('dev.guru-mapel.notes.show', $id)->with('success', $r->input('aksi') === 'kirim' ? 'Catatan dikirim ke GPK.' : 'Draft Tersimpan');
     }
 
-    private function historyQuery(string $source)
+    private function referenceQuery(string $source)
     {
-        $q = $this->access->syntheticNotes($source === 'perkembangan' ? CatatanPerkembangan::query() : CatatanPendampingan::query())
+        $q = $this->access->roleValidatedNotes($source === 'perkembangan' ? CatatanPerkembangan::query() : CatatanPendampingan::query())
             ->dipublikasikan()->whereIn('id_siswa', $this->access->students($this->guru())->select('id_siswa'));
         if ($source === 'perkembangan') {
-            $q->whereHas('mataPelajaran', fn ($m) => $m->where('nama_mapel', 'like', 'DATA DEMO %'));
             // Cross-teacher access remains restricted to the actor's assigned subject/class pairs.
             $q->whereHas('siswa', fn ($s) => $s->whereExists(fn ($a) => $a->selectRaw('1')->from('relasi_guru_mapel_kelas as a')
                 ->where('a.id_pengguna', $this->guru()->getKey())->whereColumn('a.id_kelas', 'siswa.id_kelas')->whereColumn('a.id_mapel', 'catatan_perkembangan.id_mapel')));
@@ -160,48 +170,10 @@ class GuruMapelController extends Controller
         return $q->with(['siswa.kelas', 'pembuat']);
     }
 
-    public function history(Request $r)
-    {
-        $f = $this->filters($r);
-        if (isset($f['siswa'])) {
-            $this->access->student($this->guru(), $f['siswa']);
-        }
-        // Union IDs and dates in SQL: pagination never loads all history bodies into memory.
-        $queries = [];
-        foreach (['perkembangan', 'pendampingan'] as $source) {
-            if (($f['sumber'] ?? 'Semua') !== 'Semua' && $f['sumber'] !== $source) {
-                continue;
-            }
-            $q = $this->historyQuery($source);
-            if ($f['q'] ?? '') {
-                $q->whereHas('siswa', fn ($s) => $s->where('nama_siswa', 'like', '%'.$f['q'].'%'));
-            }
-            if (isset($f['siswa'])) {
-                $q->where('id_siswa', $f['siswa']);
-            }
-            $queries[] = $q->selectRaw("id_catatan_{$source} as id, tanggal_catatan, '{$source}' as sumber")->toBase();
-        }
-        $union = array_shift($queries);
-        foreach ($queries as $q) {
-            $union->unionAll($q);
-        }
-        $page = DB::query()->fromSub($union, 'history')->orderByDesc('tanggal_catatan')->orderBy('sumber')->orderByDesc('id')->paginate($f['per_page'] ?? 10)->withQueryString();
-        $records = [];
-        foreach ($page->getCollection()->groupBy('sumber') as $source => $rows) {
-            $model = $source === 'perkembangan' ? new CatatanPerkembangan : new CatatanPendampingan;
-            $records[$source] = $this->historyQuery($source)->whereIn($model->getKeyName(), $rows->pluck('id'))->get()->keyBy($model->getKeyName());
-        }
-        $page->setCollection($page->getCollection()->map(function ($row) use ($records) {
-            return ['note' => $records[$row->sumber][$row->id], 'source' => $row->sumber];
-        }));
-
-        return $this->page('history.index', ['history' => $page]);
-    }
-
-    public function historyShow(string $source, int $id)
+    public function referenceShow(string $source, int $id)
     {
         abort_unless(in_array($source, ['perkembangan', 'pendampingan'], true), 404);
 
-        return $this->page('history.show', ['note' => $this->historyQuery($source)->with('verifikasi.verifikator')->findOrFail($id), 'source' => $source]);
+        return $this->page('references.show', ['note' => $this->referenceQuery($source)->with('verifikasi.verifikator')->findOrFail($id), 'source' => $source]);
     }
 }

@@ -34,7 +34,7 @@
                     @error('guru_mapel_id')<div class="invalid-feedback d-block">{{ $message }}</div>@enderror
                     <small class="text-muted">Pilih akun Guru Mata Pelajaran aktif untuk membuka data penugasannya.</small>
                 @else
-                    <div class="alert alert-warning small mb-0">Belum ada akun Guru Mata Pelajaran DATA DEMO aktif. Jalankan dataset A16 terlebih dahulu.</div>
+                    <div class="alert alert-warning small mb-0">Belum ada akun Guru Mata Pelajaran aktif yang memiliki penugasan kelas dan mata pelajaran aktif.</div>
                 @endif
             </div>
             <div class="mt-3" data-tim-inklusi-account @if (old('role', 'admin') !== 'tim-inklusi') hidden @endif>

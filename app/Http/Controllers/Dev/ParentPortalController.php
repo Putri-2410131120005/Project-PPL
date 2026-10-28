@@ -81,7 +81,7 @@ class ParentPortalController extends Controller
 
         $report = $reports
             ->when($period !== '', fn ($items) => $items->where('periode', $period))
-            ->first(fn ($item) => Str::contains(Str::lower($item->periode), Str::lower($semester)));
+            ->first(fn ($item) => $this->reportMatchesSemester($item, $semester));
         $sources = $report && $student ? $this->reportSources($report, $student) : collect();
         $startYear = now()->month >= 7 ? now()->year : now()->year - 1;
         $periodLabel = $period ?: $report?->periode ?: $semester.' '.$startYear.'/'.($startYear + 1);
@@ -191,6 +191,20 @@ class ParentPortalController extends Controller
             ->whereHas('rekap', fn ($query) => $query->where('id_siswa', $student->getKey()))
             ->latest('tanggal_publikasi')
             ->get();
+    }
+
+    private function reportMatchesSemester(LaporanPerkembangan $report, string $semester): bool
+    {
+        if (Str::contains(Str::lower($report->periode), Str::lower($semester))) {
+            return true;
+        }
+
+        $month = $report->tanggal_laporan?->month;
+        if (! $month) {
+            return false;
+        }
+
+        return $semester === 'Ganjil' ? $month >= 7 : $month <= 6;
     }
 
     private function reportSources(LaporanPerkembangan $report, Siswa $student): Collection

@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\Dev;
 
 use App\Http\Controllers\Controller;
+use App\Models\Pengguna;
 use App\Services\PrincipalExport;
 use App\Services\PrincipalReports;
 use Illuminate\Http\Request;
@@ -16,7 +17,9 @@ class PrincipalController extends Controller
     {
         $filters = $request->validate(['q' => 'nullable|string|max:100', 'tingkat' => 'nullable|in:Semua,X,XI,XII',
             'periode' => 'nullable|string|max:30', 'tahun_ajaran' => 'nullable|string|max:20', 'siswa' => 'nullable|integer|min:1',
-            'bulan' => 'nullable|integer|between:1,12', 'tahun' => 'nullable|integer|between:2000,2100', 'per_page' => 'nullable|integer|in:10,30,50,100']);
+            'bulan' => 'nullable|integer|between:1,12', 'tahun' => 'nullable|integer|between:2000,2100', 'per_page' => 'nullable|integer|in:10,30,50,100',
+            'per_halaman' => 'nullable|integer|in:10,30,50,100']);
+        $filters['per_page'] = $filters['per_halaman'] ?? $filters['per_page'] ?? 10;
         if (! empty($filters['siswa'])) {
             $this->data->students()->findOrFail($filters['siswa']);
         }
@@ -26,7 +29,15 @@ class PrincipalController extends Controller
 
     private function page(string $view, array $data = [])
     {
-        return view('dev.principal.'.$view, $data + ['profile' => ['name' => 'DATA DEMO', 'label' => 'Kepala Sekolah', 'initials' => 'KS']]);
+        $principal = Pengguna::query()->where('status_akun', 'Aktif')
+            ->whereHas('role', fn ($role) => $role->where('nama_role', 'Kepala Sekolah'))
+            ->orderBy('id_pengguna')->first();
+
+        return view('dev.principal.'.$view, $data + ['profile' => [
+            'name' => $principal?->nama ?? 'Kepala Sekolah',
+            'label' => 'Kepala Sekolah',
+            'initials' => Str::of($principal?->nama ?? 'Kepala Sekolah')->explode(' ')->filter()->take(2)->map(fn ($part) => Str::upper(Str::substr($part, 0, 1)))->implode(''),
+        ]]);
     }
 
     private function options(): array
@@ -49,9 +60,7 @@ class PrincipalController extends Controller
     public function students(Request $r)
     {
         $f = $this->filters($r);
-        $students = $this->data->studentFilters($this->data->students(), $f)->with(['kelas',
-            'relasiPendampingSiswa' => fn ($q) => $q->whereHas('pendamping', fn ($p) => $p->where('nama', 'like', 'DATA DEMO %')->where('email', 'like', '%@example.test')),
-            'relasiPendampingSiswa.pendamping.role'])
+        $students = $this->data->studentFilters($this->data->students(), $f)->with(['kelas', 'relasiPendampingSiswa.pendamping.role'])
             ->withMax(['catatanPerkembangan as last_note' => fn ($q) => $q->whereIn('id_catatan_perkembangan', $this->data->notes('perkembangan')->select('id_catatan_perkembangan'))], 'tanggal_catatan')
             ->orderBy('nama_siswa')->paginate($f['per_page'] ?? 10)->withQueryString();
 
@@ -60,7 +69,7 @@ class PrincipalController extends Controller
 
     public function student(int $siswa)
     {
-        $student = $this->data->students()->with(['kelas', 'relasiPendampingSiswa' => fn ($q) => $q->whereHas('pendamping', fn ($p) => $p->where('nama', 'like', 'DATA DEMO %')->where('email', 'like', '%@example.test')), 'relasiPendampingSiswa.pendamping.role'])->findOrFail($siswa);
+        $student = $this->data->students()->with(['kelas', 'relasiPendampingSiswa.pendamping.role'])->findOrFail($siswa);
         $recaps = $this->data->recaps(['siswa' => $siswa])->orderByDesc('tanggal_rekap')->get();
 
         return $this->page('student', compact('student', 'recaps'));
@@ -69,10 +78,20 @@ class PrincipalController extends Controller
     public function recaps(Request $r)
     {
         $f = $this->filters($r);
-        $recaps = $this->data->recaps($f)->with('siswa.kelas')->withCount('sumberCatatan')
-            ->orderByDesc('tanggal_rekap')->orderByDesc('id_rekap')->paginate($f['per_page'] ?? 10)->withQueryString();
+        $verifiedStudents = $this->data->studentsWithVerifiedNotes($f)
+            ->orderBy('nama_siswa')->paginate($f['per_page'] ?? 10, ['*'], 'catatan_page')->withQueryString();
+        $schoolYears = $this->data->students()->with('kelas')->get()
+            ->pluck('kelas.tahun_ajaran')->filter()->unique()->sort()->values();
 
-        return $this->page('recaps', compact('recaps') + $this->options());
+        return $this->page('recaps', compact('verifiedStudents', 'schoolYears'));
+    }
+
+    public function verifiedRecap(int $siswa)
+    {
+        $student = $this->data->studentsWithVerifiedNotes()->findOrFail($siswa);
+        $sources = $this->data->verifiedSources($student);
+
+        return $this->page('verified-recap', compact('student', 'sources'));
     }
 
     public function recap(int $rekap)
@@ -121,14 +140,37 @@ class PrincipalController extends Controller
     {
         $f = $this->filters($r);
         abort_unless(! empty($f['periode']) && $this->data->reports(['periode' => $f['periode']])->exists(), 404);
-        $reports = $this->data->reports($f)->with(['rekap.siswa.kelas'])
+        $reports = $this->data->reports($f)->with(['rekap.siswa.kelas', 'rekap.sumberCatatan'])
             ->orderBy('id_laporan')->paginate($f['per_page'] ?? 10)->withQueryString();
         $studentIds = $this->data->reports(['periode' => $f['periode']])
             ->join('rekap_perkembangan as period_recap', 'period_recap.id_rekap', '=', 'laporan_perkembangan.id_rekap')
             ->select('period_recap.id_siswa');
         $students = $this->data->students()->whereIn('id_siswa', $studentIds)->orderBy('nama_siswa')->get();
+        $selectedStudent = null;
+        if (! empty($f['siswa'])) {
+            $selectedReport = $reports->getCollection()->first();
+            if ($selectedReport) {
+                $recap = $this->data->detail($selectedReport->id_rekap);
+                $selectedStudent = [
+                    'id_siswa' => $selectedReport->rekap->siswa->getKey(),
+                    'nama_siswa' => $selectedReport->rekap->siswa->nama_siswa,
+                    'kelas' => $selectedReport->rekap->siswa->kelas->nama_kelas,
+                    'jumlah_catatan' => $recap->sumberCatatan->count(),
+                    'ringkasan' => collect(preg_split('/(?:\r\n|\r|\n|•)+/u', $selectedReport->isi_laporan))->map(fn ($line) => trim($line))->filter()->values()->all(),
+                    'records' => $this->data->sources($recap)->map(fn ($source) => [
+                        'date' => $source['date'],
+                        'source' => $source['source'].($source['subject'] ? ' · '.$source['subject'] : ''),
+                        'author' => $source['teacher'],
+                        'summary' => $source['result'] ?: $source['event'],
+                        'recommendation' => $source['action'],
+                        'verification_recommendation' => $source['recommendation'],
+                        'verified_by' => $source['verified_by'],
+                    ])->all(),
+                ];
+            }
+        }
 
-        return $this->page('period', compact('reports', 'students') + ['period' => $f['periode']]);
+        return $this->page('period', compact('reports', 'students', 'selectedStudent') + ['period' => $f['periode']]);
     }
 
     private function documents(Request $r, ?int $id = null, string $kind = 'recaps'): array
@@ -197,5 +239,4 @@ class PrincipalController extends Controller
         return response($body, 200, ['Content-Type' => $mime, 'Content-Disposition' => ($format === 'pdf' && $r->query('inline') === '1' ? 'inline' : 'attachment').'; filename="'.$file.'"',
             'Cache-Control' => 'private, no-store', 'X-Content-Type-Options' => 'nosniff']);
     }
-
 }

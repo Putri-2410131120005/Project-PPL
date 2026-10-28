@@ -11,12 +11,17 @@
             @csrf
             @if ($user->exists) @method('PUT') @endif
             <div class="row g-3">
-                <div class="col-12 col-md-6"><label class="form-label" for="id_role">Role</label><select class="form-select @error('id_role') is-invalid @enderror" id="id_role" name="id_role" required><option value="">Pilih role</option>@foreach ($roles as $availableRole)<option value="{{ $availableRole->id_role }}" data-requires-nip="{{ in_array($availableRole->nama_role, ['Guru Mapel', 'Tim Inklusi', 'GPK', 'Kepala Sekolah'], true) ? 'true' : 'false' }}" data-is-subject-teacher="{{ $availableRole->nama_role === 'Guru Mapel' ? 'true' : 'false' }}" data-is-companion="{{ in_array($availableRole->nama_role, ['GPK', 'Tim Inklusi'], true) ? 'true' : 'false' }}" data-is-parent="{{ $availableRole->nama_role === 'Orang Tua' ? 'true' : 'false' }}" @selected((string) old('id_role', $user->id_role) === (string) $availableRole->id_role)>{{ $availableRole->nama_role }}</option>@endforeach</select>@error('id_role')<div class="invalid-feedback">{{ $message }}</div>@enderror</div>
+                <div class="col-12 col-md-6"><label class="form-label" for="id_role">Role</label>@if($user->is_super_admin)<input type="hidden" name="id_role" value="{{ $user->id_role }}">@endif<select class="form-select @error('id_role') is-invalid @enderror" id="id_role" name="{{ $user->is_super_admin ? '_locked_role' : 'id_role' }}" required @disabled($user->is_super_admin)><option value="">Pilih role</option>@foreach ($roles as $availableRole)<option value="{{ $availableRole->id_role }}" data-requires-nip="{{ in_array($availableRole->nama_role, ['Guru Mapel', 'Tim Inklusi', 'GPK', 'Kepala Sekolah'], true) ? 'true' : 'false' }}" data-is-gpk="{{ $availableRole->nama_role === 'GPK' ? 'true' : 'false' }}" data-is-subject-teacher="{{ $availableRole->nama_role === 'Guru Mapel' ? 'true' : 'false' }}" data-is-companion="{{ in_array($availableRole->nama_role, ['GPK', 'Tim Inklusi'], true) ? 'true' : 'false' }}" data-is-parent="{{ $availableRole->nama_role === 'Orang Tua' ? 'true' : 'false' }}" @selected((string) old('id_role', $user->id_role) === (string) $availableRole->id_role)>{{ $user->is_super_admin ? 'Super Admin' : $availableRole->nama_role }}</option>@endforeach</select>@error('id_role')<div class="invalid-feedback">{{ $message }}</div>@enderror</div>
                 <div class="col-12 col-md-6"><label class="form-label" for="nama">Nama pengguna</label><input class="form-control @error('nama') is-invalid @enderror" id="nama" name="nama" value="{{ old('nama', $user->nama) }}" required maxlength="100">@error('nama')<div class="invalid-feedback">{{ $message }}</div>@enderror</div>
                 <div class="col-12 col-md-6"><label class="form-label" for="email">Email <span class="text-muted d-none" id="email-optional">(opsional)</span></label><input type="email" class="form-control @error('email') is-invalid @enderror" id="email" name="email" value="{{ old('email', $user->email) }}" required maxlength="100">@error('email')<div class="invalid-feedback">{{ $message }}</div>@enderror</div>
-                <div class="col-12 col-md-6"><label class="form-label" for="status_akun">Status akun</label><select class="form-select @error('status_akun') is-invalid @enderror" id="status_akun" name="status_akun" required><option value="Aktif" @selected(old('status_akun', $user->status_akun ?: 'Aktif') === 'Aktif')>Aktif</option><option value="Nonaktif" @selected(old('status_akun', $user->status_akun) === 'Nonaktif')>Nonaktif</option></select>@error('status_akun')<div class="invalid-feedback">{{ $message }}</div>@enderror</div>
+                <div class="col-12 col-md-6"><label class="form-label" for="status_akun">Status akun</label>@if($user->is_super_admin)<input type="hidden" name="status_akun" value="Aktif">@endif<select class="form-select @error('status_akun') is-invalid @enderror" id="status_akun" name="{{ $user->is_super_admin ? '_locked_status' : 'status_akun' }}" required @disabled($user->is_super_admin)><option value="Aktif" @selected(old('status_akun', $user->status_akun ?: 'Aktif') === 'Aktif')>Aktif</option><option value="Nonaktif" @selected(old('status_akun', $user->status_akun) === 'Nonaktif')>Nonaktif</option></select>@error('status_akun')<div class="invalid-feedback">{{ $message }}</div>@enderror</div>
                 <div class="col-12 col-md-6" id="username-field"><label class="form-label" for="username">Username <span class="text-muted">(opsional)</span></label><input class="form-control @error('username') is-invalid @enderror" id="username" name="username" value="{{ old('username', $user->username) }}" maxlength="50">@error('username')<div class="invalid-feedback">{{ $message }}</div>@enderror</div>
+                @if ($user->is_super_admin)
+                    <div class="col-12 col-md-6"><label class="form-label" for="password_baru">Password baru <span class="text-muted">(opsional)</span></label><input type="password" class="form-control @error('password_baru') is-invalid @enderror" id="password_baru" name="password_baru" minlength="12" autocomplete="new-password"><div class="form-text">Kosongkan jika password tidak ingin diubah. Minimal 12 karakter.</div>@error('password_baru')<div class="invalid-feedback">{{ $message }}</div>@enderror</div>
+                    <div class="col-12 col-md-6"><label class="form-label" for="password_baru_confirmation">Konfirmasi password baru</label><input type="password" class="form-control" id="password_baru_confirmation" name="password_baru_confirmation" minlength="12" autocomplete="new-password"></div>
+                @endif
                 <div class="col-12 col-md-6" id="nip-field"><label class="form-label" for="nip">NIP</label><input class="form-control @error('nip') is-invalid @enderror" id="nip" name="nip" value="{{ old('nip', $user->nip) }}" maxlength="30">@error('nip')<div class="invalid-feedback">{{ $message }}</div>@enderror</div>
+                <div class="col-12 col-md-6 d-none" id="gpk-position-field"><label class="form-label" for="jabatan_gpk">Jabatan GPK</label><select class="form-select @error('jabatan_gpk') is-invalid @enderror" id="jabatan_gpk" name="jabatan_gpk"><option value="">Pilih jabatan</option>@foreach(['Ketua','Sekretaris','Bendahara'] as $position)<option value="{{ $position }}" @selected(old('jabatan_gpk', $user->jabatan_gpk) === $position)>{{ $position }}</option>@endforeach</select>@error('jabatan_gpk')<div class="invalid-feedback">{{ $message }}</div>@enderror</div>
 
                 <div class="col-12 d-none" id="teaching-assignment-fields">
                     <div class="abk-role-fields">
@@ -88,6 +93,8 @@
         const emailOptional = document.getElementById('email-optional');
         const nipField = document.getElementById('nip-field');
         const nipInput = document.getElementById('nip');
+        const gpkPositionField = document.getElementById('gpk-position-field');
+        const gpkPositionInput = document.getElementById('jabatan_gpk');
         const usernameField = document.getElementById('username-field');
         const usernameInput = document.getElementById('username');
         const assignmentFields = document.getElementById('teaching-assignment-fields');
@@ -116,6 +123,7 @@
         const syncCompanionLimit = () => {
             const selectedRole = roleSelect.options[roleSelect.selectedIndex];
             const isCompanion = selectedRole?.dataset.isCompanion === 'true';
+            const isGpk = selectedRole?.dataset.isGpk === 'true';
             const selectedCount = Array.from(companionInputs).filter((input) => input.checked).length;
             companionInputs.forEach((input) => {
                 input.disabled = !isCompanion || (!input.checked && selectedCount >= 2);
@@ -131,6 +139,9 @@
             emailOptional.classList.toggle('d-none', !isParent);
             nipField.classList.toggle('d-none', !required);
             nipInput.required = required;
+            gpkPositionField.classList.toggle('d-none', !isGpk);
+            gpkPositionInput.required = isGpk;
+            gpkPositionInput.disabled = !isGpk;
             if (!required) nipInput.value = '';
             assignmentFields.classList.toggle('d-none', selectedRole?.dataset.isSubjectTeacher !== 'true');
             companionFields.classList.toggle('d-none', !isCompanion);
