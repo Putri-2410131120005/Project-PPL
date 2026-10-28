@@ -1,9 +1,11 @@
 <?php
 
+use App\Http\Controllers\Dev\AdminAcademicYearController;
 use App\Http\Controllers\Dev\AdminMappingController;
 use App\Http\Controllers\Dev\AdminMasterDataController;
 use App\Http\Controllers\Dev\AdminStudentController;
 use App\Http\Controllers\Dev\AdminUserController;
+use App\Http\Controllers\Dev\GpkController;
 use App\Http\Controllers\Dev\ParentAuthController;
 use App\Http\Controllers\Dev\ParentPortalController;
 use App\Http\Controllers\Dev\TimInklusiController;
@@ -14,6 +16,7 @@ use App\Models\RelasiGuruMapelKelas;
 use App\Models\RelasiOrangTuaSiswa;
 use App\Models\RelasiPendampingSiswa;
 use App\Models\Siswa;
+use App\Services\GuruMapelIdentity;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Route;
@@ -26,7 +29,7 @@ Route::get('/', function () {
 // Pemilih peran ini hanya tersedia pada lingkungan pengembangan dan pengujian.
 if (app()->environment(['local', 'testing'])) {
     $roles = [
-        'admin' => ['label' => 'Admin / Pengelola', 'name' => 'Administrator', 'initials' => 'AD'],
+        'admin' => ['label' => 'Super Admin', 'name' => 'Super Admin Sekolah', 'initials' => 'SA'],
         'guru-mapel' => ['label' => 'Guru Mata Pelajaran', 'name' => 'Guru Mata Pelajaran', 'initials' => 'GM'],
         'tim-inklusi' => ['label' => 'Tim Inklusi', 'name' => 'Tim Inklusi', 'initials' => 'TI'],
         'gpk' => ['label' => 'GPK', 'name' => 'Guru Pendamping Khusus', 'initials' => 'GP'],
@@ -44,9 +47,22 @@ if (app()->environment(['local', 'testing'])) {
 
         Route::get('/login', fn () => view('dev.login', [
             'roles' => $developmentRoles,
+            'guruMapelAccounts' => Pengguna::query()
+                ->where('status_akun', 'Aktif')
+                ->whereHas('role', fn ($query) => $query->where('nama_role', 'Guru Mapel'))
+                ->whereHas('relasiGuruMapelKelas', fn ($mapping) => $mapping
+                    ->whereHas('kelas', fn ($kelas) => $kelas->where('status_kelas', 'Aktif'))
+                    ->whereHas('mataPelajaran', fn ($mapel) => $mapel->where('status_mapel', 'Aktif')))
+                ->orderBy('nama')
+                ->get(['id_pengguna', 'nama']),
             'timInklusiAccounts' => Pengguna::query()
                 ->where('status_akun', 'Aktif')
                 ->whereHas('role', fn ($query) => $query->where('nama_role', 'Tim Inklusi'))
+                ->orderBy('nama')
+                ->get(['id_pengguna', 'nama']),
+            'gpkAccounts' => Pengguna::query()
+                ->where('status_akun', 'Aktif')
+                ->whereHas('role', fn ($query) => $query->where('nama_role', 'GPK'))
                 ->orderBy('nama')
                 ->get(['id_pengguna', 'nama']),
         ]))->name('login');
@@ -54,7 +70,9 @@ if (app()->environment(['local', 'testing'])) {
         Route::post('/login', function (Request $request) use ($developmentRoles) {
             $validated = $request->validate([
                 'role' => ['required', 'string', Rule::in(array_keys($developmentRoles))],
+                'guru_mapel_id' => [Rule::requiredIf($request->input('role') === 'guru-mapel'), 'nullable', 'integer'],
                 'pendamping_id' => [Rule::requiredIf($request->input('role') === 'tim-inklusi'), 'nullable', 'integer'],
+                'gpk_id' => [Rule::requiredIf($request->input('role') === 'gpk'), 'nullable', 'integer'],
             ]);
 
             $pendamping = null;
@@ -72,19 +90,59 @@ if (app()->environment(['local', 'testing'])) {
                 }
             }
 
+            $gpk = null;
+            if ($validated['role'] === 'gpk') {
+                $gpk = Pengguna::query()
+                    ->whereKey($validated['gpk_id'])
+                    ->where('status_akun', 'Aktif')
+                    ->whereHas('role', fn ($query) => $query->where('nama_role', 'GPK'))
+                    ->first();
+
+                if (! $gpk) {
+                    return back()->withInput()->withErrors([
+                        'gpk_id' => 'Akun yang dipilih bukan GPK aktif.',
+                    ]);
+                }
+            }
+
+            $superAdmin = null;
+            if ($validated['role'] === 'admin') {
+                $superAdmin = Pengguna::query()->where('is_super_admin', true)->where('status_akun', 'Aktif')->first();
+                if (! $superAdmin) {
+                    return back()->withInput()->withErrors(['role' => 'Akun Super Admin sekolah belum disiapkan oleh developer.']);
+                }
+            }
+
             if ($validated['role'] === 'guru-mapel') {
-                $request->session()->forget('dev_pengguna_id');
-                app(\App\Services\GuruMapelDemoIdentity::class)->start($request);
+                $guru = Pengguna::query()
+                    ->whereKey($validated['guru_mapel_id'])
+                    ->where('status_akun', 'Aktif')
+                    ->whereHas('role', fn ($query) => $query->where('nama_role', 'Guru Mapel'))
+                    ->first();
+                if (! $guru) {
+                    return back()->withInput()->withErrors([
+                        'guru_mapel_id' => 'Akun yang dipilih bukan Guru Mata Pelajaran aktif.',
+                    ]);
+                }
+
+                app(GuruMapelIdentity::class)->start($request, $guru->getKey());
+
                 return redirect()->route('dev.preview', 'guru-mapel');
             }
             Auth::guard('guru_dev')->logout();
-            $request->session()->forget(['dev_guru_demo', 'guru_note_creation_token']);
+            $request->session()->forget('guru_note_creation_token');
 
             $request->session()->regenerate();
             $request->session()->forget('dev_pengguna_id');
             $request->session()->put('dev_role', $validated['role']);
             if ($pendamping !== null) {
                 $request->session()->put('dev_pengguna_id', $pendamping->getKey());
+            }
+            if ($gpk !== null) {
+                $request->session()->put('dev_pengguna_id', $gpk->getKey());
+            }
+            if ($superAdmin !== null) {
+                $request->session()->put('dev_pengguna_id', $superAdmin->getKey());
             }
 
             return redirect()->route('dev.preview', $validated['role']);
@@ -93,7 +151,7 @@ if (app()->environment(['local', 'testing'])) {
         Route::post('/change-role', function (Request $request) {
             Auth::guard('parent')->logout();
             Auth::guard('guru_dev')->logout();
-            $request->session()->forget(['dev_role', 'dev_pengguna_id', 'dev_guru_demo', 'guru_note_creation_token']);
+            $request->session()->forget(['dev_role', 'dev_pengguna_id', 'guru_note_creation_token']);
 
             return redirect()->route('dev.login');
         })->name('change-role');
@@ -101,7 +159,7 @@ if (app()->environment(['local', 'testing'])) {
         Route::post('/logout', function (Request $request) {
             Auth::guard('parent')->logout();
             Auth::guard('guru_dev')->logout();
-            $request->session()->forget(['dev_role', 'dev_pengguna_id', 'dev_guru_demo', 'guru_note_creation_token']);
+            $request->session()->forget(['dev_role', 'dev_pengguna_id', 'guru_note_creation_token']);
 
             return redirect()->route('dev.login');
         })->name('logout');
@@ -121,6 +179,15 @@ if (app()->environment(['local', 'testing'])) {
         });
 
         Route::middleware('dev.admin')->group(function () {
+            Route::prefix('admin/tahun-ajaran')->name('admin.academic-years.')->group(function () {
+                Route::get('/', [AdminAcademicYearController::class, 'index'])->name('index');
+                Route::get('/tambah', [AdminAcademicYearController::class, 'create'])->name('create');
+                Route::post('/', [AdminAcademicYearController::class, 'store'])->name('store');
+                Route::get('/{tahunAjaran}/ubah', [AdminAcademicYearController::class, 'edit'])->name('edit');
+                Route::put('/{tahunAjaran}', [AdminAcademicYearController::class, 'update'])->name('update');
+                Route::patch('/{tahunAjaran}/aktifkan', [AdminAcademicYearController::class, 'activate'])->name('activate');
+            });
+
             Route::prefix('admin/pengguna')->name('admin.users.')->group(function () {
                 Route::get('/', [AdminUserController::class, 'index'])->name('index');
                 Route::get('/tambah', [AdminUserController::class, 'create'])->name('create');
@@ -199,6 +266,32 @@ if (app()->environment(['local', 'testing'])) {
             Route::put('/catatan/{catatan}', [TimInklusiController::class, 'updateNote'])->name('notes.update');
         });
 
+        Route::middleware('dev.gpk')->prefix('gpk')->name('gpk.')->group(function () {
+            Route::get('/dashboard', [GpkController::class, 'dashboard'])->name('dashboard');
+            Route::get('/siswa', [GpkController::class, 'students'])->name('students.index');
+            Route::get('/siswa/{siswa}', [GpkController::class, 'student'])->name('students.show');
+            Route::get('/catatan', [GpkController::class, 'notes'])->name('notes.index');
+            Route::get('/catatan/{type}/{id}', [GpkController::class, 'note'])
+                ->whereIn('type', ['perkembangan', 'pendampingan'])->whereNumber('id')->name('notes.show');
+            Route::post('/catatan/{type}/{id}/tinjau', [GpkController::class, 'claimNote'])
+                ->whereIn('type', ['perkembangan', 'pendampingan'])->whereNumber('id')->name('notes.claim');
+            Route::post('/catatan/{type}/{id}/verifikasi', [GpkController::class, 'verify'])
+                ->whereIn('type', ['perkembangan', 'pendampingan'])->whereNumber('id')->name('notes.verify');
+            Route::get('/riwayat', [GpkController::class, 'history'])->name('history.index');
+            Route::get('/rekap', [GpkController::class, 'recaps'])->name('recaps.index');
+            Route::get('/rekap/unduh-zip', [GpkController::class, 'downloadRecapsZip'])->name('recaps.zip.download');
+            Route::get('/rekap/siswa/{siswa}', [GpkController::class, 'recap'])->name('recaps.show');
+            Route::get('/rekap/siswa/{siswa}/excel', [GpkController::class, 'exportRecap'])->name('recaps.export');
+            Route::get('/rekap/siswa/{siswa}/pratinjau-pdf', [GpkController::class, 'previewRecapPdf'])->name('recaps.pdf.preview');
+            Route::get('/rekap/siswa/{siswa}/unduh-pdf', [GpkController::class, 'downloadRecapPdf'])->name('recaps.pdf.download');
+            Route::get('/laporan', [GpkController::class, 'reports'])->name('reports.index');
+            Route::get('/laporan/{laporan}', [GpkController::class, 'report'])->name('reports.show');
+            Route::get('/laporan/{laporan}/pratinjau-pdf', [GpkController::class, 'previewReportPdf'])->name('reports.pdf.preview');
+            Route::get('/laporan/{laporan}/unduh-pdf', [GpkController::class, 'downloadReportPdf'])->name('reports.pdf.download');
+            Route::post('/laporan/{laporan}/publikasi', [GpkController::class, 'publishReport'])->name('reports.publish');
+            Route::get('/orang-tua', [GpkController::class, 'parents'])->name('parents.index');
+        });
+
         require __DIR__.'/guru-mapel.php';
         require __DIR__.'/principal.php';
 
@@ -207,7 +300,7 @@ if (app()->environment(['local', 'testing'])) {
 
             $selectedRole = $request->session()->get('dev_role');
 
-            if (!$selectedRole) {
+            if (! $selectedRole) {
                 return redirect()->route('dev.login');
             }
 
@@ -230,6 +323,20 @@ if (app()->environment(['local', 'testing'])) {
                 }
             }
 
+            if ($role === 'gpk') {
+                $gpk = Pengguna::query()
+                    ->when($request->session()->get('dev_pengguna_id'), fn ($query, $id) => $query->whereKey($id))
+                    ->where('status_akun', 'Aktif')
+                    ->whereHas('role', fn ($query) => $query->where('nama_role', 'GPK'))
+                    ->first();
+
+                if ($gpk) {
+                    $request->session()->put('dev_pengguna_id', $gpk->getKey());
+
+                    return redirect()->route('dev.gpk.dashboard');
+                }
+            }
+
             if ($role === 'guru-mapel') {
                 return redirect()->route('dev.guru-mapel.dashboard');
             }
@@ -239,7 +346,6 @@ if (app()->environment(['local', 'testing'])) {
 
             $view = match ($role) {
                 'admin' => 'dev.admin-dashboard',
-                'guru-mapel' => 'dev.guru-mapel-dashboard',
                 default => 'dev.role-preview',
             };
             $data = [
@@ -249,11 +355,24 @@ if (app()->environment(['local', 'testing'])) {
             ];
 
             if ($role === 'admin') {
+                $admin = Pengguna::query()
+                    ->whereKey($request->session()->get('dev_pengguna_id'))
+                    ->where('is_super_admin', true)
+                    ->where('status_akun', 'Aktif')
+                    ->first();
+                if (! $admin) {
+                    $request->session()->forget(['dev_role', 'dev_pengguna_id']);
+
+                    return redirect()->route('dev.login')->withErrors(['role' => 'Akun Super Admin sekolah tidak tersedia.']);
+                }
+                $initials = collect(preg_split('/\s+/', trim($admin->nama)))->filter()->take(2)
+                    ->map(fn ($part) => mb_strtoupper(mb_substr($part, 0, 1)))->implode('');
+                $data['profile'] = ['label' => 'Super Admin', 'name' => $admin->nama, 'initials' => $initials ?: 'SA'];
                 $data['dashboardStats'] = [
                     'users' => Pengguna::query()->count(),
-                    'staff' => Pengguna::query()->whereHas('role', fn($query) => $query->whereIn('nama_role', ['Guru Mapel', 'Tim Inklusi', 'GPK', 'Kepala Sekolah']))->count(),
+                    'staff' => Pengguna::query()->whereHas('role', fn ($query) => $query->whereIn('nama_role', ['Guru Mapel', 'Tim Inklusi', 'GPK', 'Kepala Sekolah']))->count(),
                     'students' => Siswa::query()->count(),
-                    'parents' => Pengguna::query()->whereHas('role', fn($query) => $query->where('nama_role', 'Orang Tua'))->count(),
+                    'parents' => Pengguna::query()->whereHas('role', fn ($query) => $query->where('nama_role', 'Orang Tua'))->count(),
                     'classes' => Kelas::query()->count(),
                     'subjects' => MataPelajaran::query()->count(),
                     'guruMappings' => RelasiGuruMapelKelas::query()->count(),

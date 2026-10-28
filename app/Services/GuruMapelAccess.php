@@ -15,7 +15,7 @@ class GuruMapelAccess
     public function actor(Pengguna $guru): Pengguna
     {
         $guru = Pengguna::with('role')->findOrFail($guru->getKey());
-        abort_unless(app()->environment(['local', 'testing']) && GuruMapelDemoIdentity::isAllowedActor($guru)
+        abort_unless(app()->environment(['local', 'testing'])
             && $guru->status_akun === 'Aktif' && $guru->role?->nama_role === 'Guru Mapel', 403);
 
         return $guru;
@@ -25,27 +25,46 @@ class GuruMapelAccess
     {
         $this->actor($guru);
 
-        return RelasiGuruMapelKelas::where('id_pengguna', $guru->getKey())
-            ->whereHas('kelas', fn ($q) => $q->where('nama_kelas', 'like', 'DATA DEMO %'))
-            ->whereHas('mataPelajaran', fn ($q) => $q->where('nama_mapel', 'like', 'DATA DEMO %'));
+        return RelasiGuruMapelKelas::where('id_pengguna', $guru->getKey());
+    }
+
+    public function activeAssignmentsForStudent(Pengguna $guru, Siswa $siswa): Builder
+    {
+        return $this->assignments($guru)
+            ->where('id_kelas', $siswa->id_kelas)
+            ->whereHas('kelas', fn ($query) => $query
+                ->when(Schema::hasColumn('kelas', 'status_kelas'), fn ($query) => $query->where('status_kelas', 'Aktif')))
+            ->whereHas('mataPelajaran', fn ($query) => $query
+                ->when(Schema::hasColumn('mata_pelajaran', 'status_mapel'), fn ($query) => $query->where('status_mapel', 'Aktif')));
+    }
+
+    public function assignedSubjectId(Pengguna $guru, Siswa $siswa): int
+    {
+        $subjectIds = $this->activeAssignmentsForStudent($guru, $siswa)
+            ->distinct()->pluck('id_mapel');
+
+        abort_unless($siswa->status_siswa === 'Aktif' && $subjectIds->isNotEmpty(), 403,
+            'Mata pelajaran belum ditugaskan Admin untuk guru dan kelas siswa ini.');
+        abort_unless($subjectIds->count() === 1, 409,
+            'Terdapat lebih dari satu mata pelajaran aktif untuk guru dan kelas siswa ini. Hubungi Admin untuk memperbaiki penugasan.');
+
+        return (int) $subjectIds->first();
     }
 
     public function students(Pengguna $guru): Builder
     {
         // No implicit ABK/non-null rule: display assigned students, pending product definition.
-        return Siswa::where('nis', 'like', 'DEMO-A16-%')->where('nama_siswa', 'like', 'DATA DEMO %')
-            ->whereIn('id_kelas', $this->assignments($guru)->select('id_kelas'));
+        return Siswa::query()->whereIn('id_kelas', $this->assignments($guru)->select('id_kelas'));
     }
 
     public function student(Pengguna $guru, int $id): Siswa
     {
-        return $this->students($guru)->with(['kelas', 'relasiPendampingSiswa' => fn ($q) => $q->whereHas('pendamping', fn ($p) => $p->where('nama', 'like', 'DATA DEMO %')->where('email', 'like', '%@example.test')), 'relasiPendampingSiswa.pendamping.role'])->findOrFail($id);
+        return $this->students($guru)->with(['kelas', 'relasiPendampingSiswa.pendamping.role'])->findOrFail($id);
     }
 
     public function notes(Pengguna $guru): Builder
     {
-        return $this->syntheticNotes(CatatanPerkembangan::query())->where('id_pembuat', $this->actor($guru)->getKey())
-            ->whereHas('mataPelajaran', fn ($q) => $q->where('nama_mapel', 'like', 'DATA DEMO %'))
+        return $this->roleValidatedNotes(CatatanPerkembangan::query())->where('id_pembuat', $this->actor($guru)->getKey())
             ->whereIn('id_siswa', $this->students($guru)->select('id_siswa'))
             ->whereHas('siswa', fn ($s) => $s->whereExists(function ($q) use ($guru) {
                 $q->selectRaw('1')->from('relasi_guru_mapel_kelas as assignment')
@@ -55,19 +74,18 @@ class GuruMapelAccess
             }));
     }
 
-    public function syntheticNotes(Builder $query): Builder
+    public function roleValidatedNotes(Builder $query): Builder
     {
-        // Related authors/decisions must also be synthetic; never expose real staff through demo history.
-        return $query->whereHas('pembuat', fn ($q) => $q->where('nama', 'like', 'DATA DEMO %')->where('email', 'like', '%@example.test'))
-            ->whereDoesntHave('verifikasi.verifikator', fn ($q) => $q->where('nama', 'not like', 'DATA DEMO %')->orWhereNull('email')->orWhere('email', 'not like', '%@example.test'))
-            ->whereDoesntHave('verifikasi.publikator', fn ($q) => $q->where('nama', 'not like', 'DATA DEMO %')->orWhereNull('email')->orWhere('email', 'not like', '%@example.test'));
+        $authorRole = $query->getModel() instanceof CatatanPerkembangan ? 'Guru Mapel' : 'Tim Inklusi';
+
+        return $query->whereHas('pembuat.role', fn ($role) => $role->where('nama_role', $authorRole))
+            ->whereDoesntHave('verifikasi.verifikator.role', fn ($role) => $role->where('nama_role', '!=', 'GPK'))
+            ->whereDoesntHave('verifikasi.publikator.role', fn ($role) => $role->where('nama_role', '!=', 'GPK'));
     }
 
     public function writable(Pengguna $guru, Siswa $siswa, int $mapel): void
     {
-        abort_unless($siswa->status_siswa === 'Aktif' && $this->assignments($guru)
-            ->where('id_kelas', $siswa->id_kelas)->where('id_mapel', $mapel)
-            ->whereHas('kelas', fn ($q) => $q->when(Schema::hasColumn('kelas', 'status_kelas'), fn ($q) => $q->where('status_kelas', 'Aktif')))
-            ->whereHas('mataPelajaran', fn ($q) => $q->when(Schema::hasColumn('mata_pelajaran', 'status_mapel'), fn ($q) => $q->where('status_mapel', 'Aktif')))->exists(), 403);
+        abort_unless($siswa->status_siswa === 'Aktif'
+            && $this->activeAssignmentsForStudent($guru, $siswa)->where('id_mapel', $mapel)->exists(), 403);
     }
 }

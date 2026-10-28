@@ -23,6 +23,20 @@
             @error('role')
                 <div class="invalid-feedback">{{ $message }}</div>
             @enderror
+            <div class="mt-3" data-guru-mapel-account @if (old('role', 'admin') !== 'guru-mapel') hidden @endif>
+                <label class="abk-login-label" for="guru_mapel_id">Pilih nama Guru Mata Pelajaran</label>
+                @if ($guruMapelAccounts->isNotEmpty())
+                    <select class="form-select" id="guru_mapel_id" name="guru_mapel_id">
+                        @foreach ($guruMapelAccounts as $account)
+                            <option value="{{ $account->getKey() }}" @selected((string) old('guru_mapel_id') === (string) $account->getKey())>{{ $account->nama }}</option>
+                        @endforeach
+                    </select>
+                    @error('guru_mapel_id')<div class="invalid-feedback d-block">{{ $message }}</div>@enderror
+                    <small class="text-muted">Pilih akun Guru Mata Pelajaran aktif untuk membuka data penugasannya.</small>
+                @else
+                    <div class="alert alert-warning small mb-0">Belum ada akun Guru Mata Pelajaran aktif yang memiliki penugasan kelas dan mata pelajaran aktif.</div>
+                @endif
+            </div>
             <div class="mt-3" data-tim-inklusi-account @if (old('role', 'admin') !== 'tim-inklusi') hidden @endif>
                 <label class="abk-login-label" for="pendamping_id">Pilih nama Tim Inklusi</label>
                 @if ($timInklusiAccounts->isNotEmpty())
@@ -35,6 +49,20 @@
                     <small class="text-muted">Hanya akun aktif dengan role Tim Inklusi yang dapat masuk.</small>
                 @else
                     <div class="alert alert-warning small mb-0">Belum ada akun Tim Inklusi aktif. Tambahkan melalui halaman Admin terlebih dahulu.</div>
+                @endif
+            </div>
+            <div class="mt-3" data-gpk-account @if (old('role', 'admin') !== 'gpk') hidden @endif>
+                <label class="abk-login-label" for="gpk_id">Pilih nama GPK</label>
+                @if ($gpkAccounts->isNotEmpty())
+                    <select class="form-select" id="gpk_id" name="gpk_id">
+                        @foreach ($gpkAccounts as $account)
+                            <option value="{{ $account->getKey() }}" @selected((string) old('gpk_id') === (string) $account->getKey())>{{ $account->nama }}</option>
+                        @endforeach
+                    </select>
+                    @error('gpk_id')<div class="invalid-feedback d-block">{{ $message }}</div>@enderror
+                    <small class="text-muted">Hanya akun aktif dengan role GPK yang dapat masuk.</small>
+                @else
+                    <div class="alert alert-warning small mb-0">Belum ada akun GPK aktif. Tambahkan melalui halaman Admin terlebih dahulu.</div>
                 @endif
             </div>
             <button class="abk-login-submit" type="submit">Masuk</button>

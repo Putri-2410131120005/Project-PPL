@@ -11,7 +11,7 @@
 <body class="abk-preview">
     <div class="abk-shell">
         <x-preview.sidebar :role="$role" :roles="$roles" :active="$active" />
-        <main class="abk-main">
+        <main class="abk-main abk-main-{{ $role }}">
             {{ $slot }}
         </main>
     </div>

@@ -7,7 +7,7 @@
     };
     $class = match ($status) {
         'Dikirim' => 'abk-status-pending',
-        'Terverifikasi' => 'abk-status-verified',
+        'Terverifikasi', 'Tersedia' => 'abk-status-verified',
         'Perlu Revisi' => 'abk-status-returned',
         default => 'abk-status-draft',
     };

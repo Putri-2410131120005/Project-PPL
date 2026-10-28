@@ -84,6 +84,7 @@ class AdminUserManagementTest extends TestCase
             'email' => 'baru@example.test',
             'id_role' => $this->gpkRole->id_role,
             'nip' => '198901012020121001',
+            'jabatan_gpk' => 'Ketua',
             'status_akun' => 'Aktif',
         ];
 
@@ -125,6 +126,7 @@ class AdminUserManagementTest extends TestCase
                 'nama' => 'GPK Tanpa NIP',
                 'email' => 'gpk-tanpa-nip@example.test',
                 'id_role' => $this->gpkRole->id_role,
+                'jabatan_gpk' => 'Ketua',
                 'status_akun' => 'Aktif',
             ])
             ->assertRedirect(route('dev.admin.users.create'))
@@ -317,6 +319,7 @@ class AdminUserManagementTest extends TestCase
                 'email' => 'gpk-pendamping@example.test',
                 'id_role' => $this->gpkRole->id_role,
                 'nip' => '198901012020121099',
+                'jabatan_gpk' => 'Ketua',
                 'status_akun' => 'Aktif',
                 'id_siswa_pendamping' => [$firstStudent->id_siswa, $secondStudent->id_siswa],
             ])
@@ -457,6 +460,78 @@ class AdminUserManagementTest extends TestCase
             ->assertSessionHasErrors('status_akun');
 
         $this->assertDatabaseHas('pengguna', ['id_pengguna' => $admin->id_pengguna, 'status_akun' => 'Aktif']);
+    }
+
+    public function test_super_admin_is_protected_but_can_update_own_profile_and_password(): void
+    {
+        $superAdmin = $this->makeUser('Super Admin Sekolah', 'superadmin@example.test', $this->adminRole);
+        $superAdmin->forceFill(['username' => 'superadmin', 'is_super_admin' => true])->save();
+
+        $this->withSession(['dev_role' => 'admin', 'dev_pengguna_id' => $superAdmin->getKey()])
+            ->get(route('dev.admin.users.index'))
+            ->assertOk()
+            ->assertSee('Super Admin')
+            ->assertSee('Akun Sistem');
+
+        $this->withSession(['dev_role' => 'admin', 'dev_pengguna_id' => $superAdmin->getKey()])
+            ->patch(route('dev.admin.users.status', $superAdmin))
+            ->assertSessionHas('error');
+
+        $this->withSession(['dev_role' => 'admin', 'dev_pengguna_id' => $superAdmin->getKey()])
+            ->put(route('dev.admin.users.update', $superAdmin), [
+                'nama' => 'Super Admin Utama',
+                'username' => 'superadmin-utama',
+                'email' => 'superadmin-utama@example.test',
+                'id_role' => $this->adminRole->getKey(),
+                'status_akun' => 'Aktif',
+                'password_baru' => 'PasswordBaru!2026',
+                'password_baru_confirmation' => 'PasswordBaru!2026',
+            ])->assertRedirect(route('dev.admin.users.index'));
+
+        $superAdmin->refresh();
+        $this->assertTrue($superAdmin->is_super_admin);
+        $this->assertSame('Aktif', $superAdmin->status_akun);
+        $this->assertSame('Super Admin Utama', $superAdmin->nama);
+        $this->assertTrue(Hash::check('PasswordBaru!2026', $superAdmin->password));
+    }
+
+    public function test_super_admin_cannot_be_created_from_user_management(): void
+    {
+        $this->withSession(['dev_role' => 'admin'])
+            ->post(route('dev.admin.users.store'), [
+                'nama' => 'Admin Tambahan',
+                'username' => 'admin-tambahan',
+                'email' => 'admin-tambahan@example.test',
+                'id_role' => $this->adminRole->getKey(),
+                'status_akun' => 'Aktif',
+            ])
+            ->assertSessionHasErrors('id_role');
+
+        $this->assertDatabaseMissing('pengguna', ['email' => 'admin-tambahan@example.test']);
+    }
+
+    public function test_developer_command_provisions_the_only_active_super_admin(): void
+    {
+        $oldAdmin = $this->makeUser('Admin Lama', 'admin-lama@example.test', $this->adminRole);
+
+        $this->artisan('app:super-admin', [
+            '--name' => 'Admin Sekolah',
+            '--username' => 'superadmin-sekolah',
+            '--email' => 'superadmin-sekolah@example.test',
+            '--password' => 'PasswordAman!2026',
+        ])->assertSuccessful();
+
+        $account = Pengguna::where('username', 'superadmin-sekolah')->sole();
+        $this->assertTrue($account->is_super_admin);
+        $this->assertSame('Aktif', $account->status_akun);
+        $this->assertTrue(Hash::check('PasswordAman!2026', $account->password));
+        $this->assertSame('Nonaktif', $oldAdmin->fresh()->status_akun);
+        $this->assertSame(1, Pengguna::where('is_super_admin', true)->where('status_akun', 'Aktif')->count());
+
+        $this->withSession(['dev_role' => 'admin'])
+            ->patch(route('dev.admin.users.status', $oldAdmin))
+            ->assertSessionHas('error');
+        $this->assertSame('Nonaktif', $oldAdmin->fresh()->status_akun);
     }
 
     private function makeUser(string $name, string $email, Role $role): Pengguna

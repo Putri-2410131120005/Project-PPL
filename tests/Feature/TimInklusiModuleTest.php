@@ -95,6 +95,35 @@ class TimInklusiModuleTest extends TestCase
             ->assertSee('Tidak ada data yang cocok');
     }
 
+    public function test_student_history_can_be_filtered_by_note_source(): void
+    {
+        [$pendamping, $assigned] = $this->fixture();
+        CatatanPendampingan::query()->forceCreate([
+            'id_siswa' => $assigned->getKey(),
+            'id_pembuat' => $pendamping->getKey(),
+            'tanggal_catatan' => now()->toDateString(),
+            'kegiatan_pendampingan' => 'Catatan sumber Tim Inklusi yang unik.',
+            'status_pengajuan' => 'Draft',
+            'versi_pengajuan' => 1,
+            'idempotency_key' => (string) Str::uuid(),
+        ]);
+
+        $this->asTimInklusi($pendamping)
+            ->get(route('dev.tim-inklusi.students.show', ['siswa' => $assigned, 'sumber' => 'pendampingan']))
+            ->assertOk()
+            ->assertSee('Guru Mata Pelajaran')
+            ->assertSee('Tim Inklusi')
+            ->assertSee('Catatan sumber Tim Inklusi yang unik.');
+
+        $this->get(route('dev.tim-inklusi.students.show', ['siswa' => $assigned, 'sumber' => 'perkembangan']))
+            ->assertOk()
+            ->assertDontSee('Catatan sumber Tim Inklusi yang unik.');
+
+        $this->get(route('dev.tim-inklusi.students.show', $assigned))
+            ->assertOk()
+            ->assertDontSee('Lihat Seluruh Riwayat Siswa');
+    }
+
     public function test_draft_is_persisted_and_repeated_submission_is_idempotent(): void
     {
         [$pendamping, $assigned] = $this->fixture();

@@ -1,0 +1,1 @@
+<!doctype html><html lang="id"><head><meta charset="utf-8"><title>Rekap Perkembangan {{ $siswa->nama_siswa }}</title>@include('dev.gpk.pdf.styles')</head><body>@include('dev.gpk.pdf.recap-sheet')</body></html>

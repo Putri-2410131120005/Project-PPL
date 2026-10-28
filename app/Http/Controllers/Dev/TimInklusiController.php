@@ -67,9 +67,12 @@ class TimInklusiController extends Controller
     {
         $pendamping = $this->pendamping($request);
         $this->ensureAssigned($pendamping, $siswa);
+        $historySource = in_array($request->query('sumber'), ['perkembangan', 'pendampingan'], true)
+            ? $request->query('sumber')
+            : '';
         $history = $this->studentHistory($request, $pendamping, $siswa);
 
-        return view('dev.tim-inklusi.students.show', array_merge($this->viewContext($pendamping), compact('siswa', 'history')));
+        return view('dev.tim-inklusi.students.show', array_merge($this->viewContext($pendamping), compact('siswa', 'history', 'historySource')));
     }
 
     public function recommendation(Request $request, Siswa $siswa): View
@@ -276,13 +279,16 @@ class TimInklusiController extends Controller
 
     private function studentHistory(Request $request, Pengguna $pendamping, Siswa $siswa): LengthAwarePaginator
     {
-        $development = CatatanPerkembangan::query()
+        $source = in_array($request->query('sumber'), ['perkembangan', 'pendampingan'], true)
+            ? $request->query('sumber')
+            : '';
+        $development = $source === 'pendampingan' ? collect() : CatatanPerkembangan::query()
             ->with(['pembuat', 'mataPelajaran'])
             ->where('id_siswa', $siswa->getKey())
             ->where('status_pengajuan', '!=', 'Draft')
             ->get()
             ->map(fn ($note) => ['type' => 'perkembangan', 'note' => $note, 'date' => $note->tanggal_catatan]);
-        $assistance = CatatanPendampingan::query()
+        $assistance = $source === 'perkembangan' ? collect() : CatatanPendampingan::query()
             ->with('pembuat')
             ->where('id_siswa', $siswa->getKey())
             ->where('id_pembuat', $pendamping->getKey())
@@ -346,7 +352,7 @@ class TimInklusiController extends Controller
             'role' => 'tim-inklusi',
             'profile' => ['label' => 'Tim Inklusi', 'name' => $pendamping->nama, 'initials' => $initials ?: 'TI'],
             'previewRoles' => [
-                'admin' => ['label' => 'Admin / Pengelola'],
+                'admin' => ['label' => 'Super Admin'],
                 'guru-mapel' => ['label' => 'Guru Mata Pelajaran'],
                 'tim-inklusi' => ['label' => 'Tim Inklusi'],
                 'gpk' => ['label' => 'GPK'],

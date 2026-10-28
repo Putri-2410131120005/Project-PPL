@@ -45,13 +45,13 @@ class ParentPortalTest extends TestCase
             ->assertRedirect(route('dev.parent.password.edit'));
     }
 
-    public function test_dashboard_only_contains_linked_child_and_published_notes(): void
+    public function test_dashboard_only_contains_linked_child_and_verified_notes(): void
     {
         [$parentA, $studentA] = $this->family('Wali A', 'Anak A', 'PT-101');
         [, $studentB] = $this->family('Wali B', 'Anak B', 'PT-102');
         $published = $this->publishedAssistance($studentA, 'Catatan yang boleh dilihat');
         $this->unpublishedAssistance($studentA, 'Catatan rahasia belum terbit');
-        $this->verifiedButUnpublishedAssistance($studentA, 'Catatan terverifikasi belum dipublikasikan');
+        $this->verifiedButUnpublishedAssistance($studentA, 'Catatan terverifikasi langsung terlihat');
         $oldVersion = $this->publishedAssistance($studentA, 'Publikasi versi lama');
         $oldVersion->forceFill(['versi_pengajuan' => 2, 'status_pengajuan' => 'Dikirim'])->save();
         $this->publishedAssistance($studentB, 'Catatan anak lain');
@@ -62,7 +62,7 @@ class ParentPortalTest extends TestCase
             ->assertDontSee($studentB->nama_siswa)
             ->assertSee('Catatan yang boleh dilihat')
             ->assertDontSee('Catatan rahasia belum terbit')
-            ->assertDontSee('Catatan terverifikasi belum dipublikasikan')
+            ->assertSee('Catatan terverifikasi langsung terlihat')
             ->assertDontSee('Publikasi versi lama')
             ->assertSee(route('dev.parent.notes.show', ['pendampingan', $published->getKey()]), false);
     }

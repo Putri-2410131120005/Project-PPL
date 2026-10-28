@@ -12,6 +12,14 @@
 
     <h2 class="abk-section-heading">Riwayat perkembangan</h2>
     <p class="abk-section-description">Catatan perkembangan dari guru mapel dan pendamping sebagai dasar tindak lanjut.</p>
+    <section class="abk-panel abk-inclusion-toolbar mb-3">
+        <strong>Sumber catatan</strong>
+        <nav class="abk-chip-list" aria-label="Filter sumber riwayat perkembangan">
+            @foreach (['' => 'Semua', 'perkembangan' => 'Guru Mata Pelajaran', 'pendampingan' => 'Tim Inklusi'] as $value => $label)
+                <a class="abk-filter {{ $historySource === $value ? 'active' : '' }}" href="{{ route('dev.tim-inklusi.students.show', array_filter(['siswa' => $siswa->getKey(), 'sumber' => $value])) }}">{{ $label }}</a>
+            @endforeach
+        </nav>
+    </section>
     <section class="abk-panel overflow-hidden">
         <div class="table-responsive"><table class="table abk-table align-middle">
             <thead><tr><th>Tanggal</th><th>Sumber</th><th>Ringkasan Peristiwa</th><th>Status</th><th>Aksi</th></tr></thead>

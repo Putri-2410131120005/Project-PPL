@@ -9,7 +9,6 @@ use Illuminate\Support\Facades\Route;
 Route::prefix('guru-mapel')->name('guru-mapel.')->group(function () {
     Route::get('masuk', [GuruMapelAuthController::class, 'create'])->name('login');
     Route::middleware(EnsureDevelopmentGuru::class)->group(function () {
-        Route::post('ganti-guru-demo', [GuruMapelAuthController::class, 'switchDemo'])->block(10, 10)->name('demo.switch');
         Route::get('dashboard', [GuruMapelController::class, 'dashboard'])->name('dashboard');
         Route::get('siswa', [GuruMapelController::class, 'students'])->name('students.index');
         Route::get('siswa/{siswa}', [GuruMapelController::class, 'student'])->whereNumber('siswa')->name('students.show');
@@ -20,7 +19,6 @@ Route::prefix('guru-mapel')->name('guru-mapel.')->group(function () {
         Route::get('catatan/{id}', [GuruMapelController::class, 'show'])->whereNumber('id')->name('notes.show');
         Route::get('catatan/{id}/perbaiki', [GuruMapelController::class, 'edit'])->whereNumber('id')->name('notes.revise');
         Route::put('catatan/{id}', [GuruMapelController::class, 'update'])->whereNumber('id')->name('notes.update');
-        Route::get('riwayat', [GuruMapelController::class, 'history'])->name('history.index');
-        Route::get('riwayat/{source}/{id}', [GuruMapelController::class, 'historyShow'])->whereNumber('id')->name('history.show');
+        Route::get('referensi/{source}/{id}', [GuruMapelController::class, 'referenceShow'])->whereNumber('id')->name('references.show');
     });
 });

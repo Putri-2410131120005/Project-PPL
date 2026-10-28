@@ -1,6 +1,7 @@
 <?php
 
 use App\Http\Middleware\EnsureDevelopmentAdmin;
+use App\Http\Middleware\EnsureDevelopmentGpk;
 use App\Http\Middleware\EnsureDevelopmentTimInklusi;
 use App\Http\Middleware\EnsureParentAuthenticated;
 use Illuminate\Foundation\Application;
@@ -16,6 +17,7 @@ return Application::configure(basePath: dirname(__DIR__))
     ->withMiddleware(function (Middleware $middleware): void {
         $middleware->alias([
             'dev.admin' => EnsureDevelopmentAdmin::class,
+            'dev.gpk' => EnsureDevelopmentGpk::class,
             'dev.tim-inklusi' => EnsureDevelopmentTimInklusi::class,
             'parent.auth' => EnsureParentAuthenticated::class,
         ]);

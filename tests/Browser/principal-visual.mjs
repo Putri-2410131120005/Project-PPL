@@ -56,7 +56,7 @@ try {
             if (file === 'recap-preview.html') {
                 await command('Runtime.evaluate', {expression: `document.querySelector('iframe').src=${JSON.stringify(pathToFileURL(resolve(folder, 'report.pdf')).href)}`});
             }
-            const geometry = await command('Runtime.evaluate', { expression: `JSON.stringify({viewport:innerWidth,scroll:document.documentElement.scrollWidth,assets:[...document.querySelectorAll('nav img')].map(i=>({loaded:i.complete&&i.naturalWidth>0,width:i.getBoundingClientRect().width,height:i.getBoundingClientRect().height})),breadcrumb:(()=>{const n=document.querySelector('.ks-breadcrumbs');const h=document.querySelector('.abk-main>.abk-topbar');const c=n?.nextElementSibling;const nr=n?.getBoundingClientRect();const hr=h?.getBoundingClientRect();const cr=c?.getBoundingClientRect();const f=document.querySelector('.ks-sidebar-footer');const side=f?.closest('aside');return {order:!h||(h.nextElementSibling===n&&nr.top>=hr.bottom&&(!c||cr.top>=nr.bottom)),aligned:!h||!c||Math.abs(nr.left-cr.left)<1,count:document.querySelectorAll('.ks-breadcrumbs').length,present:!!n,current:n?.querySelectorAll('[aria-current="page"]').length,overflow:n?n.scrollWidth>n.clientWidth:false,bottomGap:f?Math.round(side.getBoundingClientRect().bottom-f.getBoundingClientRect().bottom):null,footerAfterMenu:f?f.getBoundingClientRect().top>=side.querySelector('nav').getBoundingClientRect().bottom:true}})(),buttons:[...document.querySelectorAll('.ks-button')].map(b=>({label:b.textContent.trim(),width:b.getBoundingClientRect().width,height:b.getBoundingClientRect().height}))})`, returnByValue: true });
+            const geometry = await command('Runtime.evaluate', { expression: `JSON.stringify({viewport:innerWidth,scroll:document.documentElement.scrollWidth,assets:[...document.querySelectorAll('nav img')].map(i=>({loaded:i.complete&&i.naturalWidth>0,width:i.getBoundingClientRect().width,height:i.getBoundingClientRect().height})),breadcrumb:(()=>{const n=document.querySelector('.ks-breadcrumbs');const h=document.querySelector('.abk-main>.abk-topbar');const c=n?.nextElementSibling;const nr=n?.getBoundingClientRect();const hr=h?.getBoundingClientRect();const cr=c?.getBoundingClientRect();const f=document.querySelector('.abk-sidebar-footer');const side=f?.closest('aside');return {order:!h||(h.nextElementSibling===n&&nr.top>=hr.bottom&&(!c||cr.top>=nr.bottom)),aligned:!h||!c||Math.abs(nr.left-cr.left)<1,count:document.querySelectorAll('.ks-breadcrumbs').length,present:!!n,current:n?.querySelectorAll('[aria-current="page"]').length,overflow:n?n.scrollWidth>n.clientWidth:false,bottomGap:f?Math.round(side.getBoundingClientRect().bottom-f.getBoundingClientRect().bottom):null,footerAfterMenu:f?f.getBoundingClientRect().top>=side.querySelector('nav').getBoundingClientRect().bottom:true}})(),buttons:[...document.querySelectorAll('.ks-button')].map(b=>({label:b.textContent.trim(),width:b.getBoundingClientRect().width,height:b.getBoundingClientRect().height}))})`, returnByValue: true });
             const value = JSON.parse(geometry.result.value);
             const { data } = await command('Page.captureScreenshot', { format: 'png', captureBeyondViewport: false });
             await writeFile(resolve(folder, file.replace('.html', `-${width}.png`)), Buffer.from(data, 'base64'));
@@ -97,25 +97,27 @@ try {
         await command('Runtime.evaluate',{expression:`document.querySelector('select[name="role"]').value='kepala-sekolah';document.querySelector('select[name="role"]').form.requestSubmit()`});
         await until(`location.pathname==='/_dev/kepala-sekolah/dashboard'&&!!document.querySelector('.ks-welcome')`);
         const live=[];
-        for(const page of ['dashboard','siswa','rekap','arsip','konfirmasi-keluar']) {
+        for(const page of ['dashboard','siswa','rekap','arsip']) {
             await command('Page.navigate',{url:base+'/_dev/kepala-sekolah/'+page});
             await until(`document.readyState==='complete'&&location.pathname.endsWith('/${page}')&&document.body.classList.contains('ks')`);
             const {data}=await command('Page.captureScreenshot',{format:'png',captureBeyondViewport:false});
             await writeFile(resolve(folder,'live-'+page+'.png'),Buffer.from(data,'base64'));
             live.push(page);
         }
-        await command('Runtime.evaluate',{expression:`document.querySelector('a.ks-button').click()`});
-        await until(`location.pathname.endsWith('/dashboard')&&!!document.querySelector('.ks-welcome')`);
         await command('Page.navigate',{url:base+'/_dev/kepala-sekolah/arsip'});
         await until(`document.readyState==='complete'&&!!document.querySelector('select[name="bulan"]')`);
         await command('Runtime.evaluate',{expression:`const s=document.querySelector('select[name="bulan"]');s.value='1';s.dispatchEvent(new Event('change',{bubbles:true}))`});
         await until(`location.search.includes('bulan=1')&&document.readyState==='complete'`);
-        await command('Page.navigate',{url:base+'/_dev/kepala-sekolah/konfirmasi-keluar'});
-        await until(`!!document.querySelector('.ks-logout-actions form')`);
-        await command('Runtime.evaluate',{expression:`document.querySelector('.ks-logout-actions form').requestSubmit()`});
+        await command('Runtime.evaluate',{expression:`[...document.querySelectorAll('form')].find(f=>new URL(f.action).pathname==='/_dev/logout').requestSubmit()`});
+        await until(`document.querySelector('#abkConfirmationModal')?.classList.contains('show')`);
+        await command('Runtime.evaluate',{expression:`document.querySelector('#abkConfirmationModal [data-bs-dismiss="modal"]').click()`});
+        await until(`!document.querySelector('#abkConfirmationModal')?.classList.contains('show')&&location.pathname.endsWith('/arsip')`);
+        await command('Runtime.evaluate',{expression:`[...document.querySelectorAll('form')].find(f=>new URL(f.action).pathname==='/_dev/logout').requestSubmit()`});
+        await until(`document.querySelector('#abkConfirmationModal')?.classList.contains('show')`);
+        await command('Runtime.evaluate',{expression:`document.querySelector('#abkConfirmationModalConfirm').click()`});
         await until(`location.pathname==='/_dev/login'&&!!document.querySelector('select[name="role"]')`);
         await writeFile(resolve(folder,'live-browser.json'),JSON.stringify({live,login:true,cancel:true,monthAutoSubmit:true,logout:true},null,2));
-        console.log('Live MariaDB browser: dropdown login, five pages, cancel, month auto-submit and logout passed.');
+        console.log('Live MariaDB browser: dropdown login, four pages, modal cancel, month auto-submit and logout passed.');
     }
     await writeFile(resolve(folder, 'geometry.json'), JSON.stringify(results, null, 2));
     const failures = results.filter(r => r.scroll > r.viewport || !r.breadcrumb.order || !r.breadcrumb.aligned || r.breadcrumb.count!==1 || !r.breadcrumb.present || r.breadcrumb.current!==1 || r.breadcrumb.overflow || (r.breadcrumb.bottomGap!==null && r.breadcrumb.bottomGap!==24) || !r.breadcrumb.footerAfterMenu || r.assets.some(a => !a.loaded || a.width !== 8 || a.height !== 8));

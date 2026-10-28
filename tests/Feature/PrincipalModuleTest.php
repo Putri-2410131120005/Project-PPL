@@ -4,6 +4,7 @@ namespace Tests\Feature;
 
 use App\Models\CatatanPendampingan;
 use App\Models\CatatanPerkembangan;
+use App\Models\Kelas;
 use App\Models\LaporanPerkembangan;
 use App\Models\MataPelajaran;
 use App\Models\Pengguna;
@@ -12,7 +13,6 @@ use App\Models\Role;
 use App\Models\Siswa;
 use App\Services\GpkVerifikasiService;
 use App\Services\PrincipalReports;
-use Database\Seeders\A16DemoSeeder;
 use Database\Seeders\RoleSeeder;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\DB;
@@ -45,18 +45,28 @@ class PrincipalModuleTest extends TestCase
         parent::setUp();
         $this->assertSame('sqlite', DB::connection()->getDriverName());
         $this->assertSame(':memory:', DB::connection()->getDatabaseName());
-        $path = tempnam(sys_get_temp_dir(), 'a19-fixture-');
-        file_put_contents($path, json_encode(array_fill_keys(['demo.a16.guru1', 'demo.a16.guru2', 'demo.a16.gpk'], bin2hex(random_bytes(20)))));
-        putenv('A16_DEMO_CREDENTIALS_FILE='.$path);
-        try {
-            $this->seed([RoleSeeder::class, A16DemoSeeder::class]);
-        } finally {
-            putenv('A16_DEMO_CREDENTIALS_FILE');
-            unlink($path);
-        }
-        $this->gpk = Pengguna::where('username', 'demo.a16.gpk')->sole();
-        $this->guru = Pengguna::where('username', 'demo.a16.guru1')->sole();
-        $this->student = Siswa::where('nis', 'DEMO-A16-001')->sole();
+        $this->seed(RoleSeeder::class);
+        $roles = Role::query()->pluck('id_role', 'nama_role');
+        $this->guru = Pengguna::create([
+            'id_role' => $roles['Guru Mapel'], 'username' => 'budi_santoso', 'nama' => 'Budi Santoso',
+            'nip' => '198505122010011001', 'email' => 'budi.santoso@sekolah.test', 'password' => 'password', 'status_akun' => 'Aktif',
+        ]);
+        $this->gpk = Pengguna::create([
+            'id_role' => $roles['GPK'], 'username' => 'dedi_kurniawan', 'nama' => 'Dedi Kurniawan',
+            'nip' => '198202102008011003', 'email' => 'dedi.kurniawan@sekolah.test', 'password' => 'password', 'status_akun' => 'Aktif',
+        ]);
+        Pengguna::create([
+            'id_role' => $roles['Kepala Sekolah'], 'username' => 'hendra_gunawan', 'nama' => 'Hendra Gunawan',
+            'nip' => '197503151999031004', 'email' => 'hendra.gunawan@sekolah.test', 'password' => 'password', 'status_akun' => 'Aktif',
+        ]);
+        $classX = Kelas::create(['nama_kelas' => 'X-A', 'tingkat' => 'X', 'tahun_ajaran' => '2026/2027', 'status_kelas' => 'Aktif']);
+        $classXi = Kelas::create(['nama_kelas' => 'XI-A', 'tingkat' => 'XI', 'tahun_ajaran' => '2026/2027', 'status_kelas' => 'Aktif']);
+        $subject = MataPelajaran::create(['nama_mapel' => 'Matematika', 'status_mapel' => 'Aktif']);
+        $classX->mataPelajaran()->attach($subject);
+        $classXi->mataPelajaran()->attach($subject);
+        $this->student = Siswa::create(['id_kelas' => $classX->getKey(), 'nis' => '2026001', 'nama_siswa' => 'Rafi Ahmad Pratama', 'status_siswa' => 'Aktif']);
+        Siswa::create(['id_kelas' => $classXi->getKey(), 'nis' => '2026002', 'nama_siswa' => 'Nadia Putri', 'status_siswa' => 'Aktif']);
+        Siswa::create(['id_kelas' => $classXi->getKey(), 'nis' => '2026003', 'nama_siswa' => 'Alya Ramadhani', 'status_siswa' => 'Aktif']);
         $this->withSession(['dev_role' => 'kepala-sekolah']);
     }
 
@@ -65,21 +75,20 @@ class PrincipalModuleTest extends TestCase
         $student ??= $this->student;
         $note = new CatatanPerkembangan;
         $note->forceFill(['id_siswa' => $student->getKey(), 'id_pembuat' => $this->guru->getKey(),
-            'id_mapel' => MataPelajaran::where('nama_mapel', 'DATA DEMO Matematika')->sole()->getKey(),
-            'tanggal_catatan' => $date, 'materi_kegiatan' => 'DATA DEMO Materi pecahan',
-            'kendala_peristiwa' => 'DATA DEMO Peristiwa sumber', 'tindakan' => 'DATA DEMO Tindakan guru',
-            'hasil_tindakan' => 'DATA DEMO Hasil tindakan', 'catatan_tambahan' => '=SUM(1,2)',
+            'id_mapel' => MataPelajaran::where('nama_mapel', 'Matematika')->sole()->getKey(),
+            'tanggal_catatan' => $date, 'materi_kegiatan' => 'Materi pecahan',
+            'kendala_peristiwa' => 'Peristiwa sumber', 'tindakan' => 'Tindakan guru',
+            'hasil_tindakan' => 'Hasil tindakan', 'catatan_tambahan' => '=SUM(1,2)',
             'status_pengajuan' => 'Dikirim', 'versi_pengajuan' => 1])->save();
         $service = app(GpkVerifikasiService::class);
         $verification = $service->verifikasi('perkembangan', $note->getKey(), $this->gpk->getKey(), 'Terverifikasi');
-        $service->publikasikan($verification->getKey(), $this->gpk->getKey());
         $verification->refresh();
         $recap = RekapPerkembangan::create(['id_siswa' => $student->getKey(), 'id_pembuat' => $this->gpk->getKey(),
-            'periode' => $period, 'ringkasan_perkembangan' => 'DATA DEMO Ringkasan resmi '.$student->nis, 'tanggal_rekap' => $date]);
+            'periode' => $period, 'ringkasan_perkembangan' => 'Ringkasan resmi '.$student->nis, 'tanggal_rekap' => $date]);
         $link = $recap->sumberCatatan()->create(['id_catatan_perkembangan' => $note->getKey()]);
         $report = new LaporanPerkembangan;
         $report->forceFill(['id_rekap' => $recap->getKey(), 'id_pembuat' => $this->gpk->getKey(), 'periode' => $period,
-            'isi_laporan' => 'DATA DEMO Isi laporan resmi '.$student->nis, 'tanggal_laporan' => $date,
+            'isi_laporan' => 'Isi laporan resmi '.$student->nis, 'tanggal_laporan' => $date,
             'status_laporan' => 'Tersedia', 'id_publikator' => $this->gpk->getKey(), 'tanggal_publikasi' => $date])->save();
 
         return compact('note', 'verification', 'recap', 'link', 'report');
@@ -89,10 +98,15 @@ class PrincipalModuleTest extends TestCase
     {
         $this->post(route('dev.login.store'), ['role' => 'kepala-sekolah'])->assertRedirect(route('dev.preview', 'kepala-sekolah'));
         $this->get(route('dev.preview', 'kepala-sekolah'))->assertRedirect(route('dev.principal.dashboard'));
-        foreach (['dashboard', 'students', 'recaps', 'archives', 'logout'] as $page) {
-            $response = $this->get(route('dev.principal.'.$page))->assertOk()->assertSee('DATA DEMO');
+        foreach (['dashboard', 'students', 'recaps', 'archives'] as $page) {
+            $response = $this->get(route('dev.principal.'.$page))->assertOk();
             $this->review('empty-'.$page, $response);
         }
+        $this->get(route('dev.principal.dashboard'))
+            ->assertSee('action="'.route('dev.logout').'"', false)
+            ->assertSee('data-confirm-title="Keluar?"', false)
+            ->assertSee('id="abkConfirmationModal"', false);
+        $this->get('/_dev/kepala-sekolah/konfirmasi-keluar')->assertNotFound();
         $this->get(route('dev.principal.dashboard'))->assertSee('Belum ada laporan resmi');
         $this->get(route('dev.principal.recaps.export', 'zip'))->assertNotFound();
         $this->get(route('dev.principal.period', ['periode' => 'September 2026']))->assertNotFound();
@@ -101,6 +115,9 @@ class PrincipalModuleTest extends TestCase
         foreach (['post', 'put', 'patch', 'delete'] as $method) {
             $this->$method(route('dev.principal.recaps'))->assertStatus(405);
         }
+        $this->post(route('dev.logout'))
+            ->assertRedirect(route('dev.login'))
+            ->assertSessionMissing('dev_role');
     }
 
     public function test_role_guard_also_protects_exports_and_is_disabled_in_production(): void
@@ -120,41 +137,73 @@ class PrincipalModuleTest extends TestCase
         $this->withSession(['dev_role' => 'kepala-sekolah'])->get(route('dev.principal.dashboard'))->assertNotFound();
     }
 
-    public function test_database_student_search_class_filter_and_real_students_are_private(): void
+    public function test_database_student_search_class_filter_and_real_students_are_visible(): void
     {
-        $other = Siswa::where('nis', 'DEMO-A16-003')->sole();
+        $other = Siswa::where('nis', '2026003')->sole();
         $real = Siswa::create(['id_kelas' => $this->student->id_kelas, 'nis' => 'REAL-PRIVATE', 'nama_siswa' => 'Private student']);
-        $this->get(route('dev.principal.students'))->assertOk()->assertSee($this->student->nama_siswa)->assertSee($other->nama_siswa)->assertDontSee('Private student');
+        $this->get(route('dev.principal.students'))->assertOk()->assertSee($this->student->nama_siswa)->assertSee($other->nama_siswa)->assertSee('Private student');
         $this->get(route('dev.principal.students', ['tingkat' => 'X']))->assertSee($this->student->nama_siswa)->assertDontSee($other->nama_siswa);
-        $this->get(route('dev.principal.students', ['q' => 'Tiga']))->assertSee($other->nama_siswa)->assertDontSee($this->student->nama_siswa);
-        $this->get(route('dev.principal.student', $real->getKey()))->assertNotFound();
+        $this->get(route('dev.principal.students', ['q' => 'Alya']))->assertSee($other->nama_siswa)->assertDontSee($this->student->nama_siswa);
+        $this->get(route('dev.principal.student', $real->getKey()))->assertOk()->assertSee('Private student');
         $this->getJson(route('dev.principal.students', ['tingkat' => 'INVALID']))->assertUnprocessable();
         $this->getJson(route('dev.principal.archives', ['bulan' => 13]))->assertUnprocessable();
+    }
+
+    public function test_verified_note_is_visible_in_recap_before_formal_report_exists(): void
+    {
+        $note = new CatatanPerkembangan;
+        $note->forceFill([
+            'id_siswa' => $this->student->getKey(),
+            'id_pembuat' => $this->guru->getKey(),
+            'id_mapel' => MataPelajaran::where('nama_mapel', 'Matematika')->sole()->getKey(),
+            'tanggal_catatan' => '2026-10-28',
+            'materi_kegiatan' => 'Pecahan sederhana',
+            'kendala_peristiwa' => 'Rafi memerlukan bantuan visual.',
+            'tindakan' => 'Guru menggunakan kartu pecahan.',
+            'hasil_tindakan' => 'Rafi dapat menyelesaikan latihan.',
+            'status_pengajuan' => 'Dikirim',
+            'versi_pengajuan' => 1,
+        ])->save();
+        app(GpkVerifikasiService::class)->verifikasi(
+            'perkembangan', $note->getKey(), $this->gpk->getKey(), 'Terverifikasi'
+        );
+
+        $this->assertDatabaseCount('rekap_perkembangan', 0);
+        $this->assertDatabaseCount('laporan_perkembangan', 0);
+        $this->get(route('dev.principal.recaps'))
+            ->assertOk()
+            ->assertSee($this->student->nama_siswa)
+            ->assertSee('1 catatan')
+            ->assertSee(route('dev.principal.verified-recap', $this->student), false);
+        $this->get(route('dev.principal.verified-recap', $this->student))
+            ->assertOk()
+            ->assertSee('Rafi memerlukan bantuan visual.')
+            ->assertSee('Guru menggunakan kartu pecahan.')
+            ->assertSee('Rafi dapat menyelesaikan latihan.');
     }
 
     public function test_individual_reports_sources_and_filters_use_relations(): void
     {
         $f = $this->official();
-        $other = $this->official(Siswa::where('nis', 'DEMO-A16-003')->sole(), 'Agustus 2025', '2025-08-20');
-        $inclusion = Pengguna::create(['id_role' => Role::where('nama_role', 'Tim Inklusi')->sole()->getKey(), 'nama' => 'DATA DEMO Pendamping', 'email' => 'pendamping@example.test', 'password' => bin2hex(random_bytes(20)), 'status_akun' => 'Aktif']);
+        $other = $this->official(Siswa::where('nis', '2026003')->sole(), 'Agustus 2025', '2025-08-20');
+        $inclusion = Pengguna::create(['id_role' => Role::where('nama_role', 'Tim Inklusi')->sole()->getKey(), 'nama' => 'Siti Rahmawati', 'email' => 'siti.rahmawati@sekolah.test', 'password' => bin2hex(random_bytes(20)), 'status_akun' => 'Aktif']);
         $note = new CatatanPendampingan;
-        $note->forceFill(['id_siswa' => $this->student->getKey(), 'id_pembuat' => $inclusion->getKey(), 'tanggal_catatan' => '2026-09-24', 'kegiatan_pendampingan' => 'DATA DEMO Pendampingan lengkap', 'tindak_lanjut' => 'DATA DEMO Tindak lanjut', 'kendala' => 'DATA DEMO Kendala', 'status_pengajuan' => 'Dikirim', 'versi_pengajuan' => 1])->save();
+        $note->forceFill(['id_siswa' => $this->student->getKey(), 'id_pembuat' => $inclusion->getKey(), 'tanggal_catatan' => '2026-09-24', 'kegiatan_pendampingan' => 'Pendampingan lengkap', 'tindak_lanjut' => 'Tindak lanjut', 'kendala' => 'Kendala', 'status_pengajuan' => 'Dikirim', 'versi_pengajuan' => 1])->save();
         $svc = app(GpkVerifikasiService::class);
-        $v = $svc->verifikasi('pendampingan', $note->getKey(), $this->gpk->getKey(), 'Terverifikasi');
-        $svc->publikasikan($v->getKey(), $this->gpk->getKey());
+        $svc->verifikasi('pendampingan', $note->getKey(), $this->gpk->getKey(), 'Terverifikasi');
         $link = $f['recap']->sumberCatatan()->create(['id_catatan_pendampingan' => $note->getKey()]);
         foreach (['recap', 'semester', 'recap.preview'] as $page) {
             $r = $this->get(route('dev.principal.'.$page, $f['recap']->getKey()))->assertOk()->assertSee($this->student->nama_siswa);
             $this->review($page, $r);
         }
         foreach ([$f['link'], $link] as $i => $source) {
-            $r = $this->get(route('dev.principal.note', ['rekap' => $f['recap']->getKey(), 'link' => $source->getKey()]))->assertOk()->assertSee('DATA DEMO Guru Satu')->assertSee('DATA DEMO Matematika')->assertSee('DATA DEMO Pendamping');
+            $r = $this->get(route('dev.principal.note', ['rekap' => $f['recap']->getKey(), 'link' => $source->getKey()]))->assertOk()->assertSee('Budi Santoso')->assertSee('Matematika')->assertSee('Siti Rahmawati');
             $this->review('source-'.$i, $r);
         }
         $this->get(route('dev.principal.note', ['rekap' => $f['recap']->getKey(), 'link' => $other['link']->getKey()]))->assertNotFound();
         $this->get(route('dev.principal.recaps', ['periode' => 'September 2026', 'tahun_ajaran' => '2026/2027', 'tingkat' => 'X']))->assertSee($this->student->nama_siswa)->assertDontSee($other['recap']->siswa->nama_siswa);
         $this->get(route('dev.principal.recaps', ['tahun_ajaran' => '1999/2000']))->assertDontSee($this->student->nama_siswa);
-        foreach (['dashboard', 'students', 'recaps', 'archives', 'logout'] as $page) {
+        foreach (['dashboard', 'students', 'recaps', 'archives'] as $page) {
             $this->review($page, $this->get(route('dev.principal.'.$page))->assertOk());
         }
         $this->review('student', $this->get(route('dev.principal.student', $this->student->getKey()))->assertOk());
@@ -164,13 +213,13 @@ class PrincipalModuleTest extends TestCase
     public function test_archive_filters_use_report_dates_and_period_is_per_student(): void
     {
         $a = $this->official();
-        $this->official(Siswa::where('nis', 'DEMO-A16-003')->sole(), 'Agustus 2025', '2025-08-20');
+        $this->official(Siswa::where('nis', '2026003')->sole(), 'Agustus 2025', '2025-08-20');
         $this->get(route('dev.principal.archives'))->assertSee('September 2026')->assertSee('Agustus 2025');
         foreach ([['bulan' => 9], ['tahun' => 2026], ['bulan' => 9, 'tahun' => 2026]] as $filter) {
             $this->get(route('dev.principal.archives', $filter))->assertSee('September 2026')->assertDontSee('Agustus 2025');
         }
         $this->get(route('dev.principal.archives', ['bulan' => 1]))->assertSee('Belum ada laporan resmi');
-        $r = $this->get(route('dev.principal.period', ['periode' => 'September 2026', 'siswa' => $this->student->getKey()]))->assertOk()->assertSee($a['report']->isi_laporan)->assertDontSee('DEMO-A16-003');
+        $r = $this->get(route('dev.principal.period', ['periode' => 'September 2026', 'siswa' => $this->student->getKey()]))->assertOk()->assertSee($a['report']->isi_laporan)->assertDontSee('2026003');
         $this->review('period-filter', $r);
     }
 
@@ -180,9 +229,9 @@ class PrincipalModuleTest extends TestCase
         $copy = $f['report']->replicate();
         $copy->save();
         $this->get(route('dev.principal.dashboard'))->assertOk()->assertViewHas('archive', fn ($a) => (int) $a->student_count === 1 && (int) $a->note_count === 1 && (int) $a->report_count === 2);
-        $f['note']->forceFill(['materi_kegiatan' => '<script>alert("demo")</script>'])->save();
+        $f['note']->forceFill(['materi_kegiatan' => '<script>alert("xss")</script>'])->save();
         $this->get(route('dev.principal.note', ['rekap' => $f['recap']->getKey(), 'link' => $f['link']->getKey()]))
-            ->assertOk()->assertSee('<script>alert("demo")</script>')->assertDontSee('<script>alert("demo")</script>', false);
+            ->assertOk()->assertSee('<script>alert("xss")</script>')->assertDontSee('<script>alert("xss")</script>', false);
     }
 
     public function test_verified_is_not_published_and_invalid_sources_fail_closed(): void
@@ -196,7 +245,7 @@ class PrincipalModuleTest extends TestCase
         $f['verification']->forceFill(['id_publikator' => $this->gpk->getKey(), 'tanggal_publikasi' => now()])->save();
         $f['note']->forceFill(['versi_pengajuan' => 2])->save();
         $this->assertSame(0, $data->reports()->count());
-        $f['note']->forceFill(['versi_pengajuan' => 1, 'id_siswa' => Siswa::where('nis', 'DEMO-A16-003')->sole()->getKey()])->save();
+        $f['note']->forceFill(['versi_pengajuan' => 1, 'id_siswa' => Siswa::where('nis', '2026003')->sole()->getKey()])->save();
         $this->assertSame(0, $data->reports()->count());
     }
 
@@ -233,27 +282,27 @@ class PrincipalModuleTest extends TestCase
     public function test_pdf_excel_zip_and_preview_export_real_filtered_files_without_writes(): void
     {
         $f = $this->official();
-        $this->official(Siswa::where('nis', 'DEMO-A16-003')->sole(), 'Agustus 2025', '2025-08-20');
+        $this->official(Siswa::where('nis', '2026003')->sole(), 'Agustus 2025', '2025-08-20');
         $before = $this->snapshot();
         $params = ['rekap' => $f['recap']->getKey(), 'format' => 'pdf'];
         $pdf = $this->get(route('dev.principal.recap.export', $params))->assertOk()->assertHeader('Content-Type', 'application/pdf');
         $this->assertStringStartsWith('%PDF-', $pdf->getContent());
-        $this->assertStringContainsString('demo-a16-001-september-2026.pdf', $pdf->headers->get('Content-Disposition'));
-        $this->get(route('dev.principal.recap.export', $params + ['inline' => '1']))->assertHeader('Content-Disposition', 'inline; filename="smart-abk-demo-a16-001-september-2026.pdf"');
+        $this->assertStringContainsString('2026001-september-2026.pdf', $pdf->headers->get('Content-Disposition'));
+        $this->get(route('dev.principal.recap.export', $params + ['inline' => '1']))->assertHeader('Content-Disposition', 'inline; filename="smart-abk-2026001-september-2026.pdf"');
         $xlsx = $this->get(route('dev.principal.period.export', ['format' => 'xlsx', 'periode' => 'September 2026', 'siswa' => $this->student->getKey()]))->assertOk();
         $entries = $this->unzip($xlsx->getContent());
         $sheet = $entries['xl/worksheets/sheet1.xml'];
-        foreach (['DATA DEMO Guru Satu', 'DATA DEMO Matematika', 'DEMO-A16-001', '=SUM(1,2)', $f['report']->isi_laporan] as $value) {
+        foreach (['Budi Santoso', 'Matematika', '2026001', '=SUM(1,2)', $f['report']->isi_laporan] as $value) {
             $this->assertStringContainsString($value, $sheet);
         }
-        $this->assertStringNotContainsString('DEMO-A16-003', $sheet);
+        $this->assertStringNotContainsString('2026003', $sheet);
         $this->assertStringNotContainsString('<f>', $sheet);
         $this->assertNotFalse(simplexml_load_string($sheet));
         $zip = $this->get(route('dev.principal.recaps.export', ['format' => 'zip', 'periode' => 'September 2026']))->assertOk()->assertHeader('Content-Type', 'application/zip');
         $files = $this->unzip($zip->getContent());
         $this->assertCount(1, $files);
         $this->assertStringStartsWith('%PDF-', reset($files));
-        $this->assertStringContainsString('demo-a16-001', array_key_first($files));
+        $this->assertStringContainsString('2026001', array_key_first($files));
         $this->get(route('dev.principal.period.preview', ['periode' => 'September 2026']))->assertOk()->assertSee('iframe', false);
         $this->get(route('dev.principal.recaps.export', ['format' => 'zip', 'q' => 'nonexistent']))->assertNotFound();
         $this->get(route('dev.principal.recaps.export', ['format' => 'exe']))->assertNotFound();
@@ -282,7 +331,7 @@ class PrincipalModuleTest extends TestCase
         $small = count(DB::getQueryLog());
         DB::disableQueryLog();
         foreach (range(10, 30) as $i) {
-            Siswa::create(['id_kelas' => $this->student->id_kelas, 'nis' => 'DEMO-A16-'.$i, 'nama_siswa' => 'DATA DEMO Additional '.$i]);
+            Siswa::create(['id_kelas' => $this->student->id_kelas, 'nis' => '2027'.str_pad((string) $i, 4, '0', STR_PAD_LEFT), 'nama_siswa' => 'Siswa Tambahan '.$i]);
         }
         DB::flushQueryLog();
         DB::enableQueryLog();
@@ -307,7 +356,7 @@ class PrincipalModuleTest extends TestCase
             'note' => ['rekap' => $f['recap']->getKey(), 'link' => $f['link']->getKey()],
             'recap.preview' => [$f['recap']->getKey()], 'archives' => [],
             'period' => ['periode' => 'September 2026'],
-            'period.preview' => ['periode' => 'September 2026'], 'logout' => [],
+            'period.preview' => ['periode' => 'September 2026'],
         ];
         foreach ($pages as $page => $parameters) {
             $response = $this->get(route('dev.principal.'.$page, $parameters))->assertOk();

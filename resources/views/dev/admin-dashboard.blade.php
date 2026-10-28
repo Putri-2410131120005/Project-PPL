@@ -1,5 +1,5 @@
-<x-layouts.preview :role="$role" :roles="$roles" title="Dashboard Admin / Pengelola" active="dashboard">
-    <x-preview.topbar title="Dashboard Admin / Pengelola" subtitle="Ringkasan data sekolah dan akses cepat ke seluruh pengelolaan SMART-ABK." :profile="$profile" />
+<x-layouts.preview :role="$role" :roles="$roles" title="Dashboard Super Admin" active="dashboard">
+    <x-preview.topbar title="Dashboard Super Admin" subtitle="Ringkasan data sekolah dan akses cepat ke seluruh pengelolaan SMART-ABK." :profile="$profile" />
     <div class="abk-breadcrumb">Dashboard</div>
 
     <div class="row g-3">

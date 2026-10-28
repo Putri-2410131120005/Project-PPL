@@ -15,30 +15,25 @@ class PrincipalReports
 {
     public function students(): Builder
     {
-        return Siswa::where('nis', 'like', 'DEMO-A16-%')->where('nama_siswa', 'like', 'DATA DEMO %')
-            ->whereHas('kelas', fn ($q) => $q->where('nama_kelas', 'like', 'DATA DEMO %'));
+        return Siswa::query();
     }
 
-    private function demoAuthor(Builder $q, ?string $role = null): Builder
+    private function authorWithRole(Builder $q, string $role): Builder
     {
-        return $q->where('nama', 'like', 'DATA DEMO %')->where('email', 'like', '%@example.test')
-            ->when($role, fn ($q) => $q->whereHas('role', fn ($r) => $r->where('nama_role', $role)));
+        return $q->whereHas('role', fn ($roles) => $roles->where('nama_role', $role));
     }
 
     public function notes(string $source, bool $published = true): Builder
     {
         $q = $source === 'perkembangan' ? CatatanPerkembangan::query() : CatatanPendampingan::query();
         $q->whereIn('id_siswa', $this->students()->select('id_siswa'))
-            ->whereHas('pembuat', fn ($a) => $this->demoAuthor($a, $source === 'perkembangan' ? 'Guru Mapel' : 'Tim Inklusi'));
-        if ($source === 'perkembangan') {
-            $q->whereHas('mataPelajaran', fn ($m) => $m->where('nama_mapel', 'like', 'DATA DEMO %'));
-        }
+            ->whereHas('pembuat', fn ($a) => $this->authorWithRole($a, $source === 'perkembangan' ? 'Guru Mapel' : 'Tim Inklusi'));
         $table = $q->getModel()->getTable();
         $q->where('status_pengajuan', 'Terverifikasi')->whereHas('verifikasi', function ($v) use ($table, $published) {
             $v->where('status_verifikasi', 'Terverifikasi')->whereColumn('verifikasi_catatan.versi_pengajuan', $table.'.versi_pengajuan')
-                ->whereHas('verifikator', fn ($a) => $this->demoAuthor($a, 'GPK'));
+                ->whereHas('verifikator', fn ($a) => $this->authorWithRole($a, 'GPK'));
             if ($published) {
-                $v->whereNotNull('tanggal_publikasi')->whereHas('publikator', fn ($a) => $this->demoAuthor($a, 'GPK'));
+                $v->whereNotNull('tanggal_publikasi')->whereHas('publikator', fn ($a) => $this->authorWithRole($a, 'GPK'));
             }
         });
 
@@ -48,7 +43,7 @@ class PrincipalReports
     private function eligibleRecaps(): Builder
     {
         return RekapPerkembangan::whereIn('id_siswa', $this->students()->select('id_siswa'))
-            ->whereHas('pembuat', fn ($a) => $this->demoAuthor($a, 'GPK'))
+            ->whereHas('pembuat', fn ($a) => $this->authorWithRole($a, 'GPK'))
             // Fail closed: unpublished, malformed or cross-student links invalidate the official projection.
             ->whereDoesntHave('sumberCatatan', function ($link) {
                 $link->whereNot(function ($valid) {
@@ -68,8 +63,8 @@ class PrincipalReports
     public function reports(array $filters = []): Builder
     {
         $q = LaporanPerkembangan::where('status_laporan', 'Tersedia')->whereNotNull('tanggal_publikasi')
-            ->whereHas('publikator', fn ($a) => $this->demoAuthor($a, 'GPK'))
-            ->whereHas('pembuat', fn ($a) => $this->demoAuthor($a, 'GPK'))
+            ->whereHas('publikator', fn ($a) => $this->authorWithRole($a, 'GPK'))
+            ->whereHas('pembuat', fn ($a) => $this->authorWithRole($a, 'GPK'))
             ->whereIn('laporan_perkembangan.id_rekap', $this->eligibleRecaps()->select('id_rekap'));
         if (! empty($filters['periode'])) {
             $q->where('laporan_perkembangan.periode', $filters['periode']);
@@ -92,6 +87,64 @@ class PrincipalReports
         }
 
         return $q->whereHas('siswa', fn ($s) => $this->studentFilters($s, $filters));
+    }
+
+    /** Students that already have a GPK-verified note, independent of a formal report. */
+    public function studentsWithVerifiedNotes(array $filters = []): Builder
+    {
+        $development = $this->notes('perkembangan', false);
+        $assistance = $this->notes('pendampingan', false);
+
+        return $this->studentFilters($this->students(), $filters)
+            ->where(function (Builder $query) use ($development, $assistance) {
+                $query->whereIn('id_siswa', (clone $development)->select('id_siswa'))
+                    ->orWhereIn('id_siswa', (clone $assistance)->select('id_siswa'));
+            })
+            ->with('kelas')
+            ->withCount([
+                'catatanPerkembangan as verified_development_count' => fn (Builder $query) => $query
+                    ->whereIn('id_catatan_perkembangan', (clone $development)->select('id_catatan_perkembangan')),
+                'catatanPendampingan as verified_assistance_count' => fn (Builder $query) => $query
+                    ->whereIn('id_catatan_pendampingan', (clone $assistance)->select('id_catatan_pendampingan')),
+            ])
+            ->withMax([
+                'catatanPerkembangan as latest_verified_development' => fn (Builder $query) => $query
+                    ->whereIn('id_catatan_perkembangan', (clone $development)->select('id_catatan_perkembangan')),
+            ], 'tanggal_catatan')
+            ->withMax([
+                'catatanPendampingan as latest_verified_assistance' => fn (Builder $query) => $query
+                    ->whereIn('id_catatan_pendampingan', (clone $assistance)->select('id_catatan_pendampingan')),
+            ], 'tanggal_catatan');
+    }
+
+    public function verifiedSources(Siswa $student): Collection
+    {
+        $development = $this->notes('perkembangan', false)
+            ->where('id_siswa', $student->getKey())
+            ->with(['pembuat', 'mataPelajaran'])
+            ->get()
+            ->map(fn (CatatanPerkembangan $note) => [
+                'type' => 'perkembangan', 'id' => $note->getKey(), 'date' => $note->tanggal_catatan,
+                'source' => 'Guru Mata Pelajaran', 'teacher' => $note->pembuat->nama,
+                'subject' => $note->mataPelajaran?->nama_mapel, 'event' => $note->kendala_peristiwa,
+                'action' => $note->tindakan, 'result' => $note->hasil_tindakan,
+                'material' => $note->materi_kegiatan, 'extra' => $note->catatan_tambahan,
+            ]);
+
+        $assistance = $this->notes('pendampingan', false)
+            ->where('id_siswa', $student->getKey())
+            ->with('pembuat')
+            ->get()
+            ->map(fn (CatatanPendampingan $note) => [
+                'type' => 'pendampingan', 'id' => $note->getKey(), 'date' => $note->tanggal_catatan,
+                'source' => 'Tim Inklusi', 'teacher' => $note->pembuat->nama, 'subject' => null,
+                'event' => $note->kegiatan_pendampingan, 'action' => $note->tindak_lanjut,
+                'result' => $note->kendala, 'material' => null, 'extra' => null,
+            ]);
+
+        return $development->concat($assistance)
+            ->sortByDesc(fn (array $source) => $source['date']->format('Y-m-d'))
+            ->values();
     }
 
     public function studentFilters(Builder $q, array $filters): Builder
@@ -121,6 +174,8 @@ class PrincipalReports
     {
         return $query->with(['siswa.kelas', 'pembuat', 'sumberCatatan.catatanPerkembangan.pembuat',
             'sumberCatatan.catatanPerkembangan.mataPelajaran', 'sumberCatatan.catatanPendampingan.pembuat',
+            'sumberCatatan.catatanPerkembangan.verifikasi.verifikator',
+            'sumberCatatan.catatanPendampingan.verifikasi.verifikator',
             'laporanPerkembangan' => fn ($q) => $q->whereIn('id_laporan', $this->reports()->select('id_laporan'))->orderByDesc('tanggal_laporan'),
             'laporanPerkembangan.publikator']);
     }
@@ -130,12 +185,19 @@ class PrincipalReports
         return $recap->sumberCatatan->map(function ($link) {
             $note = $link->catatanPerkembangan ?? $link->catatanPendampingan;
             $mapel = $link->catatanPerkembangan?->mataPelajaran?->nama_mapel;
+            $verification = $note->verifikasi
+                ->where('status_verifikasi', 'Terverifikasi')
+                ->where('versi_pengajuan', $note->versi_pengajuan)
+                ->sortByDesc('tanggal_verifikasi')
+                ->first();
 
             return ['link' => $link->getKey(), 'date' => $note->tanggal_catatan->format('Y-m-d'),
                 'source' => $link->catatanPerkembangan ? 'Guru Mata Pelajaran' : 'Tim Inklusi',
                 'teacher' => $note->pembuat->nama, 'subject' => $mapel,
                 'event' => $link->catatanPerkembangan ? $note->kendala_peristiwa : $note->kegiatan_pendampingan,
                 'action' => $link->catatanPerkembangan ? $note->tindakan : $note->tindak_lanjut,
+                'recommendation' => $verification?->catatan_verifikasi,
+                'verified_by' => $verification?->verifikator?->nama,
                 'result' => $link->catatanPerkembangan ? $note->hasil_tindakan : $note->kendala,
                 'material' => $link->catatanPerkembangan?->materi_kegiatan,
                 'extra' => $link->catatanPerkembangan?->catatan_tambahan];

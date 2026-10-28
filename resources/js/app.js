@@ -92,17 +92,29 @@ const initialiseConfirmationModal = () => {
 
 const initialiseDevelopmentRoleSelector = () => {
     const role = document.querySelector('[data-development-role]');
+    const guruMapelAccount = document.querySelector('[data-guru-mapel-account]');
     const account = document.querySelector('[data-tim-inklusi-account]');
+    const gpkAccount = document.querySelector('[data-gpk-account]');
 
-    if (! (role instanceof HTMLSelectElement) || ! (account instanceof HTMLElement)) {
+    if (! (role instanceof HTMLSelectElement) || ! (guruMapelAccount instanceof HTMLElement) || ! (account instanceof HTMLElement) || ! (gpkAccount instanceof HTMLElement)) {
         return;
     }
 
     const updateAccountVisibility = () => {
+        const isGuruMapel = role.value === 'guru-mapel';
+        guruMapelAccount.hidden = ! isGuruMapel;
+        guruMapelAccount.querySelectorAll('select, input').forEach((field) => {
+            field.disabled = ! isGuruMapel;
+        });
         const isTimInklusi = role.value === 'tim-inklusi';
         account.hidden = ! isTimInklusi;
         account.querySelectorAll('select, input').forEach((field) => {
             field.disabled = ! isTimInklusi;
+        });
+        const isGpk = role.value === 'gpk';
+        gpkAccount.hidden = ! isGpk;
+        gpkAccount.querySelectorAll('select, input').forEach((field) => {
+            field.disabled = ! isGpk;
         });
     };
 
@@ -110,12 +122,43 @@ const initialiseDevelopmentRoleSelector = () => {
     updateAccountVisibility();
 };
 
+const initialiseReportSummaryModal = () => {
+    const backdrop = document.querySelector('[data-report-summary-modal]');
+    const dialog = backdrop?.querySelector('[role="dialog"]');
+
+    if (! (backdrop instanceof HTMLElement) || ! (dialog instanceof HTMLElement)) {
+        return;
+    }
+
+    const close = () => {
+        const closeUrl = backdrop.dataset.closeUrl;
+        if (closeUrl) {
+            window.location.assign(closeUrl);
+        }
+    };
+
+    dialog.focus();
+    backdrop.addEventListener('click', (event) => {
+        if (event.target === backdrop) {
+            close();
+        }
+    });
+    document.addEventListener('keydown', (event) => {
+        if (event.key === 'Escape') {
+            event.preventDefault();
+            close();
+        }
+    });
+};
+
 if (document.readyState === 'loading') {
     document.addEventListener('DOMContentLoaded', () => {
         initialiseConfirmationModal();
         initialiseDevelopmentRoleSelector();
+        initialiseReportSummaryModal();
     }, { once: true });
 } else {
     initialiseConfirmationModal();
     initialiseDevelopmentRoleSelector();
+    initialiseReportSummaryModal();
 }

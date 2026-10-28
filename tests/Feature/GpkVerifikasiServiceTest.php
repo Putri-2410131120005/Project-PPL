@@ -70,47 +70,46 @@ class GpkVerifikasiServiceTest extends TestCase
         ], 'id_catatan_pendampingan');
     }
 
-    public function test_gpk_can_verify_and_publish_subject_note(): void
+    public function test_verified_subject_note_is_immediately_available_to_parent(): void
     {
         $id = $this->perkembangan();
         $svc = app(GpkVerifikasiService::class);
         $verifikasi = $svc->verifikasi('perkembangan', $id, $this->idGpk, 'Terverifikasi');
-        $this->assertEquals(0, CatatanPerkembangan::dipublikasikan()->count());
-        $svc->publikasikan($verifikasi->id_verifikasi, $this->idGpk);
         $this->assertEquals(1, CatatanPerkembangan::dipublikasikan()->count());
         $this->assertDatabaseHas('verifikasi_catatan', [
             'id_verifikasi' => $verifikasi->id_verifikasi, 'id_publikator' => $this->idGpk,
         ]);
+        $this->assertNotNull($verifikasi->tanggal_publikasi);
     }
 
-    public function test_pendamping_note_sent_back_for_revision_cannot_be_published(): void
+    public function test_pendamping_note_sent_back_for_revision_is_not_available_to_parent(): void
     {
         $id = $this->pendampingan();
         $svc = app(GpkVerifikasiService::class);
         $verifikasi = $svc->verifikasi('pendampingan', $id, $this->idGpk, 'Perlu Revisi', 'Lengkapi hasil.');
         $this->assertEquals(0, CatatanPendampingan::dipublikasikan()->count());
-        $this->expectException(DomainException::class);
-        $svc->publikasikan($verifikasi->id_verifikasi, $this->idGpk);
+        $this->assertNull($verifikasi->id_publikator);
+        $this->assertNull($verifikasi->tanggal_publikasi);
     }
 
-    public function test_only_active_gpk_may_publish(): void
+    public function test_only_active_gpk_may_verify(): void
+    {
+        $id = $this->perkembangan();
+        $svc = app(GpkVerifikasiService::class);
+        $this->expectException(DomainException::class);
+        $svc->verifikasi('perkembangan', $id, $this->idGuru, 'Terverifikasi');
+    }
+
+    public function test_old_verification_version_is_not_available_to_parent(): void
     {
         $id = $this->perkembangan();
         $svc = app(GpkVerifikasiService::class);
         $verifikasi = $svc->verifikasi('perkembangan', $id, $this->idGpk, 'Terverifikasi');
-        $this->expectException(DomainException::class);
-        $svc->publikasikan($verifikasi->id_verifikasi, $this->idGuru);
-    }
-
-    public function test_old_verification_version_cannot_be_published(): void
-    {
-        $id = $this->perkembangan();
-        $svc = app(GpkVerifikasiService::class);
-        $verifikasi = $svc->verifikasi('perkembangan', $id, $this->idGpk, 'Terverifikasi');
+        $verifikasi->forceFill(['id_publikator' => null, 'tanggal_publikasi' => null])->save();
+        $this->assertEquals(1, CatatanPerkembangan::dipublikasikan()->count());
         DB::table('catatan_perkembangan')->where('id_catatan_perkembangan', $id)
             ->update(['versi_pengajuan' => 2, 'status_pengajuan' => 'Dikirim']);
-        $this->expectException(DomainException::class);
-        $svc->publikasikan($verifikasi->id_verifikasi, $this->idGpk);
+        $this->assertEquals(0, CatatanPerkembangan::dipublikasikan()->count());
     }
 
     public function test_same_version_cannot_be_verified_twice(): void
@@ -122,5 +121,35 @@ class GpkVerifikasiServiceTest extends TestCase
             ->update(['status_pengajuan' => 'Dikirim']); // simulate an attempted duplicate
         $this->expectException(DomainException::class);
         $svc->verifikasi('perkembangan', $id, $this->idGpk, 'Terverifikasi');
+    }
+
+    public function test_first_gpk_claim_locks_review_and_records_complete_audit(): void
+    {
+        $id = $this->perkembangan();
+        $roleGpk = DB::table('role')->where('nama_role', 'GPK')->value('id_role');
+        $secondGpk = DB::table('pengguna')->insertGetId([
+            'id_role' => $roleGpk, 'nama' => 'GPK Kedua', 'email' => 'gpk-kedua@example.test',
+            'password' => bcrypt('password-testing'), 'status_akun' => 'Aktif', 'jabatan_gpk' => 'Sekretaris',
+        ], 'id_pengguna');
+        $svc = app(GpkVerifikasiService::class);
+
+        $svc->mulaiMeninjau('perkembangan', $id, $this->idGpk);
+        $this->assertDatabaseHas('aktivitas_gpk', [
+            'id_gpk' => $this->idGpk, 'id_catatan_perkembangan' => $id,
+            'versi_pengajuan' => 1, 'jenis_aktivitas' => 'Mulai Meninjau',
+        ]);
+
+        try {
+            $svc->mulaiMeninjau('perkembangan', $id, $secondGpk);
+            $this->fail('GPK kedua tidak boleh mengambil catatan yang sudah diklaim.');
+        } catch (DomainException) {
+            $this->assertTrue(true);
+        }
+
+        $svc->verifikasi('perkembangan', $id, $this->idGpk, 'Terverifikasi', 'Lanjutkan bantuan visual.');
+        $this->assertDatabaseHas('aktivitas_gpk', [
+            'id_gpk' => $this->idGpk, 'id_catatan_perkembangan' => $id,
+            'jenis_aktivitas' => 'Terverifikasi', 'keterangan' => 'Lanjutkan bantuan visual.',
+        ]);
     }
 }

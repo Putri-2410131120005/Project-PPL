@@ -57,14 +57,22 @@ class CatatanPerkembangan extends Model
         return $this->hasMany(SumberRekapCatatan::class, 'id_catatan_perkembangan', 'id_catatan_perkembangan');
     }
 
-    /** Hanya catatan dengan verifikasi versi terkini yang telah dipublikasikan. */
+    public function peninjauGpk(): BelongsTo
+    {
+        return $this->belongsTo(Pengguna::class, 'id_peninjau_gpk', 'id_pengguna');
+    }
+
+    public function aktivitasGpk(): HasMany
+    {
+        return $this->hasMany(AktivitasGpk::class, 'id_catatan_perkembangan', 'id_catatan_perkembangan');
+    }
+
+    /** Catatan langsung tersedia bagi orang tua setelah versi terkini diverifikasi GPK. */
     public function scopeDipublikasikan($query)
     {
         return $query->where('status_pengajuan', 'Terverifikasi')
             ->whereHas('verifikasi', function ($q) {
                 $q->where('status_verifikasi', 'Terverifikasi')
-                  ->whereNotNull('id_publikator')
-                  ->whereNotNull('tanggal_publikasi')
                   ->whereColumn('verifikasi_catatan.versi_pengajuan', 'catatan_perkembangan.versi_pengajuan');
             });
     }

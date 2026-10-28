@@ -28,9 +28,13 @@
                     @error('tingkat')<div class="invalid-feedback">{{ $message }}</div>@enderror
                 </div>
                 <div class="col-12 col-md-6">
-                    <label class="form-label" for="tahun_ajaran">Tahun ajaran</label>
-                    <input class="form-control @error('tahun_ajaran') is-invalid @enderror" id="tahun_ajaran" name="tahun_ajaran" value="{{ old('tahun_ajaran', $kelas->tahun_ajaran) }}" required maxlength="20" placeholder="Contoh: 2026/2027">
-                    @error('tahun_ajaran')<div class="invalid-feedback">{{ $message }}</div>@enderror
+                    <label class="form-label" for="id_tahun_ajaran">Tahun ajaran</label>
+                    <select class="form-select @error('id_tahun_ajaran') is-invalid @enderror" id="id_tahun_ajaran" name="id_tahun_ajaran" required>
+                        <option value="">Pilih tahun ajaran</option>
+                        @foreach($academicYears as $year)<option value="{{ $year->id_tahun_ajaran }}" @selected((string)old('id_tahun_ajaran', $kelas->id_tahun_ajaran) === (string)$year->id_tahun_ajaran)>{{ $year->nama }}{{ $year->status === 'Aktif' ? ' — Aktif' : '' }}</option>@endforeach
+                    </select>
+                    @error('id_tahun_ajaran')<div class="invalid-feedback">{{ $message }}</div>@enderror
+                    @if($academicYears->isEmpty())<div class="form-text"><a href="{{ route('dev.admin.academic-years.create') }}">Tambahkan tahun ajaran dahulu.</a></div>@endif
                 </div>
                 <div class="col-12 col-md-6">
                     <label class="form-label" for="status_kelas">Status kelas</label>
