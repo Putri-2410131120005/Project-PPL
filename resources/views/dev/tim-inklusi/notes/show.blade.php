@@ -1,7 +1,7 @@
 @php($returned = $note->status_pengajuan === 'Perlu Revisi')
 <x-layouts.preview :role="$role" :roles="$previewRoles" active="history" :title="$returned ? 'Detail Catatan — Dikembalikan untuk Revisi' : 'Detail Catatan Pendampingan'">
     <x-preview.topbar :title="$returned ? 'Detail Catatan — Dikembalikan untuk Revisi' : 'Detail Catatan Pendampingan'" :subtitle="$returned ? 'Catatan dikembalikan oleh GPK dan dapat diperbaiki lalu dikirim ulang untuk verifikasi.' : 'Lihat hasil pendampingan, tindak lanjut, dan kebutuhan dukungan siswa.'" :profile="$profile" />
-    <div class="abk-breadcrumb"><a href="{{ route('dev.tim-inklusi.dashboard') }}">Dashboard</a> <span>/</span> <a href="{{ route('dev.tim-inklusi.notes.index') }}">Riwayat Catatan</a> <span>/</span> Detail Catatan Pendampingan</div>
+    <x-preview.breadcrumbs :home="route('dev.tim-inklusi.dashboard')" :items="[['Riwayat Catatan', route('dev.tim-inklusi.notes.index')], [$note->siswa->nama_siswa, route('dev.tim-inklusi.students.show', $note->siswa)], ['Detail Catatan Pendampingan', null]]" />
     <x-preview.flash-messages />
 
     <section class="abk-panel abk-note-card">

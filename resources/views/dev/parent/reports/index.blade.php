@@ -1,6 +1,6 @@
 <x-layouts.preview :role="$role" :roles="$previewRoles" active="reports" :title="$student ? 'Laporan Perkembangan '.$student->nama_siswa : 'Laporan Perkembangan Anak'">
     <x-preview.topbar :title="$student ? 'Laporan Perkembangan '.$student->nama_siswa : 'Laporan Perkembangan Anak'" subtitle="Ringkasan perkembangan semester anak yang telah dipublikasikan GPK." :profile="$profile" />
-    <div class="abk-breadcrumb"><a href="{{ route('dev.parent.dashboard') }}">Dashboard</a> <span>/</span> Laporan Perkembangan</div>
+    <x-preview.breadcrumbs :home="route('dev.parent.dashboard')" :items="[['Laporan Perkembangan', null]]" />
 
     <section class="abk-panel abk-parent-report-filters">
         <form method="GET" action="{{ route('dev.parent.reports.index') }}">

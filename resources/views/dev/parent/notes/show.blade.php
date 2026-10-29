@@ -1,6 +1,6 @@
 <x-layouts.preview :role="$role" :roles="$previewRoles" active="progress" title="Detail Catatan Perkembangan">
     <x-preview.topbar title="Detail Catatan Perkembangan" subtitle="Informasi lengkap catatan siswa—hanya untuk dilihat." :profile="$profile" />
-    <div class="abk-breadcrumb"><a href="{{ route('dev.parent.dashboard') }}">Dashboard</a> <span>/</span> <a href="{{ route('dev.parent.notes.index') }}">Catatan Perkembangan</a> <span>/</span> Detail Catatan</div>
+    <x-preview.breadcrumbs :home="route('dev.parent.dashboard')" :items="[['Catatan Perkembangan', route('dev.parent.notes.index')], ['Detail Catatan', null]]" />
 
     <section class="abk-panel abk-parent-note-detail">
         <div class="abk-parent-detail-meta">

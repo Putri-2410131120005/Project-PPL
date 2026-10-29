@@ -1,6 +1,6 @@
 <x-layouts.preview :role="$role" :roles="$previewRoles" active="history" title="Riwayat Verifikasi">
     <x-preview.topbar title="Riwayat Verifikasi" subtitle="Arsip keputusan seluruh GPK untuk setiap versi catatan." :profile="$profile" />
-    <div class="abk-breadcrumb"><a href="{{ route('dev.gpk.dashboard') }}">Dashboard</a><span>/</span>Riwayat Verifikasi</div>
+    <x-preview.breadcrumbs :home="route('dev.gpk.dashboard')" :items="[['Riwayat Verifikasi', null]]" />
     <section class="abk-panel abk-gpk-filter-panel">
         <form method="GET" class="abk-gpk-filter-form">
             <input class="form-control abk-search-input" name="cari" value="{{ $filters['search'] }}" placeholder="Cari nama siswa...">

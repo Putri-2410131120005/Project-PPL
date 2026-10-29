@@ -16,7 +16,7 @@
     </section>
 
     <section class="abk-panel overflow-hidden">
-        <div class="table-responsive"><table class="table abk-table abk-students-table align-middle">
+        <div class="table-responsive"><table class="table abk-table abk-students-table abk-student-directory-table abk-responsive-card-table align-middle">
             <thead><tr><th>Nama Siswa</th><th>Kelas</th><th>Jenis Disabilitas</th><th>Guru Pendamping</th><th>Catatan Terakhir</th><th>Aksi</th></tr></thead>
             <tbody>
             @forelse ($students as $student)

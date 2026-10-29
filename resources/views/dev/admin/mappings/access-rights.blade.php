@@ -1,6 +1,6 @@
 <x-layouts.preview :role="$role" :roles="$previewRoles" active="mappings" title="Hak Akses Pengguna">
     <x-preview.topbar title="Hak Akses Pengguna" subtitle="Ringkasan peran yang tersedia dan jumlah akun yang ditetapkan pada setiap peran." :profile="$profile" />
-    <div class="abk-breadcrumb"><a href="{{ route('dev.preview', 'admin') }}">Dashboard</a> <span>/</span> Pemetaan Data <span>/</span> Hak Akses Pengguna</div>
+    <x-preview.breadcrumbs :home="route('dev.preview', 'admin')" :items="[['Pemetaan Data', null], ['Hak Akses Pengguna', null]]" />
 
     <section class="abk-panel overflow-hidden">
         <div class="table-responsive">

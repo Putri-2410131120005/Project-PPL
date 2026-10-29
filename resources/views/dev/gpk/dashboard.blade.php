@@ -1,10 +1,10 @@
 <x-layouts.preview :role="$role" :roles="$previewRoles" active="dashboard" title="Dashboard GPK">
     <x-preview.topbar title="Dashboard GPK" subtitle="Pantau verifikasi catatan, perkembangan siswa, rekap, dan laporan dari satu tempat." :profile="$profile" />
-    <div class="abk-breadcrumb">Dashboard</div>
+    <x-preview.breadcrumbs :home="route('dev.gpk.dashboard')" />
     <x-preview.flash-messages />
     <div class="abk-welcome">Selamat datang, {{ $gpk->nama }}</div>
 
-    <div class="row g-3">
+    <div class="row g-3 abk-stat-grid abk-stat-grid-4">
         <div class="col-12 col-md-6 col-xl-3"><x-preview.stat-card icon="•" tone="indigo" :value="$stats['students']" label="Siswa ABK" /></div>
         <div class="col-12 col-md-6 col-xl-3"><x-preview.stat-card icon="•" tone="amber" :value="$stats['pending']" label="Menunggu Verifikasi" /></div>
         <div class="col-12 col-md-6 col-xl-3"><x-preview.stat-card icon="•" tone="red" :value="$stats['revision']" label="Perlu Revisi" /></div>

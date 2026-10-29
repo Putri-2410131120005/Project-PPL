@@ -4,7 +4,7 @@
         :subtitle="$laporan->status_laporan === 'Tersedia' ? 'Laporan sudah dipublikasikan dan dapat dipantau Kepala Sekolah.' : 'Tinjau ringkasan siswa sebelum laporan bulanan dipublikasikan.'"
         :profile="$profile"
     />
-    <div class="abk-breadcrumb"><a href="{{ route('dev.gpk.dashboard') }}">Dashboard</a><span>/</span><a href="{{ route('dev.gpk.reports.index') }}">Laporan</a><span>/</span>{{ $laporan->periode_bulan->locale('id')->translatedFormat('F Y') }}</div>
+    <x-preview.breadcrumbs :home="route('dev.gpk.dashboard')" :items="[['Laporan', route('dev.gpk.reports.index')], [$laporan->periode_bulan->locale('id')->translatedFormat('F Y'), null]]" />
     <x-preview.flash-messages />
     @if ($errors->any())<div class="abk-alert abk-alert-danger"><ul class="mb-0">@foreach ($errors->all() as $error)<li>{{ $error }}</li>@endforeach</ul></div>@endif
 

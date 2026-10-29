@@ -1,6 +1,6 @@
 <x-layouts.preview :role="$role" :roles="$previewRoles" active="students" title="Detail Siswa">
     <x-preview.topbar title="Detail Siswa" subtitle="Profil ringkas dan riwayat perkembangan untuk kebutuhan pendampingan." :profile="$profile" />
-    <div class="abk-breadcrumb"><a href="{{ route('dev.tim-inklusi.dashboard') }}">Dashboard</a> <span>/</span> <a href="{{ route('dev.tim-inklusi.students.index') }}">Data Siswa</a> <span>/</span> Detail Siswa</div>
+    <x-preview.breadcrumbs :home="route('dev.tim-inklusi.dashboard')" :items="[['Data Siswa', route('dev.tim-inklusi.students.index')], [$siswa->nama_siswa, null]]" />
 
     <section class="abk-panel abk-student-profile">
         <div class="abk-student-identity">

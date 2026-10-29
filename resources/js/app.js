@@ -151,14 +151,139 @@ const initialiseReportSummaryModal = () => {
     });
 };
 
+const initialiseMobileSidebar = () => {
+    document.querySelectorAll('[data-mobile-sidebar]').forEach((sidebar) => {
+        const toggle = sidebar.querySelector('.abk-menu-toggle');
+        const content = sidebar.querySelector('.abk-sidebar-content');
+
+        if (! (toggle instanceof HTMLButtonElement) || ! (content instanceof HTMLElement)) {
+            return;
+        }
+
+        const setOpen = (isOpen) => {
+            sidebar.classList.toggle('is-open', isOpen);
+            toggle.setAttribute('aria-expanded', String(isOpen));
+            const label = toggle.querySelector('.visually-hidden');
+            if (label) {
+                label.textContent = isOpen ? 'Tutup menu navigasi' : 'Buka menu navigasi';
+            }
+        };
+
+        toggle.addEventListener('click', () => {
+            setOpen(! sidebar.classList.contains('is-open'));
+        });
+
+        content.addEventListener('click', (event) => {
+            if (window.innerWidth < 768 && event.target instanceof HTMLAnchorElement) {
+                setOpen(false);
+            }
+        });
+
+        window.addEventListener('resize', () => {
+            if (window.innerWidth >= 768) {
+                setOpen(false);
+            }
+        });
+    });
+};
+
+const initialiseMasterAccordions = () => {
+    document.querySelectorAll('[data-master-accordion]').forEach((accordion) => {
+        const disclosures = [...accordion.querySelectorAll('.abk-master-disclosure')];
+
+        disclosures.forEach((disclosure) => {
+            disclosure.addEventListener('toggle', () => {
+                if (! disclosure.open) {
+                    return;
+                }
+
+                disclosures.forEach((otherDisclosure) => {
+                    if (otherDisclosure !== disclosure) {
+                        otherDisclosure.open = false;
+                    }
+                });
+            });
+        });
+    });
+};
+
+const initialiseResponsiveTableDisclosures = () => {
+    document.querySelectorAll('.abk-responsive-card-table, .ks-students-table').forEach((table) => {
+        const rows = [...table.querySelectorAll('tbody tr')].filter((row) => ! row.querySelector('td[colspan]'));
+
+        rows.forEach((row) => {
+            const firstCell = row.querySelector('td:first-child');
+            if (! (firstCell instanceof HTMLTableCellElement)) {
+                return;
+            }
+
+            const studentName = firstCell.textContent.trim();
+            const actionLinks = [...row.querySelectorAll('td:last-child a')];
+            if (actionLinks.length) {
+                const quickActions = document.createElement('div');
+                quickActions.className = 'abk-row-quick-actions';
+                actionLinks.forEach((link) => quickActions.append(link.cloneNode(true)));
+                firstCell.append(quickActions);
+                row.classList.add('has-quick-actions');
+            }
+
+            const toggle = document.createElement('button');
+            toggle.type = 'button';
+            toggle.className = 'abk-row-disclosure-toggle';
+            toggle.setAttribute('aria-expanded', 'false');
+            toggle.setAttribute('aria-label', `Buka detail ${studentName}`);
+            toggle.innerHTML = '<span aria-hidden="true"></span>';
+            firstCell.append(toggle);
+
+            const setOpen = (isOpen) => {
+                row.classList.toggle('is-open', isOpen);
+                toggle.setAttribute('aria-expanded', String(isOpen));
+                toggle.setAttribute('aria-label', `${isOpen ? 'Tutup' : 'Buka'} detail ${studentName}`);
+            };
+
+            toggle.addEventListener('click', (event) => {
+                event.stopPropagation();
+                const willOpen = ! row.classList.contains('is-open');
+                rows.forEach((otherRow) => {
+                    if (otherRow !== row) {
+                        otherRow.classList.remove('is-open');
+                        const otherToggle = otherRow.querySelector('.abk-row-disclosure-toggle');
+                        if (otherToggle instanceof HTMLButtonElement) {
+                            otherToggle.setAttribute('aria-expanded', 'false');
+                            const otherName = otherRow.querySelector('td:first-child')?.textContent.trim() || 'siswa';
+                            otherToggle.setAttribute('aria-label', `Buka detail ${otherName}`);
+                        }
+                    }
+                });
+                setOpen(willOpen);
+            });
+
+            firstCell.addEventListener('click', (event) => {
+                const target = event.target;
+                if (window.innerWidth < 768 && target instanceof Element && ! target.closest('a, button, input, select')) {
+                    toggle.click();
+                }
+            });
+        });
+
+        table.classList.add('is-disclosure-ready');
+    });
+};
+
 if (document.readyState === 'loading') {
     document.addEventListener('DOMContentLoaded', () => {
         initialiseConfirmationModal();
         initialiseDevelopmentRoleSelector();
         initialiseReportSummaryModal();
+        initialiseMobileSidebar();
+        initialiseMasterAccordions();
+        initialiseResponsiveTableDisclosures();
     }, { once: true });
 } else {
     initialiseConfirmationModal();
     initialiseDevelopmentRoleSelector();
     initialiseReportSummaryModal();
+    initialiseMobileSidebar();
+    initialiseMasterAccordions();
+    initialiseResponsiveTableDisclosures();
 }

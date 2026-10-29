@@ -5,6 +5,7 @@ namespace Database\Seeders;
 use App\Models\CatatanPendampingan;
 use App\Models\CatatanPerkembangan;
 use App\Models\Kelas;
+use App\Models\LaporanBulanan;
 use App\Models\MataPelajaran;
 use App\Models\OrangTua;
 use App\Models\Pengguna;
@@ -18,6 +19,7 @@ use App\Models\TahunAjaran;
 use App\Services\GpkVerifikasiService;
 use App\Services\LaporanBulananService;
 use App\Support\ParentCredentials;
+use Carbon\CarbonImmutable;
 use Illuminate\Database\Seeder;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
@@ -34,7 +36,13 @@ class RealisticDemoSeeder extends Seeder
             $roles = Role::query()->pluck('id_role', 'nama_role');
             $year = TahunAjaran::resolveLabel('2026/2027');
             TahunAjaran::query()->whereKeyNot($year->getKey())->where('status', 'Aktif')->update(['status' => 'Selesai']);
-            $year->forceFill(['status' => 'Aktif'])->save();
+            $year->forceFill([
+                'mulai_ganjil' => '2026-07-01',
+                'selesai_ganjil' => '2026-12-31',
+                'mulai_genap' => '2027-01-01',
+                'selesai_genap' => '2027-06-30',
+                'status' => 'Aktif',
+            ])->save();
 
             $classes = collect([
                 ['nama_kelas' => 'VII A', 'tingkat' => 'VII'],
@@ -207,9 +215,33 @@ class RealisticDemoSeeder extends Seeder
                 $this->verifyIfNeeded('pendampingan', $note, $gpk, $status, $review);
             }
 
-            app(LaporanBulananService::class)->synchronizeCompletedMonths();
+            // Lengkapi alur demo Muhammad Daffa sampai dapat dilihat wali.
+            // Riwayat penolakan versi pertama tetap dipertahankan sebagai audit.
+            $this->publishMuhammadDaffaData($students['26070202'], $gpk);
 
-            $this->command?->info('Dataset demo realistis berhasil dibuat: 8 siswa, 8 wali, 9 staf, 16 catatan perkembangan/pendampingan.');
+            $monthlyReports = app(LaporanBulananService::class);
+            $monthlyReports->synchronizeCompletedMonths();
+
+            // Publikasikan September sebagai data demo lengkap. Proses ini juga
+            // membentuk rekap dan laporan perkembangan resmi untuk setiap siswa
+            // yang memiliki catatan terverifikasi pada bulan tersebut.
+            $septemberReport = LaporanBulanan::query()
+                ->whereDate('periode_bulan', '2026-09-01')
+                ->firstOrFail();
+            $septemberStart = CarbonImmutable::parse('2026-09-01', 'Asia/Makassar');
+            $septemberSnapshot = $monthlyReports->snapshot($septemberStart, $septemberStart->endOfMonth());
+            $septemberReport->forceFill([
+                'jumlah_siswa' => count($septemberSnapshot['students']),
+                'jumlah_catatan' => collect($septemberSnapshot['students'])->sum('jumlah_catatan'),
+                'data_laporan' => $septemberSnapshot,
+            ])->save();
+            if ($septemberReport->status_laporan !== 'Tersedia') {
+                $monthlyReports->publish($septemberReport, $gpk);
+            } else {
+                $monthlyReports->synchronizeOfficialProjection($septemberReport, $septemberReport->publikator()->firstOrFail());
+            }
+
+            $this->command?->info('Dataset demo realistis berhasil dibuat: 8 siswa, 8 wali, 9 staf, 16 catatan, laporan September, dan rekap siswa.');
         }, 3);
     }
 
@@ -236,5 +268,40 @@ class RealisticDemoSeeder extends Seeder
         }
 
         app(GpkVerifikasiService::class)->verifikasi($type, $note->getKey(), $gpk->getKey(), $status, $review);
+    }
+
+    private function publishMuhammadDaffaData(Siswa $student, Pengguna $gpk): void
+    {
+        $development = CatatanPerkembangan::query()
+            ->where('id_siswa', $student->getKey())
+            ->whereDate('tanggal_catatan', '2026-09-03')
+            ->firstOrFail();
+
+        if ($development->status_pengajuan === 'Perlu Revisi') {
+            $development->forceFill([
+                'hasil_tindakan' => 'Memahami pecahan senilai dan mampu menyelesaikan 4 dari 5 soal cerita dengan bantuan penanda informasi.',
+                'catatan_tambahan' => 'Latihan berikutnya difokuskan pada soal cerita bertahap menggunakan penanda diketahui, ditanya, dan operasi hitung.',
+                'status_pengajuan' => 'Dikirim',
+                'versi_pengajuan' => $development->versi_pengajuan + 1,
+                'tanggal_kirim' => now(),
+            ])->save();
+        }
+        if ($development->status_pengajuan === 'Dikirim') {
+            $this->verifyIfNeeded('perkembangan', $development->fresh(), $gpk, 'Terverifikasi', 'Revisi sudah melengkapi hasil soal cerita dan rencana latihan berikutnya.');
+        }
+
+        $assistance = CatatanPendampingan::query()
+            ->where('id_siswa', $student->getKey())
+            ->whereDate('tanggal_catatan', '2026-10-16')
+            ->firstOrFail();
+        if ($assistance->status_pengajuan === 'Draft') {
+            $assistance->forceFill([
+                'status_pengajuan' => 'Dikirim',
+                'tanggal_kirim' => now(),
+            ])->save();
+        }
+        if ($assistance->status_pengajuan === 'Dikirim') {
+            $this->verifyIfNeeded('pendampingan', $assistance->fresh(), $gpk, 'Terverifikasi', 'Strategi kata kunci dapat dilanjutkan dan dievaluasi pada pendampingan berikutnya.');
+        }
     }
 }

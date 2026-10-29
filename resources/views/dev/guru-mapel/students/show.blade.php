@@ -1,6 +1,6 @@
 <x-layouts.preview :role="$role" :roles="$roles" active="students" title="Detail Siswa">
     <x-preview.topbar title="Detail Siswa" subtitle="Profil ringkas dan riwayat perkembangan sebagai referensi pembelajaran." :profile="$profile" />
-    <x-preview.breadcrumbs :items="[['Data Siswa', route('dev.guru-mapel.students.index')], ['Detail Siswa', null]]" />
+    <x-preview.breadcrumbs :items="[['Data Siswa', route('dev.guru-mapel.students.index')], [$student->nama_siswa, null]]" />
 
     @php($companions = $student->relasiPendampingSiswa->map->pendamping->filter(fn ($person) => $person && $person->status_akun === 'Aktif' && in_array($person->role?->nama_role, ['Tim Inklusi', 'GPK'], true))->pluck('nama')->join(', '))
     <section class="abk-panel abk-student-profile">

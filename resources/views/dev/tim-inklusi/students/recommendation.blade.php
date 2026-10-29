@@ -1,6 +1,6 @@
 <x-layouts.preview :role="$role" :roles="$previewRoles" active="students" title="Rekomendasi Pendampingan">
     <x-preview.topbar title="Rekomendasi Pendampingan" subtitle="Lihat rekomendasi pendampingan sebagai acuan dukungan yang diberikan kepada siswa." :profile="$profile" />
-    <div class="abk-breadcrumb"><a href="{{ route('dev.tim-inklusi.dashboard') }}">Dashboard</a> <span>/</span> <a href="{{ route('dev.tim-inklusi.students.index') }}">Data Siswa</a> <span>/</span> Rekomendasi Pendampingan</div>
+    <x-preview.breadcrumbs :home="route('dev.tim-inklusi.dashboard')" :items="[['Data Siswa', route('dev.tim-inklusi.students.index')], [$siswa->nama_siswa, route('dev.tim-inklusi.students.show', $siswa)], ['Rekomendasi Pendampingan', null]]" />
 
     <section class="abk-panel abk-student-profile">
         <div class="abk-student-identity"><x-preview.student-avatar :student="$siswa" /><div><h2>{{ $siswa->nama_siswa }}</h2><p>{{ $siswa->kelas?->nama_kelas ?: 'Tanpa kelas' }} <span>•</span> NIS {{ $siswa->nis }}</p><span class="abk-need-pill">{{ $siswa->kebutuhan_khusus ?: 'Kebutuhan belum dicatat' }}</span></div></div>

@@ -1,6 +1,6 @@
 <x-layouts.preview :role="$role" :roles="$previewRoles" active="students" title="Data Siswa Dampingan">
     <x-preview.topbar title="Data Siswa Dampingan" subtitle="Daftar siswa ABK yang menjadi tanggung jawab pendampingan Anda." :profile="$profile" />
-    <div class="abk-breadcrumb"><a href="{{ route('dev.tim-inklusi.dashboard') }}">Dashboard</a> <span>/</span> Data Siswa</div>
+    <x-preview.breadcrumbs :home="route('dev.tim-inklusi.dashboard')" :items="[['Data Siswa', null]]" />
 
     <section class="abk-panel abk-inclusion-toolbar">
         <form class="abk-search-form" method="GET" action="{{ route('dev.tim-inklusi.students.index') }}">
@@ -16,7 +16,7 @@
     </section>
 
     <section class="abk-panel overflow-hidden">
-        <div class="table-responsive"><table class="table abk-table abk-students-table align-middle">
+        <div class="table-responsive"><table class="table abk-table abk-students-table abk-student-directory-table abk-responsive-card-table align-middle">
             <thead><tr><th>Nama Siswa</th><th>Kelas</th><th>Jenis Disabilitas</th><th>Guru Pendamping</th><th>Catatan Terakhir</th><th>Aksi</th></tr></thead>
             <tbody>
             @forelse ($students as $student)

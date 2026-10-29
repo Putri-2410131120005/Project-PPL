@@ -5,7 +5,7 @@
 
     <div class="abk-welcome">Selamat datang, {{ $profile['name'] }}</div>
     @php($numbers = array_values($stats))
-    <div class="row g-3">
+    <div class="row g-3 abk-stat-grid abk-stat-grid-3">
         <div class="col-12 col-lg-4"><x-preview.stat-card icon="&bull;" tone="indigo" :value="$numbers[0]" label="Siswa yang Diajar" /></div>
         <div class="col-12 col-lg-4"><x-preview.stat-card icon="&bull;" tone="amber" :value="$numbers[1]" label="Menunggu Verifikasi" /></div>
         <div class="col-12 col-lg-4"><x-preview.stat-card icon="&bull;" tone="teal" :value="$numbers[2]" label="Terverifikasi" /></div>

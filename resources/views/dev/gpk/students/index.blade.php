@@ -1,6 +1,6 @@
 <x-layouts.preview :role="$role" :roles="$previewRoles" active="students" title="Data Siswa ABK">
     <x-preview.topbar title="Data Siswa ABK" subtitle="Daftar siswa ABK yang menjadi tanggung jawab GPK." :profile="$profile" />
-    <div class="abk-breadcrumb"><a href="{{ route('dev.gpk.dashboard') }}">Dashboard</a><span>/</span>Data Siswa</div>
+    <x-preview.breadcrumbs :home="route('dev.gpk.dashboard')" :items="[['Data Siswa', null]]" />
     <section class="abk-panel abk-inclusion-toolbar">
         <form class="abk-search-form" method="GET">
             @if ($filters['tingkat'])<input type="hidden" name="tingkat" value="{{ $filters['tingkat'] }}">@endif
@@ -14,7 +14,7 @@
         <div class="abk-users-count">Total {{ $students->total() }} siswa terdaftar</div>
     </section>
     <section class="abk-panel overflow-hidden">
-        <div class="table-responsive"><table class="table abk-table align-middle">
+        <div class="table-responsive"><table class="table abk-table abk-student-directory-table abk-student-directory-table-gpk abk-responsive-card-table align-middle">
             <thead><tr><th>Nama Siswa</th><th>NIS</th><th>Kelas</th><th>Jenis Disabilitas</th><th>Guru Pendamping</th><th>Catatan Terakhir</th><th>Aksi</th></tr></thead>
             <tbody>
             @forelse ($students as $student)
@@ -23,7 +23,7 @@
                     $lastDate = collect([$student->perkembangan_terakhir, $student->pendampingan_terakhir])->filter()->sortDesc()->first();
                 @endphp
                 <tr>
-                    <td class="abk-data-name">{{ $student->nama_siswa }}</td><td>{{ $student->nis }}</td>
+                    <td class="abk-data-name"><div class="abk-student-table-name"><x-preview.student-avatar :student="$student" size="small" /><span>{{ $student->nama_siswa }}</span></div></td><td>{{ $student->nis }}</td>
                     <td>{{ $student->kelas?->nama_kelas ?: '—' }}</td><td><span class="abk-need-pill">{{ $student->kebutuhan_khusus ?: 'Belum dicatat' }}</span></td>
                     <td>{{ $companions ?: '—' }}</td>
                     <td>{{ $lastDate ? \Illuminate\Support\Carbon::parse($lastDate)->locale('id')->translatedFormat('d M Y') : '—' }}</td>

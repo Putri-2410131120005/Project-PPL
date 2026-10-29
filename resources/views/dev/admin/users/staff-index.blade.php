@@ -1,6 +1,6 @@
 <x-layouts.preview :role="$role" :roles="$previewRoles" active="users" title="Data Guru">
     <x-preview.topbar title="Data Guru" subtitle="Kelola Guru Mata Pelajaran, Tim Inklusi, GPK, dan Kepala Sekolah." :profile="$profile" />
-    <div class="abk-breadcrumb"><a href="{{ route('dev.preview', 'admin') }}">Dashboard</a> <span>/</span> Data Guru</div>
+    <x-preview.breadcrumbs :home="route('dev.preview', 'admin')" :items="[['Pengguna', route('dev.admin.users.index')], ['Data Guru', null]]" />
 
     <x-preview.flash-messages />
 

@@ -52,14 +52,25 @@
     };
 @endphp
 
-<aside class="abk-sidebar">
-    <div class="abk-brand">INKLUSI</div>
-    <div class="abk-brand-subtitle">Monitoring ABK</div>
+<aside class="abk-sidebar" data-mobile-sidebar>
+    <div class="abk-sidebar-header">
+        <div>
+            <div class="abk-brand">INKLUSI</div>
+            <div class="abk-brand-subtitle">Monitoring ABK</div>
+        </div>
+        <button class="abk-menu-toggle" type="button" aria-expanded="false" aria-controls="abk-sidebar-content">
+            <span class="abk-menu-toggle-icon" aria-hidden="true"><i></i><i></i><i></i></span>
+            <span class="visually-hidden">Buka menu navigasi</span>
+        </button>
+    </div>
+    <div class="abk-sidebar-content" id="abk-sidebar-content">
+    <div class="abk-sidebar-content-inner">
     <nav class="abk-nav d-flex flex-column" aria-label="Navigasi utama">
         @foreach ($menus as $menu)
             @if (isset($menu['children']))
                 <details class="abk-nav-group" @if ($active === $menu['key']) open @endif>
                     <summary class="abk-nav-link {{ $active === $menu['key'] ? 'active' : '' }}">
+                        <x-preview.nav-icon :name="$menu['key']" />
                         <span>{{ $menu['label'] }}</span><span class="abk-nav-chevron" aria-hidden="true">⌄</span>
                     </summary>
                     <div class="abk-nav-submenu">
@@ -69,7 +80,7 @@
                     </div>
                 </details>
             @else
-                <a class="abk-nav-link {{ $active === $menu['key'] ? 'active' : '' }}" href="{{ $menu['href'] }}" @if ($active === $menu['key']) aria-current="page" @endif>{{ $menu['label'] }}</a>
+                <a class="abk-nav-link {{ $active === $menu['key'] ? 'active' : '' }}" href="{{ $menu['href'] }}" @if ($active === $menu['key']) aria-current="page" @endif><x-preview.nav-icon :name="$menu['key']" /><span>{{ $menu['label'] }}</span></a>
             @endif
         @endforeach
     </nav>
@@ -86,4 +97,6 @@
         </form>
     </div>
     <div class="abk-sidebar-footer">{{ $roles[$role]['label'] }}@if (! empty($roles[$role]['secondary']))<small>{{ $roles[$role]['secondary'] }}</small>@endif</div>
+    </div>
+    </div>
 </aside>

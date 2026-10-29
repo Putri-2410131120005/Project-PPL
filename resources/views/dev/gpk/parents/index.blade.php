@@ -1,6 +1,6 @@
 <x-layouts.preview :role="$role" :roles="$previewRoles" active="parents" title="Data Orang Tua / Wali">
     <x-preview.topbar title="Data Orang Tua / Wali" subtitle="Data wali siswa dalam penugasan GPK; halaman ini bersifat baca saja." :profile="$profile" />
-    <div class="abk-breadcrumb"><a href="{{ route('dev.gpk.dashboard') }}">Dashboard</a><span>/</span>Data Orang Tua / Wali</div>
+    <x-preview.breadcrumbs :home="route('dev.gpk.dashboard')" :items="[['Data Orang Tua / Wali', null]]" />
     <section class="abk-panel abk-inclusion-toolbar">
         <form class="abk-search-form" method="GET">@if($filters['tingkat'])<input type="hidden" name="tingkat" value="{{ $filters['tingkat'] }}">@endif<input class="form-control abk-search-input" name="cari" value="{{ $filters['cari'] }}" placeholder="Cari nama siswa..."></form>
         <nav class="abk-chip-list">@foreach([''=>'Semua','X'=>'X','XI'=>'XI','XII'=>'XII'] as $value=>$label)<a class="abk-filter {{ $filters['tingkat']===$value?'active':'' }}" href="{{ route('dev.gpk.parents.index',array_filter(['cari'=>$filters['cari'],'tingkat'=>$value])) }}">{{ $label }}</a>@endforeach</nav>

@@ -1,8 +1,8 @@
 <x-layouts.preview :role="$role" :roles="$previewRoles" active="recaps" title="Rekap Perkembangan Siswa">
     <x-preview.topbar title="Rekap Perkembangan Siswa" :subtitle="'Rekap seluruh siswa untuk '.$period.' berdasarkan catatan yang telah terverifikasi GPK.'" :profile="$profile" />
-    <div class="abk-breadcrumb"><a href="{{ route('dev.gpk.dashboard') }}">Dashboard</a><span>/</span>Rekap</div>
+    <x-preview.breadcrumbs :home="route('dev.gpk.dashboard')" :items="[['Rekap', null]]" />
     <section class="abk-panel abk-gpk-filter-panel">
-        <form method="GET" class="abk-gpk-filter-form">
+        <form method="GET" class="abk-gpk-filter-form abk-gpk-recap-filter">
             <input class="form-control abk-search-input" name="cari" value="{{ $filters['cari'] }}" placeholder="Cari nama siswa...">
             <select class="form-select" name="tingkat"><option value="">Semua Kelas</option>@foreach(['X','XI','XII'] as $level)<option value="{{ $level }}" @selected($filters['tingkat']===$level)>Kelas {{ $level }}</option>@endforeach</select>
             <select class="form-select" name="semester"><option value="ganjil" @selected($filters['semester']==='ganjil')>Semester Ganjil</option><option value="genap" @selected($filters['semester']==='genap')>Semester Genap</option></select>

@@ -1,17 +1,17 @@
 <x-layouts.preview :role="$role" :roles="$previewRoles" active="history" title="Riwayat Catatan Pendamping">
     <x-preview.topbar title="Riwayat Catatan Pendamping" subtitle="Pantau catatan pendampingan yang sudah dibuat dan status verifikasinya." :profile="$profile" />
-    <div class="abk-breadcrumb"><a href="{{ route('dev.tim-inklusi.dashboard') }}">Dashboard</a> <span>/</span> Riwayat Catatan</div>
+    <x-preview.breadcrumbs :home="route('dev.tim-inklusi.dashboard')" :items="[['Riwayat Catatan', null]]" />
 
     <section class="abk-panel abk-inclusion-toolbar">
-        <form class="abk-search-form" method="GET" action="{{ route('dev.tim-inklusi.notes.index') }}">
-            @if ($filters['status'])<input type="hidden" name="status" value="{{ $filters['status'] }}">@endif
+        <form class="abk-search-form abk-history-filter-form" method="GET" action="{{ route('dev.tim-inklusi.notes.index') }}">
             <input class="form-control abk-search-input" name="cari" value="{{ $filters['cari'] }}" placeholder="Cari nama siswa..." aria-label="Cari nama siswa">
+            <label class="visually-hidden" for="companion-note-status">Status catatan</label>
+            <select class="form-select abk-filter-select" id="companion-note-status" name="status" onchange="this.form.submit()">
+                @foreach (['' => 'Semua status', 'Draft' => 'Draft', 'Dikirim' => 'Menunggu Verifikasi', 'Terverifikasi' => 'Terverifikasi', 'Perlu Revisi' => 'Dikembalikan'] as $value => $label)
+                    <option value="{{ $value }}" @selected($filters['status'] === $value)>{{ $label }}</option>
+                @endforeach
+            </select>
         </form>
-        <nav class="abk-chip-list" aria-label="Filter status catatan">
-            @foreach (['' => 'Semua', 'Draft' => 'Draft', 'Dikirim' => 'Menunggu Verifikasi', 'Terverifikasi' => 'Terverifikasi', 'Perlu Revisi' => 'Dikembalikan'] as $value => $label)
-                <a class="abk-filter {{ $filters['status'] === $value ? 'active' : '' }}" href="{{ route('dev.tim-inklusi.notes.index', array_filter(['cari' => $filters['cari'], 'status' => $value])) }}">{{ $label }}</a>
-            @endforeach
-        </nav>
         <div class="abk-users-count">Total {{ $notes->total() }} catatan</div>
     </section>
 

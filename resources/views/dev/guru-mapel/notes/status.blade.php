@@ -3,15 +3,14 @@
     <x-preview.breadcrumbs :items="[['Riwayat Catatan', null]]" />
 
     <section class="abk-panel abk-inclusion-toolbar">
-        <form class="abk-search-form" method="GET" action="{{ route('dev.guru-mapel.notes.status') }}">
-            @if (request('status', 'Semua') !== 'Semua')<input type="hidden" name="status" value="{{ request('status') }}">@endif
+        <form class="abk-search-form abk-history-filter-form" method="GET" action="{{ route('dev.guru-mapel.notes.status') }}">
             <input class="form-control abk-search-input" name="q" value="{{ request('q') }}" placeholder="Cari nama siswa..." aria-label="Cari nama siswa">
+            <label class="visually-hidden" for="guru-note-status">Status catatan</label>
+            <select class="form-select abk-filter-select" id="guru-note-status" name="status" onchange="this.form.submit()">
+                <option value="Semua">Semua status</option>
+                @foreach ($labels as $value => $label)<option value="{{ $value }}" @selected(request('status', 'Semua') === $value)>{{ $label }}</option>@endforeach
+            </select>
         </form>
-        <nav class="abk-chip-list" aria-label="Filter status catatan">
-            @foreach (['Semua' => 'Semua'] + $labels as $value => $label)
-                <a class="abk-filter {{ request('status', 'Semua') === $value ? 'active' : '' }}" href="{{ route('dev.guru-mapel.notes.status', array_filter(['q' => request('q'), 'status' => $value === 'Semua' ? null : $value])) }}">{{ $label }}</a>
-            @endforeach
-        </nav>
         <div class="abk-users-count">Total {{ $notes->total() }} catatan</div>
     </section>
 

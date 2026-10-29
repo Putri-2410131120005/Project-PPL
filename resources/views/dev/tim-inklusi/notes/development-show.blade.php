@@ -1,6 +1,6 @@
 <x-layouts.preview :role="$role" :roles="$previewRoles" active="students" title="Detail Catatan Guru Mata Pelajaran">
     <x-preview.topbar title="Detail Catatan Guru Mata Pelajaran" subtitle="Lihat catatan perkembangan siswa beserta sumber dan status verifikasinya." :profile="$profile" />
-    <div class="abk-breadcrumb"><a href="{{ route('dev.tim-inklusi.dashboard') }}">Dashboard</a> <span>/</span> <a href="{{ route('dev.tim-inklusi.students.show', $note->siswa) }}">Detail Siswa</a> <span>/</span> Detail Catatan</div>
+    <x-preview.breadcrumbs :home="route('dev.tim-inklusi.dashboard')" :items="[['Data Siswa', route('dev.tim-inklusi.students.index')], [$note->siswa->nama_siswa, route('dev.tim-inklusi.students.show', $note->siswa)], ['Detail Catatan', null]]" />
     <section class="abk-panel abk-note-card">
         <div class="abk-note-heading"><div><h2>{{ $note->siswa->nama_siswa }}</h2><p>{{ $note->siswa->kelas?->nama_kelas ?: 'Tanpa kelas' }}</p></div><x-preview.status-badge :status="$note->status_pengajuan" /></div>
         <div class="abk-note-meta"><div><small>Sumber Catatan</small><strong>Guru Mata Pelajaran</strong></div><div><small>Nama Guru</small><strong>{{ $note->pembuat?->nama ?: '—' }}</strong></div><div><small>Mata Pelajaran</small><strong>{{ $note->mataPelajaran?->nama_mapel ?: '—' }}</strong></div><div><small>Tanggal</small><strong>{{ $note->tanggal_catatan->locale('id')->translatedFormat('d F Y') }}</strong></div></div>

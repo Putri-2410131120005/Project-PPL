@@ -1,6 +1,6 @@
 <x-layouts.preview :role="$role" :roles="$previewRoles" active="academic-years" :title="$title">
     <x-preview.topbar :title="$title" subtitle="Tentukan rentang semester agar filter laporan dan rekap konsisten." :profile="$profile" />
-    <div class="abk-breadcrumb"><a href="{{ route('dev.preview', 'admin') }}">Dashboard</a> <span>/</span> <a href="{{ route('dev.admin.academic-years.index') }}">Tahun Ajaran</a> <span>/</span> {{ $title }}</div>
+    <x-preview.breadcrumbs :home="route('dev.preview', 'admin')" :items="[['Tahun Ajaran', route('dev.admin.academic-years.index')], [$title, null]]" />
     <section class="abk-panel abk-user-form"><form method="POST" action="{{ $academicYear->exists ? route('dev.admin.academic-years.update', $academicYear) : route('dev.admin.academic-years.store') }}" data-confirm-form data-confirm-title="Simpan tahun ajaran?" data-confirm-message="Periode ini akan tersedia untuk kelas, rekap, dan laporan." data-confirm-button="Simpan">
         @csrf @if($academicYear->exists) @method('PUT') @endif
         <div class="row g-3">
