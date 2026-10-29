@@ -5,7 +5,9 @@
 @endphp
 <x-layouts.preview :role="$role" :roles="$previewRoles" active="students" :title="$returned ? 'Perbaiki Catatan Pendampingan' : 'Tambah Catatan Pendamping'">
     <x-preview.topbar :title="$returned ? 'Perbaiki Catatan Pendampingan' : ($editing ? 'Edit Draft Catatan Pendampingan' : 'Tambah Catatan Pendamping')" :subtitle="$returned ? 'Perbaiki catatan sesuai masukan GPK, lalu simpan atau kirim ulang untuk verifikasi.' : 'Catat hasil pendampingan, perkembangan, dan tindak lanjut siswa.'" :profile="$profile" />
-    <div class="abk-breadcrumb"><a href="{{ route('dev.tim-inklusi.dashboard') }}">Dashboard</a> <span>/</span> <a href="{{ route('dev.tim-inklusi.students.index') }}">Data Siswa</a> <span>/</span> {{ $returned ? 'Perbaiki Catatan' : 'Tambah Catatan Pendamping' }}</div>
+    <x-preview.breadcrumbs :home="route('dev.tim-inklusi.dashboard')" :items="$editing
+        ? [['Riwayat Catatan', route('dev.tim-inklusi.notes.index')], [$siswa->nama_siswa, route('dev.tim-inklusi.notes.show', $note)], [$returned ? 'Perbaiki Catatan' : 'Edit Draft', null]]
+        : [['Data Siswa', route('dev.tim-inklusi.students.index')], [$siswa->nama_siswa, route('dev.tim-inklusi.students.show', $siswa)], ['Tambah Catatan Pendamping', null]]" />
     <x-preview.flash-messages />
 
     <section class="abk-panel abk-note-card">

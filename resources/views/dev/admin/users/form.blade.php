@@ -1,6 +1,6 @@
 <x-layouts.preview :role="$role" :roles="$previewRoles" active="users" :title="$title">
     <x-preview.topbar :title="$title" subtitle="Lengkapi data akun pengguna sesuai kebutuhan sekolah." :profile="$profile" />
-    <div class="abk-breadcrumb"><a href="{{ route('dev.preview', 'admin') }}">Dashboard</a> <span>/</span> <a href="{{ route('dev.admin.users.index') }}">Pengguna</a> <span>/</span> {{ $title }}</div>
+    <x-preview.breadcrumbs :home="route('dev.preview', 'admin')" :items="[['Pengguna', route('dev.admin.users.index')], [$title, null]]" />
     <section class="abk-panel abk-user-form">
         @unless ($user->exists)
             <div class="alert alert-info abk-alert mb-4">

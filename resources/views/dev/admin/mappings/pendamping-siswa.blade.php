@@ -1,6 +1,6 @@
 <x-layouts.preview :role="$role" :roles="$previewRoles" active="mappings" title="Hubungan Pendamping dan Siswa">
     <x-preview.topbar title="Hubungan Pendamping dan Siswa" subtitle="Tinjau GPK atau Tim Inklusi yang mendampingi setiap siswa ABK." :profile="$profile" />
-    <div class="abk-breadcrumb"><a href="{{ route('dev.preview', 'admin') }}">Dashboard</a> <span>/</span> Hubungan Data <span>/</span> Pendamping Siswa</div>
+    <x-preview.breadcrumbs :home="route('dev.preview', 'admin')" :items="[['Hubungan Data', null], ['Pendamping Siswa', null]]" />
 
     <x-preview.flash-messages />
 

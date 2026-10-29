@@ -1,6 +1,6 @@
 <x-layouts.preview :role="$role" :roles="$previewRoles" active="notes" title="Verifikasi Catatan">
     <x-preview.topbar title="Verifikasi Catatan" subtitle="Antrean seluruh catatan Guru Mata Pelajaran dan Tim Inklusi yang perlu ditinjau, dikembalikan, atau diverifikasi GPK." :profile="$profile" />
-    <div class="abk-breadcrumb"><a href="{{ route('dev.gpk.dashboard') }}">Dashboard</a><span>/</span>Verifikasi Catatan</div>
+    <x-preview.breadcrumbs :home="route('dev.gpk.dashboard')" :items="[['Verifikasi Catatan', null]]" />
     <section class="abk-panel abk-gpk-filter-panel">
         <form method="GET" class="abk-gpk-filter-form">
             <input class="form-control abk-search-input" name="cari" value="{{ $filters['search'] }}" placeholder="Cari nama siswa...">

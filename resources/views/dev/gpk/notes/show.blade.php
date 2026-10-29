@@ -1,6 +1,6 @@
 <x-layouts.preview :role="$role" :roles="$previewRoles" active="notes" :title="$note->status_pengajuan === 'Dikirim' ? 'Verifikasi Catatan' : 'Detail Catatan'">
     <x-preview.topbar :title="$type === 'perkembangan' ? 'Verifikasi Catatan Perkembangan' : 'Verifikasi Catatan Pendampingan'" subtitle="Catatan yang disetujui akan langsung tersedia bagi Orang Tua/Wali." :profile="$profile" />
-    <div class="abk-breadcrumb"><a href="{{ route('dev.gpk.dashboard') }}">Dashboard</a><span>/</span><a href="{{ route('dev.gpk.notes.index') }}">Verifikasi Catatan</a><span>/</span>Detail Catatan</div>
+    <x-preview.breadcrumbs :home="route('dev.gpk.dashboard')" :items="[['Verifikasi Catatan', route('dev.gpk.notes.index')], ['Detail Catatan', null]]" />
     <x-preview.flash-messages />
     @if ($errors->any())<div class="abk-alert abk-alert-danger"><strong>Tindakan belum berhasil.</strong><ul class="mb-0 mt-2">@foreach($errors->all() as $error)<li>{{ $error }}</li>@endforeach</ul></div>@endif
 

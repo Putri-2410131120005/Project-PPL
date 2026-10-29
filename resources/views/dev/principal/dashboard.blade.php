@@ -1,6 +1,6 @@
 <x-principal.layout :profile="$profile" title="Dashboard Kepala Sekolah" subtitle="Lihat ringkasan monitoring dan laporan perkembangan siswa ABK dari satu tempat.">
 <div class="ks-welcome">Selamat datang, Kepala Sekolah</div>
-<div class="ks-stats">
+<div class="ks-stats abk-stat-grid abk-stat-grid-3">
 <a class="abk-stat-card" href="{{ route('dev.principal.students') }}"><span class="abk-stat-icon abk-icon-indigo" aria-hidden="true">•</span><div><div class="abk-stat-number">{{ $stats['students'] }}</div><div class="abk-stat-label">Siswa Terdaftar</div></div></a>
 <div class="abk-stat-card"><span class="abk-stat-icon abk-icon-amber" aria-hidden="true">•</span><div><div class="abk-stat-number">{{ $stats['verified'] }}</div><div class="abk-stat-label">Catatan Terverifikasi</div></div></div>
 <a class="abk-stat-card" href="{{ route('dev.principal.archives') }}"><span class="abk-stat-icon abk-icon-red" aria-hidden="true">•</span><div><div class="ks-stat-period">{{ $stats['period'] ?? 'Belum tersedia' }}</div><div class="abk-stat-label">Laporan Terbaru</div></div></a>

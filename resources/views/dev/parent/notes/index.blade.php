@@ -1,6 +1,6 @@
 <x-layouts.preview :role="$role" :roles="$previewRoles" active="progress" title="Catatan Perkembangan">
     <x-preview.topbar title="Catatan Perkembangan" :subtitle="$student ? 'Riwayat catatan '.$student->nama_siswa.' yang telah diverifikasi GPK.' : 'Riwayat catatan anak yang telah diverifikasi GPK.'" :profile="$profile" />
-    <div class="abk-breadcrumb"><a href="{{ route('dev.parent.dashboard') }}">Dashboard</a> <span>/</span> Catatan Perkembangan</div>
+    <x-preview.breadcrumbs :home="route('dev.parent.dashboard')" :items="[['Catatan Perkembangan', null]]" />
 
     <section class="abk-panel abk-parent-date-filter">
         <div><strong>Cari catatan berdasarkan tanggal</strong><small>Pilih bulan atau tanggal pada kalender.</small></div>

@@ -1,6 +1,6 @@
 <x-layouts.preview :role="$role" :roles="$previewRoles" active="dashboard" title="Dashboard Orang Tua">
     <x-preview.topbar title="Dashboard Orang Tua" subtitle="Lihat perkembangan anak yang telah diverifikasi oleh GPK." :profile="$profile" />
-    <div class="abk-breadcrumb">Dashboard</div>
+    <x-preview.breadcrumbs :home="route('dev.parent.dashboard')" />
     <x-preview.flash-messages />
 
     @if (! $student)

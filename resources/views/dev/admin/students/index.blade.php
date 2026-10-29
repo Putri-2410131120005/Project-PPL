@@ -1,10 +1,10 @@
 <x-layouts.preview :role="$role" :roles="$previewRoles" active="students" title="Kelola Data Siswa ABK">
     <x-preview.topbar title="Kelola Data Siswa ABK" subtitle="Kelola data induk siswa, kelas, kebutuhan khusus, dan status keaktifan." :profile="$profile" />
-    <div class="abk-breadcrumb"><a href="{{ route('dev.preview', 'admin') }}">Dashboard</a> <span>/</span> Siswa ABK</div>
+    <x-preview.breadcrumbs :home="route('dev.preview', 'admin')" :items="[['Siswa ABK', null]]" />
 
     <x-preview.flash-messages />
 
-    <section class="abk-panel abk-users-toolbar">
+    <section class="abk-panel abk-users-toolbar abk-primary-toolbar">
         <form class="abk-search-form" method="GET" action="{{ route('dev.admin.students.index') }}">
             @if (! empty($filters['kelas']))<input type="hidden" name="kelas" value="{{ $filters['kelas'] }}">@endif
             @if (! empty($filters['status']))<input type="hidden" name="status" value="{{ $filters['status'] }}">@endif

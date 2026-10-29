@@ -1,7 +1,7 @@
 <x-layouts.preview :role="$role" :roles="$previewRoles" active="recaps" title="Detail Rekap Perkembangan Siswa">
     <x-preview.topbar title="Detail Rekap Perkembangan Siswa" subtitle="Riwayat perkembangan siswa selama satu semester berdasarkan catatan yang telah terverifikasi." :profile="$profile" />
-    <div class="abk-breadcrumb"><a href="{{ route('dev.gpk.dashboard') }}">Dashboard</a><span>/</span><a href="{{ route('dev.gpk.recaps.index') }}">Rekap</a><span>/</span>{{ $siswa->nama_siswa }}</div>
-    <div class="abk-gpk-page-actions">
+    <x-preview.breadcrumbs :home="route('dev.gpk.dashboard')" :items="[['Rekap', route('dev.gpk.recaps.index')], [$siswa->nama_siswa, null]]" />
+    <div class="abk-gpk-page-actions abk-export-actions">
         <a class="abk-outline-button text-decoration-none" href="{{ route('dev.gpk.recaps.export', ['siswa' => $siswa, 'semester' => $semester, 'tahun_ajaran' => $schoolYear]) }}">Unduh Excel</a>
         <a class="abk-outline-button" href="{{ route('dev.gpk.recaps.pdf.download', ['siswa' => $siswa, 'semester' => $semester, 'tahun_ajaran' => $schoolYear]) }}">Unduh PDF</a>
         <a class="abk-dark-button" href="{{ route('dev.gpk.recaps.pdf.preview', ['siswa' => $siswa, 'semester' => $semester, 'tahun_ajaran' => $schoolYear]) }}">Pratinjau PDF</a>

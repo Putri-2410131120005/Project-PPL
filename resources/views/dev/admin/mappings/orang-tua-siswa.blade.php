@@ -1,6 +1,6 @@
 <x-layouts.preview :role="$role" :roles="$previewRoles" active="mappings" title="Hubungan Orang Tua dan Siswa">
     <x-preview.topbar title="Hubungan Orang Tua dan Siswa" subtitle="Tinjau akun Orang Tua/Wali dan siswa yang menjadi tanggung jawabnya." :profile="$profile" />
-    <div class="abk-breadcrumb"><a href="{{ route('dev.preview', 'admin') }}">Dashboard</a> <span>/</span> Hubungan Data <span>/</span> Orang Tua Siswa</div>
+    <x-preview.breadcrumbs :home="route('dev.preview', 'admin')" :items="[['Hubungan Data', null], ['Orang Tua Siswa', null]]" />
 
     <x-preview.flash-messages />
 

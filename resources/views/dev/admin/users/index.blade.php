@@ -1,13 +1,13 @@
 <x-layouts.preview :role="$role" :roles="$previewRoles" active="users" title="Kelola Pengguna">
     <x-preview.topbar title="Kelola Pengguna" subtitle="Master akun seluruh pengguna, termasuk Orang Tua/Wali. Gunakan filter untuk memilih role." :profile="$profile" />
-    <div class="abk-breadcrumb"><a href="{{ route('dev.preview', 'admin') }}">Dashboard</a> <span>/</span> Pengguna</div>
+    <x-preview.breadcrumbs :home="route('dev.preview', 'admin')" :items="[['Pengguna', null]]" />
 
     <x-preview.flash-messages />
     @if (session('temporary_parent_password'))
         <div class="alert alert-warning abk-alert"><strong>Kredensial akun:</strong> username <code>{{ session('temporary_parent_username') }}</code> dan password sementara <code>{{ session('temporary_parent_password') }}</code>. Jika kredensial ini hilang, admin dapat menggunakan Reset Password kembali.</div>
     @endif
 
-    <section class="abk-panel abk-users-toolbar">
+    <section class="abk-panel abk-users-toolbar abk-primary-toolbar">
         <form class="abk-search-form" method="GET" action="{{ route('dev.admin.users.index') }}">
             @if (! empty($filters['role']))<input type="hidden" name="role" value="{{ $filters['role'] }}">@endif
             <input class="form-control abk-search-input" name="cari" value="{{ $filters['cari'] ?? '' }}" placeholder="{{ $isParentFilter ? 'Cari nama atau username...' : 'Cari nama, email, username, atau NIP...' }}">
@@ -16,12 +16,17 @@
         <a class="abk-primary-button" href="{{ route('dev.admin.users.create') }}">Tambah Pengguna</a>
     </section>
 
-    <section class="abk-panel abk-filter-bar">
-        <span>Role:</span>
-        <a class="abk-filter {{ empty($filters['role']) ? 'active' : '' }}" href="{{ route('dev.admin.users.index', array_filter(['cari' => $filters['cari'] ?? null])) }}">Semua</a>
-        @foreach ($roles as $filterRole)
-            <a class="abk-filter {{ (string) ($filters['role'] ?? '') === (string) $filterRole->id_role ? 'active' : '' }}" href="{{ route('dev.admin.users.index', array_filter(['cari' => $filters['cari'] ?? null, 'role' => $filterRole->id_role])) }}">{{ $filterRole->nama_role }}</a>
-        @endforeach
+    <section class="abk-panel abk-filter-bar abk-compact-filter-bar">
+        <form class="abk-compact-filter-form" method="GET" action="{{ route('dev.admin.users.index') }}">
+            <input type="hidden" name="cari" value="{{ $filters['cari'] ?? '' }}">
+            <label for="role-filter">Role pengguna</label>
+            <select class="form-select abk-filter-select" id="role-filter" name="role" onchange="this.form.submit()">
+                <option value="">Semua role</option>
+                @foreach ($roles as $filterRole)
+                    <option value="{{ $filterRole->id_role }}" @selected((string) ($filters['role'] ?? '') === (string) $filterRole->id_role)>{{ $filterRole->nama_role }}</option>
+                @endforeach
+            </select>
+        </form>
     </section>
 
     <section class="abk-panel overflow-hidden">

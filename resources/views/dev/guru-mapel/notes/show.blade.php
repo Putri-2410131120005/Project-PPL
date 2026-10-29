@@ -1,7 +1,7 @@
 @php($latestDecision = $note->verifikasi->sortByDesc('versi_pengajuan')->first())
 <x-layouts.preview :role="$role" :roles="$roles" active="history" title="Detail Catatan Perkembangan">
     <x-preview.topbar title="Detail Catatan Perkembangan" subtitle="Lihat peristiwa, tindakan guru, dan respons siswa." :profile="$profile" />
-    <x-preview.breadcrumbs :items="[['Riwayat Catatan', route('dev.guru-mapel.notes.status')], ['Detail Catatan', null]]" />
+    <x-preview.breadcrumbs :items="[['Riwayat Catatan', route('dev.guru-mapel.notes.status')], [$note->siswa->nama_siswa, route('dev.guru-mapel.students.show', $note->siswa)], ['Detail Catatan', null]]" />
     <x-preview.flash-messages />
     <section class="abk-panel abk-note-card">
         <div class="abk-note-heading"><div><h2>{{ $note->siswa->nama_siswa }}</h2><p>{{ $note->siswa->kelas?->nama_kelas ?: 'Tanpa kelas' }} &bull; Versi {{ $note->versi_pengajuan }}</p></div><x-preview.status-badge :status="$note->status_pengajuan" /></div>

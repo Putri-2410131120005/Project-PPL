@@ -1,6 +1,6 @@
 <x-layouts.preview :role="$role" :roles="$previewRoles" active="users" title="Data Orang Tua/Wali">
     <x-preview.topbar title="Data Orang Tua/Wali" subtitle="Kelola akun wali yang ditautkan ke siswa." :profile="$profile" />
-    <div class="abk-breadcrumb"><a href="{{ route('dev.preview', 'admin') }}">Dashboard</a> <span>/</span> Orang Tua/Wali</div>
+    <x-preview.breadcrumbs :home="route('dev.preview', 'admin')" :items="[['Pengguna', route('dev.admin.users.index')], ['Orang Tua/Wali', null]]" />
 
     <x-preview.flash-messages />
     @if (session('temporary_parent_password'))

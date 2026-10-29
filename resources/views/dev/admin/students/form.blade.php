@@ -1,6 +1,6 @@
 <x-layouts.preview :role="$role" :roles="$previewRoles" active="students" :title="$title">
     <x-preview.topbar :title="$title" subtitle="Lengkapi data induk siswa sesuai dokumen sekolah." :profile="$profile" />
-    <div class="abk-breadcrumb"><a href="{{ route('dev.preview', 'admin') }}">Dashboard</a> <span>/</span> <a href="{{ route('dev.admin.students.index') }}">Siswa ABK</a> <span>/</span> {{ $title }}</div>
+    <x-preview.breadcrumbs :home="route('dev.preview', 'admin')" :items="[['Siswa ABK', route('dev.admin.students.index')], [$title, null]]" />
 
     <section class="abk-panel abk-user-form">
         <form method="POST" enctype="multipart/form-data" action="{{ $student->exists ? route('dev.admin.students.update', $student) : route('dev.admin.students.store') }}"

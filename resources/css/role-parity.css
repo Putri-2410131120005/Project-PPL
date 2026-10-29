@@ -423,3 +423,40 @@
         min-width: 700px !important;
     }
 }
+
+/* Principal student cards use the shared mobile disclosure geometry. */
+@media (max-width: 767.98px) {
+    .ks .ks-students-table,
+    .ks .ks-students-table tbody,
+    .ks .ks-students-table tbody tr {
+        height: auto !important;
+    }
+
+    .ks .ks-students-table tbody td {
+        height: auto !important;
+        min-height: 43px;
+        overflow: visible;
+    }
+
+    .ks .ks-students-table.is-disclosure-ready tbody td:first-child {
+        min-height: 132px;
+        padding: 14px !important;
+    }
+
+    .ks .ks-students-table .abk-student-table-name {
+        align-items: center;
+        gap: 10px;
+        min-width: 0;
+    }
+
+    .ks .ks-students-table .abk-student-table-name > span {
+        color: var(--abk-text);
+        font-size: 13px;
+        font-weight: 700;
+        overflow-wrap: anywhere;
+    }
+
+    .ks .ks-students-table .abk-row-quick-actions {
+        min-height: 40px;
+    }
+}

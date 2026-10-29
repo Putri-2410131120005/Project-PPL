@@ -1,11 +1,11 @@
 <x-layouts.preview :role="$role" :roles="$previewRoles" active="dashboard" title="Dashboard Guru Pendamping">
     <x-preview.topbar title="Dashboard Guru Pendamping" subtitle="Pantau siswa dampingan dan status catatan pendampingan dari satu tempat." :profile="$profile" />
-    <div class="abk-breadcrumb">Dashboard</div>
+    <x-preview.breadcrumbs :home="route('dev.tim-inklusi.dashboard')" />
     <x-preview.flash-messages />
 
     <div class="abk-welcome">Selamat datang, {{ $pendamping->nama }}</div>
 
-    <div class="row g-3">
+    <div class="row g-3 abk-stat-grid abk-stat-grid-3">
         <div class="col-12 col-lg-4"><x-preview.stat-card icon="•" tone="indigo" :value="$stats['students']" label="Siswa Dampingan" /></div>
         <div class="col-12 col-lg-4"><x-preview.stat-card icon="•" tone="amber" :value="$stats['pending']" label="Menunggu Verifikasi" /></div>
         <div class="col-12 col-lg-4"><x-preview.stat-card icon="•" tone="teal" :value="$stats['verified']" label="Terverifikasi" /></div>

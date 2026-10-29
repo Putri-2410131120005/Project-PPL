@@ -7,7 +7,9 @@
 @endphp
 <x-layouts.preview :role="$role" :roles="$roles" :active="$editing ? 'history' : 'students'" :title="$revision ? 'Perbaiki Catatan Perkembangan' : ($editing ? 'Edit Draft Catatan' : 'Tambah Catatan Perkembangan')">
     <x-preview.topbar :title="$revision ? 'Perbaiki Catatan Perkembangan' : ($editing ? 'Edit Draft Catatan' : 'Tambah Catatan Perkembangan')" subtitle="Catat kondisi pembelajaran secara terstruktur: peristiwa, tindakan guru, dan respons siswa." :profile="$profile" />
-    <x-preview.breadcrumbs :items="[[$editing ? 'Riwayat Catatan' : 'Data Siswa', $editing ? route('dev.guru-mapel.notes.status') : route('dev.guru-mapel.students.index')], [$revision ? 'Perbaiki Catatan' : ($editing ? 'Edit Draft' : 'Tambah Catatan'), null]]" />
+    <x-preview.breadcrumbs :items="$editing
+        ? [['Riwayat Catatan', route('dev.guru-mapel.notes.status')], [$student->nama_siswa, route('dev.guru-mapel.notes.show', $note)], [$revision ? 'Perbaiki Catatan' : 'Edit Draft', null]]
+        : [['Data Siswa', route('dev.guru-mapel.students.index')], [$student->nama_siswa, route('dev.guru-mapel.students.show', $student)], ['Tambah Catatan', null]]" />
     <x-preview.flash-messages />
 
     <section class="abk-panel abk-note-card">
