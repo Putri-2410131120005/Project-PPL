@@ -16,7 +16,7 @@
             <input class="form-control abk-search-input" name="cari" value="{{ $filters['cari'] ?? '' }}" placeholder="Cari nama, email, atau NIS...">
         </form>
         <div class="abk-users-count">Total {{ $parents->total() }} akun</div>
-        <a class="abk-primary-button" href="{{ route('dev.admin.users.parents.create') }}">Buat Akun Orang Tua</a>
+        <a class="abk-primary-button" href="{{ route('dev.admin.users.create') }}">Tambah Pengguna</a>
     </section>
 
     <section class="abk-panel overflow-hidden">

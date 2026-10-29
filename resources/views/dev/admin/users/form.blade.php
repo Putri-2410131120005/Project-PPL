@@ -2,6 +2,11 @@
     <x-preview.topbar :title="$title" subtitle="Lengkapi data akun pengguna sesuai kebutuhan sekolah." :profile="$profile" />
     <div class="abk-breadcrumb"><a href="{{ route('dev.preview', 'admin') }}">Dashboard</a> <span>/</span> <a href="{{ route('dev.admin.users.index') }}">Pengguna</a> <span>/</span> {{ $title }}</div>
     <section class="abk-panel abk-user-form">
+        @unless ($user->exists)
+            <div class="alert alert-info abk-alert mb-4">
+                Pilih role pengguna terlebih dahulu. Form tambahan akan muncul otomatis sesuai kebutuhan role yang dipilih.
+            </div>
+        @endunless
         <form method="POST" action="{{ $formAction }}"
             data-confirm-form
             data-confirm-title="{{ $user->exists ? 'Simpan perubahan pengguna?' : ($title === 'Tambah Guru' ? 'Tambah data guru?' : 'Tambah pengguna?') }}"
@@ -13,7 +18,7 @@
             <div class="row g-3">
                 <div class="col-12 col-md-6"><label class="form-label" for="id_role">Role</label>@if($user->is_super_admin)<input type="hidden" name="id_role" value="{{ $user->id_role }}">@endif<select class="form-select @error('id_role') is-invalid @enderror" id="id_role" name="{{ $user->is_super_admin ? '_locked_role' : 'id_role' }}" required @disabled($user->is_super_admin)><option value="">Pilih role</option>@foreach ($roles as $availableRole)<option value="{{ $availableRole->id_role }}" data-requires-nip="{{ in_array($availableRole->nama_role, ['Guru Mapel', 'Tim Inklusi', 'GPK', 'Kepala Sekolah'], true) ? 'true' : 'false' }}" data-is-gpk="{{ $availableRole->nama_role === 'GPK' ? 'true' : 'false' }}" data-is-subject-teacher="{{ $availableRole->nama_role === 'Guru Mapel' ? 'true' : 'false' }}" data-is-companion="{{ in_array($availableRole->nama_role, ['GPK', 'Tim Inklusi'], true) ? 'true' : 'false' }}" data-is-parent="{{ $availableRole->nama_role === 'Orang Tua' ? 'true' : 'false' }}" @selected((string) old('id_role', $user->id_role) === (string) $availableRole->id_role)>{{ $user->is_super_admin ? 'Super Admin' : $availableRole->nama_role }}</option>@endforeach</select>@error('id_role')<div class="invalid-feedback">{{ $message }}</div>@enderror</div>
                 <div class="col-12 col-md-6"><label class="form-label" for="nama">Nama pengguna</label><input class="form-control @error('nama') is-invalid @enderror" id="nama" name="nama" value="{{ old('nama', $user->nama) }}" required maxlength="100">@error('nama')<div class="invalid-feedback">{{ $message }}</div>@enderror</div>
-                <div class="col-12 col-md-6"><label class="form-label" for="email">Email <span class="text-muted d-none" id="email-optional">(opsional)</span></label><input type="email" class="form-control @error('email') is-invalid @enderror" id="email" name="email" value="{{ old('email', $user->email) }}" required maxlength="100">@error('email')<div class="invalid-feedback">{{ $message }}</div>@enderror</div>
+                <div class="col-12 col-md-6"><label class="form-label" for="email">Email <span class="text-muted d-none" id="email-disabled">(tidak digunakan untuk Orang Tua/Wali)</span></label><input type="email" class="form-control @error('email') is-invalid @enderror" id="email" name="email" value="{{ old('email', $user->email) }}" required maxlength="100">@error('email')<div class="invalid-feedback">{{ $message }}</div>@enderror</div>
                 <div class="col-12 col-md-6"><label class="form-label" for="status_akun">Status akun</label>@if($user->is_super_admin)<input type="hidden" name="status_akun" value="Aktif">@endif<select class="form-select @error('status_akun') is-invalid @enderror" id="status_akun" name="{{ $user->is_super_admin ? '_locked_status' : 'status_akun' }}" required @disabled($user->is_super_admin)><option value="Aktif" @selected(old('status_akun', $user->status_akun ?: 'Aktif') === 'Aktif')>Aktif</option><option value="Nonaktif" @selected(old('status_akun', $user->status_akun) === 'Nonaktif')>Nonaktif</option></select>@error('status_akun')<div class="invalid-feedback">{{ $message }}</div>@enderror</div>
                 <div class="col-12 col-md-6" id="username-field"><label class="form-label" for="username">Username <span class="text-muted">(opsional)</span></label><input class="form-control @error('username') is-invalid @enderror" id="username" name="username" value="{{ old('username', $user->username) }}" maxlength="50">@error('username')<div class="invalid-feedback">{{ $message }}</div>@enderror</div>
                 @if ($user->is_super_admin)
@@ -90,7 +95,7 @@
     <script>
         const roleSelect = document.getElementById('id_role');
         const emailInput = document.getElementById('email');
-        const emailOptional = document.getElementById('email-optional');
+        const emailDisabled = document.getElementById('email-disabled');
         const nipField = document.getElementById('nip-field');
         const nipInput = document.getElementById('nip');
         const gpkPositionField = document.getElementById('gpk-position-field');
@@ -123,7 +128,6 @@
         const syncCompanionLimit = () => {
             const selectedRole = roleSelect.options[roleSelect.selectedIndex];
             const isCompanion = selectedRole?.dataset.isCompanion === 'true';
-            const isGpk = selectedRole?.dataset.isGpk === 'true';
             const selectedCount = Array.from(companionInputs).filter((input) => input.checked).length;
             companionInputs.forEach((input) => {
                 input.disabled = !isCompanion || (!input.checked && selectedCount >= 2);
@@ -135,8 +139,11 @@
             const required = selectedRole?.dataset.requiresNip === 'true';
             const isParent = selectedRole?.dataset.isParent === 'true';
             const isCompanion = selectedRole?.dataset.isCompanion === 'true';
+            const isGpk = selectedRole?.dataset.isGpk === 'true';
             emailInput.required = !isParent;
-            emailOptional.classList.toggle('d-none', !isParent);
+            emailInput.disabled = isParent;
+            emailDisabled.classList.toggle('d-none', !isParent);
+            if (isParent) emailInput.value = '';
             nipField.classList.toggle('d-none', !required);
             nipInput.required = required;
             gpkPositionField.classList.toggle('d-none', !isGpk);
