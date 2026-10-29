@@ -31,9 +31,8 @@
                     @error('nama')<div class="invalid-feedback">{{ $message }}</div>@enderror
                 </div>
                 <div class="col-12 col-md-6">
-                    <label class="form-label" for="email">Email <span class="text-muted">(opsional)</span></label>
-                    <input type="email" class="form-control @error('email') is-invalid @enderror" id="email" name="email" value="{{ old('email', $parent->email) }}" maxlength="100">
-                    @error('email')<div class="invalid-feedback">{{ $message }}</div>@enderror
+                    <label class="form-label" for="email">Email <span class="text-muted">(tidak digunakan)</span></label>
+                    <input type="email" class="form-control" id="email" value="" placeholder="Email dinonaktifkan untuk akun Orang Tua/Wali" disabled>
                 </div>
 
                 @if ($parent->exists)

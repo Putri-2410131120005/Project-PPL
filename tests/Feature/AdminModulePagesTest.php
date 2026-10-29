@@ -74,6 +74,32 @@ class AdminModulePagesTest extends TestCase
                 'id="companion-assignment-fields"',
                 'id="parent-fields"',
             ], false);
+
+        $this->withSession(['dev_role' => 'admin'])
+            ->get(route('dev.admin.users.create'))
+            ->assertSeeInOrder([
+                'const syncRoleFields = () =>',
+                "const isGpk = selectedRole?.dataset.isGpk === 'true';",
+                "gpkPositionField.classList.toggle('d-none', !isGpk);",
+            ], false);
+    }
+
+    public function test_every_user_creation_entry_uses_the_unified_role_driven_form(): void
+    {
+        foreach ([
+            route('dev.admin.users.create'),
+            route('dev.admin.staff.create'),
+            route('dev.admin.users.parents.create'),
+        ] as $url) {
+            $this->withSession(['dev_role' => 'admin'])
+                ->get($url)
+                ->assertOk()
+                ->assertSee('Pilih role pengguna terlebih dahulu')
+                ->assertSee('id="id_role"', false)
+                ->assertSee('id="teaching-assignment-fields"', false)
+                ->assertSee('id="companion-assignment-fields"', false)
+                ->assertSee('id="parent-fields"', false);
+        }
     }
 
     public function test_updated_admin_forms_show_the_requested_fields(): void

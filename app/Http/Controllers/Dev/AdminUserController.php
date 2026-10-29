@@ -107,13 +107,9 @@ class AdminUserController extends AdminController
 
     public function createStaff(): View
     {
-        return $this->formView(
-            new Pengguna,
-            'Tambah Guru',
-            true,
-            route('dev.admin.staff.store'),
-            route('dev.admin.staff.index')
-        );
+        // Jalur lama /admin/guru/tambah tetap dapat dibuka, tetapi proses
+        // penambahan pengguna selalu memakai satu form terpadu berbasis role.
+        return $this->formView(new Pengguna, 'Tambah Pengguna');
     }
 
     public function storeStaff(Request $request): RedirectResponse
@@ -151,6 +147,7 @@ class AdminUserController extends AdminController
         $baseData = $request->validate([
             'nama' => ['required', 'string', 'max:100'],
             'email' => [
+                Rule::excludeIf(fn (): bool => $this->isParentRole($request->integer('id_role'))),
                 Rule::requiredIf(fn (): bool => ! $this->isParentRole($request->integer('id_role'))),
                 'nullable',
                 'email',
@@ -267,7 +264,9 @@ class AdminUserController extends AdminController
 
     public function createParent(): View
     {
-        return $this->parentForm();
+        // Jalur lama akun orang tua diarahkan ke pengalaman form terpadu yang
+        // sama agar field khusus tetap dikendalikan oleh pilihan role.
+        return $this->formView(new Pengguna, 'Tambah Pengguna');
     }
 
     public function parentsIndex(Request $request): View
@@ -294,7 +293,6 @@ class AdminUserController extends AdminController
     {
         $data = $request->validate([
             'nama' => ['required', 'string', 'max:100'],
-            'email' => ['nullable', 'email', 'max:100', Rule::unique('pengguna', 'email')],
             'id_siswa' => ['required', 'integer', Rule::exists('siswa', 'id_siswa')],
             'hubungan' => ['required', Rule::in(['Ibu', 'Ayah', 'Wali'])],
             'no_telepon' => ['nullable', 'string', 'max:20'],
@@ -332,7 +330,7 @@ class AdminUserController extends AdminController
                     'id_role' => $parentRole->id_role,
                     'nama' => $data['nama'],
                     'username' => $username,
-                    'email' => $data['email'] ?? null,
+                    'email' => null,
                     'password' => Hash::make($temporaryPassword),
                     'password_diubah_pada' => null,
                     'wajib_ganti_password' => true,
@@ -359,7 +357,6 @@ class AdminUserController extends AdminController
 
         return redirect()->route('dev.admin.users.index', ['role' => $parentRole->id_role])
             ->with('success', 'Akun Orang Tua/Wali berhasil dibuat.')
-            ->with('temporary_parent_email', $data['email'] ?? null)
             ->with('temporary_parent_username', $credentials['username'])
             ->with('temporary_parent_password', $credentials['password']);
     }
@@ -445,7 +442,6 @@ class AdminUserController extends AdminController
     {
         $data = $request->validate([
             'nama' => ['required', 'string', 'max:100'],
-            'email' => ['nullable', 'email', 'max:100', Rule::unique('pengguna', 'email')->ignore($pengguna)],
             'id_siswa' => ['required', 'integer', Rule::exists('siswa', 'id_siswa')],
             'hubungan' => ['required', Rule::in(['Ibu', 'Ayah', 'Wali'])],
             'no_telepon' => ['nullable', 'string', 'max:20'],
@@ -520,7 +516,7 @@ class AdminUserController extends AdminController
 
                 $account->update([
                     'nama' => $data['nama'],
-                    'email' => $data['email'] ?? null,
+                    'email' => null,
                     'username' => $username,
                     'status_akun' => $data['status_akun'],
                 ]);

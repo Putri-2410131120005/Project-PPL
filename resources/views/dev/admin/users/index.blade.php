@@ -10,7 +10,7 @@
     <section class="abk-panel abk-users-toolbar">
         <form class="abk-search-form" method="GET" action="{{ route('dev.admin.users.index') }}">
             @if (! empty($filters['role']))<input type="hidden" name="role" value="{{ $filters['role'] }}">@endif
-            <input class="form-control abk-search-input" name="cari" value="{{ $filters['cari'] ?? '' }}" placeholder="Cari nama, email, username, atau NIP...">
+            <input class="form-control abk-search-input" name="cari" value="{{ $filters['cari'] ?? '' }}" placeholder="{{ $isParentFilter ? 'Cari nama atau username...' : 'Cari nama, email, username, atau NIP...' }}">
         </form>
         <div class="abk-users-count">Total {{ $users->total() }} pengguna</div>
         <a class="abk-primary-button" href="{{ route('dev.admin.users.create') }}">Tambah Pengguna</a>
@@ -25,11 +25,23 @@
     </section>
 
     <section class="abk-panel overflow-hidden">
-        <div class="table-responsive"><table class="table abk-table abk-users-table align-middle"><thead><tr><th>Nama Pengguna</th><th>Email</th>@if($isParentFilter)<th>Username &amp; Keamanan</th>@endif<th>Role</th><th>Status</th><th>Aksi</th></tr></thead><tbody>
+        <div class="table-responsive"><table class="table abk-table abk-users-table align-middle">
+            <thead><tr>
+                <th>Nama Pengguna</th>
+                @unless ($isParentFilter)
+                    <th>Email</th>
+                @endunless
+                @if ($isParentFilter)
+                    <th>Username &amp; Keamanan</th>
+                @endif
+                <th>Role</th><th>Status</th><th>Aksi</th>
+            </tr></thead><tbody>
             @forelse ($users as $user)
                 <tr>
                     <td class="abk-data-name">{{ $user->nama }}</td>
-                    <td>{{ $user->email ?: '—' }}</td>
+                    @unless ($isParentFilter)
+                        <td>{{ $user->email ?: '—' }}</td>
+                    @endunless
                     @if ($isParentFilter)
                         <td>
                             <div><strong>Username:</strong> {{ $user->username ?: 'Belum tersedia' }}</div>
@@ -80,7 +92,7 @@
                     </td>
                 </tr>
             @empty
-                <tr><td colspan="{{ $isParentFilter ? 6 : 5 }}" class="text-center py-4 text-muted">Belum ada pengguna yang sesuai.</td></tr>
+                <tr><td colspan="5" class="text-center py-4 text-muted">Belum ada pengguna yang sesuai.</td></tr>
             @endforelse
         </tbody></table></div>
     </section>

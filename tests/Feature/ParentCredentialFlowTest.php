@@ -41,7 +41,8 @@ class ParentCredentialFlowTest extends TestCase
     {
         $this->createParentAccount();
 
-        $parent = Pengguna::where('email', 'wali-ahmad@example.test')->firstOrFail();
+        $parent = Pengguna::where('username', 'ortu_12345')->firstOrFail();
+        $this->assertNull($parent->email);
         $this->assertSame('ortu_12345', $parent->username);
         $this->assertTrue(Hash::check('Ahmad12345', $parent->password));
         $this->assertTrue($parent->wajib_ganti_password);

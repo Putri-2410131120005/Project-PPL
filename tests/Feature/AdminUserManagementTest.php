@@ -208,8 +208,9 @@ class AdminUserManagementTest extends TestCase
             ->assertSessionHas('temporary_parent_password', 'SiswaS-001')
             ->assertSessionHas('temporary_parent_username', 'ortu_S-001');
 
-        $parent = Pengguna::where('email', $payload['email'])->firstOrFail();
+        $parent = Pengguna::where('username', 'ortu_'.$student->nis)->firstOrFail();
         $this->assertSame($this->parentRole->id_role, $parent->id_role);
+        $this->assertNull($parent->email);
         $this->assertSame('ortu_'.$student->nis, $parent->username);
         $this->assertTrue(Hash::check('SiswaS-001', $parent->password));
         $this->assertTrue($parent->wajib_ganti_password);
@@ -230,9 +231,9 @@ class AdminUserManagementTest extends TestCase
             ->get(route('dev.admin.users.parents.create'))
             ->assertOk()
             ->assertSee('format ortu_NIS')
-            ->assertSee('Username login')
+            ->assertSee('Pilih role pengguna terlebih dahulu')
             ->assertSee('for="alamat"', false)
-            ->assertDontSee('name="username"', false);
+            ->assertSee('name="username"', false);
 
         $this->withSession(['dev_role' => 'admin'])
             ->from(route('dev.admin.users.parents.create'))
@@ -246,7 +247,7 @@ class AdminUserManagementTest extends TestCase
             ->assertSessionHasErrors('id_siswa');
     }
 
-    public function test_parent_email_is_optional_and_multiple_parents_can_leave_it_empty(): void
+    public function test_parent_email_is_disabled_and_always_stored_as_null(): void
     {
         $firstStudent = $this->makeStudent('S-EMAIL-01', 'Siswa Tanpa Email Satu');
         $secondStudent = $this->makeStudent('S-EMAIL-02', 'Siswa Tanpa Email Dua');
@@ -255,6 +256,7 @@ class AdminUserManagementTest extends TestCase
             $this->withSession(['dev_role' => 'admin'])
                 ->post(route('dev.admin.users.parents.store'), [
                     'nama' => 'Wali Tanpa Email '.($index + 1),
+                    'email' => 'email-yang-diabaikan-'.($index + 1).'@example.test',
                     'id_siswa' => $student->id_siswa,
                     'hubungan' => 'Wali',
                 ])
@@ -270,7 +272,7 @@ class AdminUserManagementTest extends TestCase
         $this->withSession(['dev_role' => 'admin'])
             ->get(route('dev.admin.users.parents.create'))
             ->assertOk()
-            ->assertSee('Email <span class="text-muted">(opsional)</span>', false);
+            ->assertSee('id="email-disabled">(tidak digunakan untuk Orang Tua/Wali)</span>', false);
     }
 
     public function test_parent_account_can_be_created_from_the_unified_user_form(): void
@@ -392,6 +394,8 @@ class AdminUserManagementTest extends TestCase
         $this->withSession(['dev_role' => 'admin'])
             ->get(route('dev.admin.users.index', ['role' => $this->parentRole->id_role]))
             ->assertOk()
+            ->assertDontSee('<th>Email</th>', false)
+            ->assertSee('Cari nama atau username...')
             ->assertSee('Username &amp; Keamanan', false)
             ->assertSee('Username:')
             ->assertSee('Password:')

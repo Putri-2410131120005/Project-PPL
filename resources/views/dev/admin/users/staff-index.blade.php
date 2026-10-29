@@ -9,7 +9,7 @@
             <input class="form-control abk-search-input" name="cari" value="{{ $filters['cari'] ?? '' }}" placeholder="Cari nama, email, atau NIP...">
         </form>
         <div class="abk-users-count">Total {{ $users->total() }} data guru</div>
-        <a class="abk-primary-button" href="{{ route('dev.admin.staff.create') }}">Tambah Guru</a>
+        <a class="abk-primary-button" href="{{ route('dev.admin.users.create') }}">Tambah Pengguna</a>
     </section>
 
     <section class="abk-panel abk-filter-bar">
