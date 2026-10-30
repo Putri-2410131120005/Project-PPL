@@ -34,6 +34,20 @@ class RealisticDemoSeeder extends Seeder
 
         DB::transaction(function (): void {
             $roles = Role::query()->pluck('id_role', 'nama_role');
+            $superAdmin = Pengguna::query()->updateOrCreate(
+                ['username' => 'superadmin'],
+                [
+                    'id_role' => $roles['Admin'],
+                    'nama' => 'Sri Wahyuni',
+                    'nip' => null,
+                    'email' => 'superadmin@sekolah.test',
+                    'password' => self::STAFF_PASSWORD,
+                    'status_akun' => 'Aktif',
+                    'jabatan_gpk' => null,
+                ],
+            );
+            $superAdmin->forceFill(['is_super_admin' => true])->save();
+
             $year = TahunAjaran::resolveLabel('2026/2027');
             TahunAjaran::query()->whereKeyNot($year->getKey())->where('status', 'Aktif')->update(['status' => 'Selesai']);
             $year->forceFill([
@@ -241,7 +255,7 @@ class RealisticDemoSeeder extends Seeder
                 $monthlyReports->synchronizeOfficialProjection($septemberReport, $septemberReport->publikator()->firstOrFail());
             }
 
-            $this->command?->info('Dataset demo realistis berhasil dibuat: 8 siswa, 8 wali, 9 staf, 16 catatan, laporan September, dan rekap siswa.');
+            $this->command?->info('Dataset demo realistis berhasil dibuat: 8 siswa, 8 wali, 10 staf, 16 catatan, laporan September, dan rekap siswa.');
         }, 3);
     }
 
