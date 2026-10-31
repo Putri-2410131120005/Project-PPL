@@ -5,12 +5,26 @@ namespace App\Http\Middleware;
 use App\Models\Pengguna;
 use Closure;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Auth;
 use Symfony\Component\HttpFoundation\Response;
 
 class EnsureDevelopmentGpk
 {
     public function handle(Request $request, Closure $next): Response
     {
+        $staff = Auth::guard('staff')->user()?->fresh(['role']);
+        if ($staff) {
+            abort_unless(
+                $staff->status_akun === 'Aktif'
+                && $staff->google_id !== null
+                && $staff->role?->nama_role === 'GPK',
+                403,
+            );
+            $request->attributes->set('gpk', $staff);
+
+            return $next($request);
+        }
+
         $role = $request->session()->get('dev_role');
 
         if (! $role) {

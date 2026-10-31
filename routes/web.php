@@ -9,6 +9,7 @@ use App\Http\Controllers\Dev\GpkController;
 use App\Http\Controllers\Dev\ParentAuthController;
 use App\Http\Controllers\Dev\ParentPortalController;
 use App\Http\Controllers\Dev\TimInklusiController;
+use App\Http\Controllers\GoogleAuthController;
 use App\Models\Kelas;
 use App\Models\MataPelajaran;
 use App\Models\Pengguna;
@@ -22,9 +23,10 @@ use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Route;
 use Illuminate\Validation\Rule;
 
-Route::get('/', function () {
-    return view('welcome');
-});
+Route::get('/', [GoogleAuthController::class, 'login'])->name('home');
+
+require __DIR__.'/auth.php';
+require __DIR__.'/guru-mapel-auth.php';
 
 // Pemilih peran ini hanya tersedia pada lingkungan pengembangan dan pengujian.
 if (app()->environment(['local', 'testing'])) {
@@ -396,4 +398,8 @@ if (app()->environment(['local', 'testing'])) {
             return view($view, $data);
         })->name('preview');
     });
+}
+
+if (! app()->environment(['local', 'testing'])) {
+    require __DIR__.'/staff-production.php';
 }

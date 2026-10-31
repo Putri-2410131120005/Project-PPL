@@ -39,6 +39,14 @@ return [
     */
 
     'guards' => [
+        'staff' => [
+            'driver' => 'session',
+            'provider' => 'pengguna',
+        ],
+        'guru_mapel' => [
+            'driver' => 'session',
+            'provider' => 'pengguna',
+        ],
         'guru_dev' => [
             'driver' => 'session',
             'provider' => 'pengguna',

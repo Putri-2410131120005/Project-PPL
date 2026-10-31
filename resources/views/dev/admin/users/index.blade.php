@@ -39,7 +39,7 @@
                 @if ($isParentFilter)
                     <th>Username &amp; Keamanan</th>
                 @endif
-                <th>Role</th><th>Status</th><th>Aksi</th>
+                <th>Role</th><th>Status Google Login</th><th>Status</th><th>Aksi</th>
             </tr></thead><tbody>
             @forelse ($users as $user)
                 <tr>
@@ -71,6 +71,17 @@
                         </td>
                     @endif
                     <td>{{ $user->is_super_admin ? 'Super Admin' : $user->role->nama_role }}</td>
+                    <td>
+                        @if ($user->role->nama_role === 'Orang Tua')
+                            <span class="text-muted">Tidak digunakan</span>
+                        @elseif ($user->status_akun !== 'Aktif')
+                            <span class="abk-status abk-status-inactive">Akun Nonaktif</span>
+                        @elseif ($user->google_id)
+                            <span class="abk-status abk-status-verified">Sudah terhubung Google</span>
+                        @else
+                            <span class="abk-status abk-status-inactive">Belum pernah login Google</span>
+                        @endif
+                    </td>
                     <td><span class="abk-status {{ $user->status_akun === 'Aktif' ? 'abk-status-verified' : 'abk-status-inactive' }}">{{ $user->status_akun }}</span></td>
                     <td>
                         <div class="d-flex flex-wrap gap-2">
@@ -97,7 +108,7 @@
                     </td>
                 </tr>
             @empty
-                <tr><td colspan="5" class="text-center py-4 text-muted">Belum ada pengguna yang sesuai.</td></tr>
+                <tr><td colspan="7" class="text-center py-4 text-muted">Belum ada pengguna yang sesuai.</td></tr>
             @endforelse
         </tbody></table></div>
     </section>

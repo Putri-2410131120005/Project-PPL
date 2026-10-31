@@ -1,5 +1,8 @@
 @props(['role', 'roles', 'active' => 'dashboard'])
 @php
+    $realGuruMapel = $role === 'guru-mapel' && request()->routeIs('guru-mapel.*');
+    $productionStaff = Auth::guard('staff')->check();
+    $guruRoutePrefix = $realGuruMapel ? 'guru-mapel.' : 'dev.guru-mapel.';
     $menus = match ($role) {
         'admin' => [
             ['key' => 'dashboard', 'label' => 'Dashboard', 'href' => route('dev.preview', 'admin')],
@@ -17,9 +20,9 @@
             ]],
         ],
         'guru-mapel' => [
-            ['key' => 'dashboard', 'label' => 'Dashboard', 'href' => route('dev.guru-mapel.dashboard')],
-            ['key' => 'students', 'label' => 'Data Siswa', 'href' => route('dev.guru-mapel.students.index')],
-            ['key' => 'history', 'label' => 'Riwayat Catatan', 'href' => route('dev.guru-mapel.notes.status')],
+            ['key' => 'dashboard', 'label' => 'Dashboard', 'href' => route($guruRoutePrefix.'dashboard')],
+            ['key' => 'students', 'label' => 'Data Siswa', 'href' => route($guruRoutePrefix.'students.index')],
+            ['key' => 'history', 'label' => 'Riwayat Catatan', 'href' => route($guruRoutePrefix.'notes.status')],
         ],
         'kepala-sekolah' => [
             ['key' => 'dashboard', 'label' => 'Dashboard', 'href' => route('dev.principal.dashboard')],
@@ -85,13 +88,13 @@
         @endforeach
     </nav>
     <div class="mt-4 pt-3 border-top border-secondary-subtle abk-session-controls">
-        @if ($role !== 'orang-tua')
+        @if ($role !== 'orang-tua' && ! $realGuruMapel && ! $productionStaff)
         <form method="POST" action="{{ route('dev.change-role') }}" data-confirm-form data-confirm-title="Ganti peran?" data-confirm-message="Sesi saat ini akan diakhiri. Anda dapat memilih peran lain pada halaman berikutnya." data-confirm-button="Ganti Peran">
             @csrf
             <button type="submit" class="abk-dev-button">Ganti Peran</button>
         </form>
         @endif
-        <form method="POST" action="{{ route('dev.logout') }}" class="mt-2" data-confirm-form data-confirm-title="Keluar?" data-confirm-message="Sesi aktif akan diakhiri." data-confirm-button="Keluar" data-confirm-variant="danger">
+        <form method="POST" action="{{ $productionStaff ? route('logout') : ($realGuruMapel ? route('guru-mapel.logout') : route('dev.logout')) }}" class="mt-2" data-confirm-form data-confirm-title="Keluar?" data-confirm-message="Sesi aktif akan diakhiri." data-confirm-button="Keluar" data-confirm-variant="danger">
             @csrf
             <button type="submit" class="abk-dev-button abk-dev-button-muted">Keluar</button>
         </form>

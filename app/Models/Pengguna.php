@@ -22,6 +22,7 @@ class Pengguna extends Authenticatable
         'jabatan_gpk',
         'username',
         'email',
+        'google_id',
         'password',
         'password_diubah_pada',
         'wajib_ganti_password',

@@ -5,6 +5,7 @@ namespace App\Http\Controllers\Dev;
 use App\Http\Controllers\Controller;
 use App\Models\Pengguna;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Auth;
 
 abstract class AdminController extends Controller
 {
@@ -22,8 +23,11 @@ abstract class AdminController extends Controller
      */
     protected function viewContext(): array
     {
-        $admin = Pengguna::query()->whereKey(session('dev_pengguna_id'))->where('is_super_admin', true)->first()
-            ?? Pengguna::query()->where('is_super_admin', true)->where('status_akun', 'Aktif')->first();
+        $admin = Auth::guard('staff')->user();
+        if (! $admin?->is_super_admin) {
+            $admin = Pengguna::query()->whereKey(session('dev_pengguna_id'))->where('is_super_admin', true)->first();
+        }
+        $admin ??= Pengguna::query()->where('is_super_admin', true)->where('status_akun', 'Aktif')->first();
         $name = $admin?->nama ?: 'Super Admin Sekolah';
         $initials = collect(preg_split('/\s+/', trim($name)))->filter()->take(2)
             ->map(fn ($part) => mb_strtoupper(mb_substr($part, 0, 1)))->implode('');

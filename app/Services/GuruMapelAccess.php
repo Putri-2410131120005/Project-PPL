@@ -15,8 +15,7 @@ class GuruMapelAccess
     public function actor(Pengguna $guru): Pengguna
     {
         $guru = Pengguna::with('role')->findOrFail($guru->getKey());
-        abort_unless(app()->environment(['local', 'testing'])
-            && $guru->status_akun === 'Aktif' && $guru->role?->nama_role === 'Guru Mapel', 403);
+        abort_unless($guru->status_akun === 'Aktif' && $guru->role?->nama_role === 'Guru Mapel', 403);
 
         return $guru;
     }

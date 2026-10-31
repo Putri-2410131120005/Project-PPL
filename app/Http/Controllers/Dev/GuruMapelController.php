@@ -15,17 +15,35 @@ class GuruMapelController extends Controller
 {
     public function __construct(private GuruMapelAccess $access) {}
 
+    private function realMode(): bool
+    {
+        return request()->routeIs('guru-mapel.*');
+    }
+
+    private function routeName(string $name): string
+    {
+        return ($this->realMode() ? 'guru-mapel.' : 'dev.guru-mapel.').$name;
+    }
+
     private function guru()
     {
-        return Auth::guard('guru_dev')->user();
+        return Auth::guard($this->realMode() ? 'guru_mapel' : 'guru_dev')->user();
     }
 
     private function page(string $view, array $data = [])
     {
         $guru = $this->guru();
-        $profile = ['label' => 'Guru Mata Pelajaran', 'name' => $guru->nama, 'initials' => mb_strtoupper(mb_substr($guru->nama, 0, 2))];
+        $initials = collect(preg_split('/\s+/', trim($guru->nama)))->filter()->take(2)
+            ->map(fn ($part) => mb_strtoupper(mb_substr($part, 0, 1)))->implode('');
+        $profile = ['label' => 'Guru Mata Pelajaran', 'name' => $guru->nama, 'initials' => $initials ?: 'GM'];
 
-        return view('dev.guru-mapel.'.$view, $data + ['role' => 'guru-mapel', 'roles' => ['guru-mapel' => $profile], 'profile' => $profile, 'labels' => GuruMapelNoteService::LABELS]);
+        return view('dev.guru-mapel.'.$view, $data + [
+            'role' => 'guru-mapel',
+            'roles' => ['guru-mapel' => $profile],
+            'profile' => $profile,
+            'labels' => GuruMapelNoteService::LABELS,
+            'guruRoutePrefix' => $this->realMode() ? 'guru-mapel.' : 'dev.guru-mapel.',
+        ]);
     }
 
     private function filters(Request $r): array
@@ -114,7 +132,7 @@ class GuruMapelController extends Controller
         $note = $service->save($this->guru(), $siswa, $r->all());
         $r->session()->forget('guru_note_creation_token');
 
-        return redirect()->route('dev.guru-mapel.notes.show', $note->getKey())->with('success', $note->status_pengajuan === 'Draft' ? 'Draft Tersimpan' : 'Catatan dikirim ke GPK.');
+        return redirect()->route($this->routeName('notes.show'), $note->getKey())->with('success', $note->status_pengajuan === 'Draft' ? 'Draft Tersimpan' : 'Catatan dikirim ke GPK.');
     }
 
     public function status(Request $r)
@@ -154,7 +172,7 @@ class GuruMapelController extends Controller
         $note = $this->note($id);
         $service->save($this->guru(), $note->id_siswa, $r->all(), $id);
 
-        return redirect()->route('dev.guru-mapel.notes.show', $id)->with('success', $r->input('aksi') === 'kirim' ? 'Catatan dikirim ke GPK.' : 'Draft Tersimpan');
+        return redirect()->route($this->routeName('notes.show'), $id)->with('success', $r->input('aksi') === 'kirim' ? 'Catatan dikirim ke GPK.' : 'Draft Tersimpan');
     }
 
     private function referenceQuery(string $source)

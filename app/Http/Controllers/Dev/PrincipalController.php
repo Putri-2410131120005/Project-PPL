@@ -7,6 +7,7 @@ use App\Models\Pengguna;
 use App\Services\PrincipalExport;
 use App\Services\PrincipalReports;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Str;
 
 class PrincipalController extends Controller
@@ -29,9 +30,12 @@ class PrincipalController extends Controller
 
     private function page(string $view, array $data = [])
     {
-        $principal = Pengguna::query()->where('status_akun', 'Aktif')
+        $principal = Auth::guard('staff')->user();
+        if ($principal?->role?->nama_role !== 'Kepala Sekolah') {
+            $principal = Pengguna::query()->where('status_akun', 'Aktif')
             ->whereHas('role', fn ($role) => $role->where('nama_role', 'Kepala Sekolah'))
             ->orderBy('id_pengguna')->first();
+        }
 
         return view('dev.principal.'.$view, $data + ['profile' => [
             'name' => $principal?->nama ?? 'Kepala Sekolah',

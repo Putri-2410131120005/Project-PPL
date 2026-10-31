@@ -23,6 +23,39 @@ Seeder aman dijalankan ulang karena data utama dibuat dengan `updateOrCreate` at
 `firstOrCreate`. Jangan memakai `php artisan migrate:fresh --seed` pada database yang
 berisi data penting karena perintah itu menghapus seluruh tabel terlebih dahulu.
 
+## Google Login staf sekolah
+
+Google Login hanya mengizinkan akun internal yang sudah dibuat Super Admin pada tabel
+`pengguna`. Sistem tidak membuat akun atau menentukan role dari profil Google. Siapkan
+OAuth Client bertipe **Web application** di Google Cloud Console, aktifkan consent
+screen, lalu tambahkan redirect URI berikut secara persis:
+
+```text
+http://127.0.0.1:8000/auth/google/callback
+```
+
+Untuk production, gunakan domain HTTPS aplikasi dengan path yang sama. Isi konfigurasi
+lokal tanpa memasukkan rahasia ke Git:
+
+```dotenv
+GOOGLE_CLIENT_ID=
+GOOGLE_CLIENT_SECRET=
+GOOGLE_REDIRECT_URI=http://127.0.0.1:8000/auth/google/callback
+```
+
+Setelah menarik perubahan, jalankan `composer install` dan `php artisan migrate`.
+Halaman `/masuk` menyediakan pilihan login Kepala Sekolah, Guru Mata Pelajaran,
+GPK, Tim Inklusi, dan Super Admin. Setiap pilihan memulai OAuth dengan konteks role
+yang disimpan di session, sedangkan seluruh role tetap memakai callback bersama
+`/auth/google/callback`.
+
+Super Admin tetap dibuat atau dipulihkan dari terminal server menggunakan command
+`php artisan app:super-admin` dengan password minimal 12 karakter. Jika Google ID
+Super Admin perlu dilepas karena pemulihan akun, lakukan perubahan database secara
+terkendali oleh pengelola server setelah identitas pemohon diverifikasi dan simpan
+catatan audit operasional. Aplikasi sengaja tidak menyediakan tombol reset Google ID
+melalui web.
+
 <p align="center">
 <a href="https://github.com/laravel/framework/actions"><img src="https://github.com/laravel/framework/workflows/tests/badge.svg" alt="Build Status"></a>
 <a href="https://packagist.org/packages/laravel/framework"><img src="https://img.shields.io/packagist/dt/laravel/framework" alt="Total Downloads"></a>

@@ -1,15 +1,15 @@
 @php
     $editing = $note !== null;
     $revision = $editing && ($note->status_pengajuan === 'Perlu Revisi' || $note->versi_pengajuan > 1);
-    $formAction = $editing ? route('dev.guru-mapel.notes.update', $note) : route('dev.guru-mapel.notes.store', $student);
+    $formAction = $editing ? route($guruRoutePrefix.'notes.update', $note) : route($guruRoutePrefix.'notes.store', $student);
     $fields = ['materi_kegiatan' => ['Materi / TP yang Berkaitan', 'Tuliskan materi atau TP yang sedang dipelajari...'], 'kendala_peristiwa' => ['Peristiwa / Hasil Pengamatan', 'Tuliskan capaian, kesulitan, perilaku belajar, atau kendala yang terlihat...'], 'tindakan' => ['Tindakan / Penyesuaian Guru', 'Tuliskan tindakan, bantuan, atau penyesuaian yang diberikan...'], 'hasil_tindakan' => ['Respons / Hasil Setelah Tindakan', 'Tuliskan respons siswa atau perubahan yang terlihat...'], 'catatan_tambahan' => ['Catatan Tambahan / Kendala (Opsional)', 'Tambahkan informasi lain bila diperlukan...']];
     $reason = $revision ? $note->verifikasi->where('status_verifikasi', 'Perlu Revisi')->sortByDesc('versi_pengajuan')->first() : null;
 @endphp
 <x-layouts.preview :role="$role" :roles="$roles" :active="$editing ? 'history' : 'students'" :title="$revision ? 'Perbaiki Catatan Perkembangan' : ($editing ? 'Edit Draft Catatan' : 'Tambah Catatan Perkembangan')">
     <x-preview.topbar :title="$revision ? 'Perbaiki Catatan Perkembangan' : ($editing ? 'Edit Draft Catatan' : 'Tambah Catatan Perkembangan')" subtitle="Catat kondisi pembelajaran secara terstruktur: peristiwa, tindakan guru, dan respons siswa." :profile="$profile" />
     <x-preview.breadcrumbs :items="$editing
-        ? [['Riwayat Catatan', route('dev.guru-mapel.notes.status')], [$student->nama_siswa, route('dev.guru-mapel.notes.show', $note)], [$revision ? 'Perbaiki Catatan' : 'Edit Draft', null]]
-        : [['Data Siswa', route('dev.guru-mapel.students.index')], [$student->nama_siswa, route('dev.guru-mapel.students.show', $student)], ['Tambah Catatan', null]]" />
+        ? [['Riwayat Catatan', route($guruRoutePrefix.'notes.status')], [$student->nama_siswa, route($guruRoutePrefix.'notes.show', $note)], [$revision ? 'Perbaiki Catatan' : 'Edit Draft', null]]
+        : [['Data Siswa', route($guruRoutePrefix.'students.index')], [$student->nama_siswa, route($guruRoutePrefix.'students.show', $student)], ['Tambah Catatan', null]]" />
     <x-preview.flash-messages />
 
     <section class="abk-panel abk-note-card">
