@@ -42,7 +42,7 @@
 .abk-topbar > div:first-child { align-self: flex-start; }
 .abk-title { font-size: 28px; font-weight: 700; letter-spacing: -.03em; margin: 0 0 8px; }
 .abk-subtitle { color: var(--abk-muted); font-size: 13px; margin: 0; }
-.abk-profile { align-items: center; background: #fff; border: 1px solid #dbe3ed; border-radius: 10px; display: flex; gap: 10px; min-width: 234px; padding: 7px 12px 7px 10px; }
+.abk-profile { align-items: center; background: #fff; border: 1px solid #dbe3ed; border-radius: 10px; display: flex; gap: 10px; min-width: 205px; padding: 7px 12px 7px 10px; }
 .abk-avatar { align-items: center; background: #e5edff; border-radius: 17px; color: #3b57bd; display: flex; font-size: 11px; font-weight: 600; height: 34px; justify-content: center; width: 34px; }
 .abk-profile-name { color: #1c2942; font-size: 12px; font-weight: 600; }.abk-profile-role { color: #6b7d96; font-size: 10px; margin-top: 3px; }
 .abk-breadcrumb { color: #4f5e7a; font-size: 12px; font-weight: 600; min-height: 23px; padding: 3px 20px 4px; }
@@ -63,6 +63,11 @@
 .abk-role-placeholder { max-width: 720px; padding: 28px; }.abk-role-placeholder p { color: var(--abk-muted); margin-bottom: 0; }
 .abk-dev-button { background: #9ca8ff; border: 0; border-radius: 9px; color: var(--abk-navy); font-size: 12px; font-weight: 700; padding: 8px 12px; width: 100%; }.abk-dev-button-muted { background: transparent; border: 1px solid #5b6b88; color: #d4ddf0; }
 .abk-login { align-items: center; background: var(--abk-bg); display: flex; justify-content: center; min-height: 100vh; padding: 24px; }.abk-login-card { background: #fff; border: 1px solid var(--abk-line); border-radius: 20px; box-shadow: 0 10px 28px rgb(14 24 44 / 12%); max-width: 440px; padding: 32px; width: 100%; }.abk-login-brand { color: var(--abk-navy); font-size: 24px; font-weight: 700; letter-spacing: .02em; }.abk-login-note { background: #eef0ff; border-radius: 10px; color: #303cb0; font-size: 13px; margin: 20px 0; padding: 12px 14px; }.abk-login-label { color: var(--abk-text); display: block; font-size: 13px; font-weight: 600; margin-bottom: 8px; }.abk-login-submit { background: var(--abk-indigo); border: 0; border-radius: 10px; color: #fff; font-size: 14px; font-weight: 700; margin-top: 20px; padding: 12px; width: 100%; }
+.abk-password-control { position: relative; }.abk-password-control .form-control { padding-right: 88px; }.abk-password-toggle { align-items: center; background: transparent; border: 0; color: #40506a; display: inline-flex; font-size: 10px; font-weight: 700; justify-content: center; min-height: 30px; padding: 4px 8px; white-space: nowrap; }.abk-password-control > .abk-password-toggle { border-radius: 7px; position: absolute; right: 6px; top: 50%; transform: translateY(-50%); }.abk-password-toggle:hover { background: #edf1f7; color: #17233a; }.abk-password-toggle:focus-visible { outline: 2px solid #6872dc; outline-offset: 1px; }
+.abk-topbar-actions, .abk-pwa-actions { align-items: center; display: flex; gap: 8px; }.abk-pwa-button { background: #eef2ff; border: 1px solid #c7d2fe; border-radius: 8px; color: #3347a8; font-size: 10px; font-weight: 700; padding: 7px 9px; }.abk-pwa-button:hover { background: #dfe6ff; }.abk-pwa-hint { color: #52627a; font-size: 10px; line-height: 1.35; max-width: 150px; }
+.abk-pwa-label-short { display: none; } @media (min-width: 768px) { .abk-pwa-label-full { display: none; }.abk-pwa-button { min-width: 74px; }.abk-pwa-label-short { display: inline; } }
+.abk-pwa-login-actions { align-items: center; display: flex; gap: 8px; justify-content: center; margin: -8px 0 12px; }.abk-pwa-login-actions .abk-pwa-button { background: rgb(255 255 255 / 12%); border-color: rgb(255 255 255 / 42%); color: #fff; }.abk-pwa-login-actions .abk-pwa-button:hover { background: rgb(255 255 255 / 22%); }.abk-pwa-login-actions .abk-pwa-hint { color: #d1daf0; max-width: 240px; text-align: center; }
+@media (max-width: 767.98px) { .abk-topbar { display: block; }.abk-topbar-actions { display: block; margin-top: 12px; }.abk-pwa-actions { align-items: center; flex-direction: row; flex-wrap: wrap; justify-content: flex-start; }.abk-pwa-hint { flex-basis: 100%; max-width: 280px; text-align: left; } }
 .abk-breadcrumb a { color: #3859c2; text-decoration: none; }.abk-breadcrumb span { color: #96a6bd; margin: 0 7px; }.abk-alert { border-radius: 12px; font-size: 13px; line-height: 1.5; margin: 0 20px 16px; padding: 14px 18px; }.abk-users-toolbar { align-items: center; display: flex; gap: 12px; margin-bottom: 16px; padding: 16px 18px; }.abk-search-form { flex: 1; max-width: 470px; }.abk-search-input { background: #f6f8fb; border: 1px solid transparent; border-radius: 11px; font-size: 12px; height: 40px; padding: 0 14px; }.abk-search-input:focus { background: #fff; border-color: #aeb8f5; box-shadow: 0 0 0 3px rgb(65 79 219 / 10%); }.abk-users-count { color: #05947a; font-size: 12px; font-weight: 600; margin-left: auto; white-space: nowrap; }.abk-primary-button { align-items: center; background: var(--abk-indigo); border: 0; border-radius: 9px; color: #fff; display: inline-flex; font-size: 12px; font-weight: 600; justify-content: center; min-height: 36px; padding: 9px 14px; text-decoration: none; white-space: nowrap; }.abk-filter-bar { align-items: center; display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 16px; min-height: 52px; padding: 8px 14px; }.abk-filter-bar > span { color: #6b7d9e; font-size: 12px; font-weight: 600; }.abk-filter-bar .form-select { font-size: 12px; min-height: 36px; }.abk-filter { border: 1px solid var(--abk-line); border-radius: 9px; color: #6b7d9e; font-size: 12px; font-weight: 500; padding: 8px 12px; text-decoration: none; }.abk-filter.active { background: var(--abk-indigo); border-color: var(--abk-indigo); color: #fff; }.abk-users-table { min-width: 900px; }.abk-status-inactive { background: #f1f4f8; color: #64748b; }.abk-button-danger { background: #ffeaea; color: #d9485f; }.abk-pagination nav { font-size: 12px; }.abk-user-form { max-width: 920px; padding: 24px; }
 .abk-student-filter-form { align-items: flex-end; display: flex; flex: 1; flex-wrap: wrap; gap: 12px; width: 100%; }
 .abk-filter-field { display: grid; flex: 0 1 220px; gap: 6px; min-width: 180px; }
@@ -194,6 +199,7 @@
 .abk-parent-report-card h3 { font-size: 19px; margin: 12px 0; }.abk-parent-report-card p { color: #c3cee0; font-size: 11px; line-height: 1.5; }.abk-parent-report-card span { align-self: flex-start; background: #315681; border-radius: 8px; font-size: 10px; margin: 12px 0; padding: 7px 12px; }.abk-parent-report-card a { background: var(--abk-indigo); border-radius: 9px; color: #fff; font-size: 10px; font-weight: 600; margin-top: auto; padding: 14px; text-align: center; text-decoration: none; }
 .abk-parent-empty, .abk-parent-report-empty { margin: 4px 20px; padding: 26px 32px; }.abk-parent-empty h2, .abk-parent-report-empty h2 { font-size: 19px; }.abk-parent-empty p, .abk-parent-report-empty p { color: #72819a; font-size: 12px; }
 .abk-parent-date-filter { align-items: center; display: flex; justify-content: space-between; margin-bottom: 16px; padding: 14px 18px; }.abk-parent-date-filter > div { display: grid; gap: 5px; }.abk-parent-date-filter strong { font-size: 11px; }.abk-parent-date-filter small { color: #72819a; font-size: 10px; }.abk-parent-date-filter form { align-items: center; display: flex; flex-wrap: wrap; gap: 8px; }.abk-parent-date-filter .form-control { font-size: 11px; max-width: 170px; min-height: 38px; }.abk-parent-reset { background: #f5f7fb; border: 1px solid #d6e0f0; border-radius: 8px; color: #344563; font-size: 10px; font-weight: 600; padding: 10px 13px; text-decoration: none; }
+.abk-parent-date-field { display: grid; gap: 4px; margin: 0; }.abk-parent-date-field > span { color: #52627a; font-size: 9px; font-weight: 700; padding-left: 3px; }.abk-parent-date-field .form-control { color: #17233a; color-scheme: light; min-width: 150px; }
 .abk-parent-table-empty { padding: 28px; text-align: center; }.abk-parent-table-empty strong { font-size: 14px; }.abk-parent-table-empty p { color: #72819a; font-size: 11px; margin: 8px 0 0; }
 .abk-parent-note-detail { margin-bottom: 24px; max-width: 980px; padding: 22px; }.abk-parent-detail-meta { background: #e9f2ff; border: 1px solid #c8dcfb; border-radius: 10px; display: grid; gap: 16px; grid-template-columns: repeat(auto-fit, minmax(130px, 1fr)); margin-bottom: 12px; padding: 14px; }.abk-parent-detail-meta > div { display: grid; gap: 4px; min-width: 0; }.abk-parent-detail-meta small, .abk-parent-detail-field small { color: #617393; font-size: 9px; }.abk-parent-detail-meta strong { font-size: 11px; overflow-wrap: anywhere; }.abk-parent-detail-field { background: #f5f7fb; border-radius: 10px; margin-bottom: 12px; min-height: 80px; padding: 14px 16px; }.abk-parent-detail-field p { font-size: 11px; line-height: 1.6; margin: 7px 0 0; overflow-wrap: anywhere; white-space: pre-wrap; }
 .abk-parent-report-filters { align-items: stretch; display: grid; gap: 12px; grid-template-columns: 2fr 1fr; margin-bottom: 16px; padding: 12px 14px; }.abk-parent-report-filters form { display: grid; gap: 12px; grid-template-columns: repeat(2, 1fr); }.abk-parent-report-filters label, .abk-parent-report-filters > div { background: #f6f8fb; border-radius: 10px; display: grid; gap: 6px; padding: 10px 12px; }.abk-parent-report-filters span, .abk-parent-report-filters small { color: #617393; font-size: 9px; }.abk-parent-report-filters .form-select { background-color: transparent; border: 0; font-size: 12px; font-weight: 600; padding-left: 0; }.abk-parent-report-filters strong { font-size: 12px; }
@@ -302,12 +308,12 @@
 @media (max-width: 900px) { .abk-report-summary-grid { grid-template-columns: 1fr; }.abk-report-summary-header { align-items: flex-start; flex-direction: column; } }
 @media (max-width: 767.98px) { .abk-report-summary-backdrop { align-items: flex-start; padding: 12px; }.abk-report-student-summary { max-height: calc(100dvh - 24px); width: 100%; }.abk-report-summary-grid { padding: 16px; }.abk-report-summary-header { padding: 18px; }.abk-report-record-meta { align-items: flex-start; flex-direction: column; gap: 4px; } }
 /* Login Orang Tua — komposisi kartu horizontal */
-.abk-parent-access-page { background: #081426; color: #eff4ff; font-family: Inter, ui-sans-serif, system-ui, sans-serif; height: 100dvh; overflow: hidden; }
+.abk-parent-access-page { background: #081426; color: #eff4ff; font-family: Inter, ui-sans-serif, system-ui, sans-serif; min-height: 100dvh; overflow-x: hidden; overflow-y: auto; }
 .abk-parent-access-page::before { background: radial-gradient(circle, rgb(100 113 255 / 19%) 0, transparent 64%); content: ''; height: 680px; left: 50%; pointer-events: none; position: fixed; top: 42%; transform: translate(-50%, -50%); width: 1050px; }
-.abk-parent-access-main { box-sizing: border-box; display: flex; flex-direction: column; height: 100dvh; margin: 0 auto; max-width: 1280px; padding: clamp(18px, 3.2vh, 34px) 28px 16px; position: relative; width: 100%; z-index: 1; }
+.abk-parent-access-main { box-sizing: border-box; display: flex; flex-direction: column; margin: 0 auto; max-width: 1280px; min-height: 100dvh; padding: clamp(18px, 3.2vh, 34px) 28px 16px; position: relative; width: 100%; z-index: 1; }
 .abk-parent-access-main > h1 { flex: 0 0 auto; font-size: 18px; font-weight: 700; letter-spacing: -.02em; margin: 0 0 clamp(12px, 2.2vh, 22px); text-align: center; }
-.abk-parent-access-frame { background: rgb(255 255 255 / 7%); border: 1px solid rgb(255 255 255 / 38%); border-radius: 25px; box-shadow: 0 28px 70px rgb(0 0 0 / 42%); display: grid; flex: 1 1 auto; grid-template-columns: minmax(0, 1.25fr) minmax(340px, .75fr); min-height: 0; overflow: hidden; padding: clamp(12px, 1.8vh, 18px); position: relative; }
-.abk-parent-access-visual { background: linear-gradient(145deg, #101f38 0%, #142849 50%, #303a96 100%); border-radius: 18px; display: flex; flex-direction: column; justify-content: center; min-width: 0; overflow: hidden; padding: 58px; position: relative; }
+.abk-parent-access-frame { background: rgb(255 255 255 / 7%); border: 1px solid rgb(255 255 255 / 38%); border-radius: 25px; box-shadow: 0 28px 70px rgb(0 0 0 / 42%); box-sizing: border-box; display: grid; flex: 1 0 auto; grid-template-columns: minmax(0, 1.25fr) minmax(340px, .75fr); max-width: 100%; min-height: 620px; overflow: hidden; padding: clamp(12px, 1.8vh, 18px); position: relative; }
+.abk-parent-access-visual { background: linear-gradient(145deg, #101f38 0%, #142849 50%, #303a96 100%); border-radius: 18px; box-sizing: border-box; display: flex; flex-direction: column; justify-content: center; max-width: 100%; min-width: 0; overflow: hidden; padding: 58px; position: relative; }
 .abk-parent-access-grid { background-image: linear-gradient(rgb(255 255 255 / 4%) 1px, transparent 1px), linear-gradient(90deg, rgb(255 255 255 / 4%) 1px, transparent 1px); background-size: 44px 44px; inset: 0; mask-image: linear-gradient(to right, #000, transparent); position: absolute; }
 .abk-parent-access-glow { border-radius: 50%; filter: blur(1px); position: absolute; }
 .abk-parent-access-glow-one { background: rgb(103 111 255 / 44%); height: 310px; right: -100px; top: -120px; width: 310px; }
@@ -317,8 +323,8 @@
 .abk-parent-access-brand strong { font-family: Georgia, 'Times New Roman', serif; font-size: clamp(39px, 5vw, 64px); letter-spacing: -.045em; line-height: .95; }
 .abk-parent-access-brand small { color: #aebbd1; font-size: 10px; letter-spacing: .08em; text-transform: uppercase; }
 .abk-parent-access-visual > p { color: #c1cbe0; font-size: 11px; line-height: 1.7; margin: 36px 0 0; max-width: 360px; position: relative; z-index: 1; }
-.abk-parent-access-form-wrap { align-items: center; display: flex; justify-content: center; min-width: 0; padding: 34px 28px; }
-.abk-parent-access-form-card { background: #f2f5f8; border: 1px solid rgb(255 255 255 / 70%); border-radius: 22px; box-shadow: 0 18px 42px rgb(0 0 0 / 28%); color: #142038; max-width: 340px; min-width: 0; padding: 34px 30px 28px; width: 100%; }
+.abk-parent-access-form-wrap { align-items: center; box-sizing: border-box; display: flex; justify-content: center; max-width: 100%; min-width: 0; padding: 34px 28px; }
+.abk-parent-access-form-card { background: #f2f5f8; border: 1px solid rgb(255 255 255 / 70%); border-radius: 22px; box-shadow: 0 18px 42px rgb(0 0 0 / 28%); box-sizing: border-box; color: #142038; max-width: 340px; min-width: 0; padding: 34px 30px 28px; width: 100%; }
 .abk-parent-access-form-card h2 { font-size: 24px; font-weight: 750; letter-spacing: -.035em; margin: 0; text-align: center; }
 .abk-parent-access-form-card > p { color: #748096; font-size: 10px; margin: 5px 0 24px; text-align: center; }
 .abk-parent-access-field + .abk-parent-access-field { margin-top: 14px; }
@@ -329,6 +335,7 @@
 .abk-parent-access-field input { background: transparent; border: 0; color: #17233a; font-size: 11px; height: 40px; min-width: 0; outline: 0; padding: 0 5px; width: 100%; }
 .abk-parent-access-field input::placeholder { color: #a7b0bf; }
 .abk-parent-access-field > div:has(.is-invalid) { border-color: #df6676; }
+.abk-parent-access-form-card .abk-parent-access-field .abk-password-toggle { background: transparent; border-radius: 999px; box-shadow: none; color: #52627a; flex: 0 0 auto; font-size: 9px; margin: 0; min-height: 30px; padding: 4px 8px; width: auto; }.abk-parent-access-form-card .abk-parent-access-field .abk-password-toggle:hover { background: #edf1f7; color: #17233a; transform: none; }
 .abk-parent-access-error { color: #c53d53; display: block; font-size: 9px; margin: 5px 8px 0; }
 .abk-parent-access-form-card button { background: #111f38; border: 0; border-radius: 999px; box-shadow: 0 9px 18px rgb(17 31 56 / 22%); color: #fff; font-size: 11px; font-weight: 700; margin-top: 22px; min-height: 43px; transition: .18s ease; width: 100%; }
 .abk-parent-access-form-card button:hover { background: #263b65; transform: translateY(-1px); }
@@ -336,6 +343,9 @@
 .abk-google-logo { display: block; flex: 0 0 18px; height: 18px; width: 18px; }
 .abk-google-login-button:hover { border-color: #8793a7; color: #17233a; transform: translateY(-1px); }
 .abk-google-login-button.disabled { cursor: not-allowed; opacity: .55; pointer-events: none; }
+.abk-login-divider { align-items: center; color: #929daf; display: flex; font-size: 9px; gap: 10px; margin: 18px 0; text-transform: uppercase; }
+.abk-login-divider::before, .abk-login-divider::after { background: #d6dde7; content: ''; flex: 1; height: 1px; }
+.abk-google-login-error { background: #fff0f2; border: 1px solid #f1bdc5; border-radius: 10px; color: #a82e42; font-size: 9px; line-height: 1.45; margin-bottom: 12px; padding: 9px 11px; }
 .abk-login-role-list { display: grid; gap: 7px; margin-top: 4px; }
 .abk-login-role-list a { background: #fff; border: 1px solid #d8dee8; border-radius: 10px; color: #17233a; display: flex; flex-direction: column; padding: 8px 11px; text-decoration: none; transition: .18s ease; }
 .abk-login-role-list a:hover { border-color: #8793a7; box-shadow: 0 5px 12px rgb(20 32 56 / 8%); transform: translateY(-1px); }
@@ -346,40 +356,61 @@
 .abk-parent-access-help { border-top: 1px solid #d6dde7; color: #7b879a; font-size: 8px; line-height: 1.55; margin-top: 22px; padding-top: 16px; text-align: center; }
 .abk-parent-access-back { color: #9aa8c2; display: block; flex: 0 0 auto; font-size: 10px; margin-top: clamp(10px, 1.8vh, 18px); text-align: center; text-decoration: none; }.abk-parent-access-back:hover { color: #fff; }
 
-@media (min-width: 821px) and (max-height: 760px) {
-    .abk-parent-access-main { padding-bottom: 10px; padding-top: 14px; }
+@media (min-width: 821px) and (max-height: 900px) {
+    .abk-parent-access-page { height: 100dvh; min-height: 0; overflow: hidden; }
+    .abk-parent-access-main { height: 100dvh; min-height: 0; padding-bottom: 10px; padding-top: 14px; }
     .abk-parent-access-main > h1 { font-size: 16px; margin-bottom: 10px; }
+    .abk-pwa-login-actions { margin: -4px 0 8px; }
+    .abk-pwa-login-actions .abk-pwa-button { padding-bottom: 6px; padding-top: 6px; }
+    .abk-parent-access-frame { flex: 1 1 auto; min-height: 0; }
     .abk-parent-access-visual { padding: 38px; }
     .abk-parent-access-mark { height: 40px; margin-bottom: 10px; width: 40px; }
     .abk-parent-access-brand strong { font-size: 48px; }
     .abk-parent-access-visual > p { margin-top: 24px; }
-    .abk-parent-access-form-wrap { padding: 20px; }
-    .abk-parent-access-form-card { padding: 25px 26px 22px; }
-    .abk-parent-access-form-card > p { margin-bottom: 18px; }
+    .abk-parent-access-form-wrap { padding: 14px 20px; }
+    .abk-parent-access-form-card { padding: 22px 26px 18px; }
+    .abk-parent-access-form-card > p { margin-bottom: 14px; }
     .abk-parent-access-field + .abk-parent-access-field { margin-top: 10px; }
-    .abk-parent-access-form-card button { margin-top: 16px; }
-    .abk-parent-access-help { margin-top: 16px; padding-top: 12px; }
+    .abk-parent-access-form-card button { margin-top: 13px; }
+    .abk-login-divider { margin-bottom: 12px; margin-top: 12px; }
+    .abk-parent-access-help { margin-top: 12px; padding-top: 10px; }
 }
 
 @media (max-width: 820px) {
-    .abk-parent-access-page { height: auto; min-height: 100dvh; overflow-x: hidden; overflow-y: auto; }
-    .abk-parent-access-main { display: block; height: auto; min-height: 100dvh; padding: 30px 18px; }
-    .abk-parent-access-frame { grid-template-columns: 1fr; padding: 12px; }
-    .abk-parent-access-visual { min-height: 260px; padding: 36px; }
-    .abk-parent-access-brand strong { font-size: 42px; }
-    .abk-parent-access-visual > p { margin-top: 24px; }
-    .abk-parent-access-form-wrap { padding: 24px 14px 18px; }
+    .abk-parent-access-main { display: block; min-height: 100dvh; padding: 22px 16px; }
+    .abk-parent-access-main > h1 { font-size: 18px; margin-bottom: 10px; }
+    .abk-pwa-login-actions { margin: 0 0 12px; }
+    .abk-parent-access-frame { display: block; min-height: 0; padding: 9px; }
+    .abk-parent-access-visual { min-height: 190px; padding: 28px; }
+    .abk-parent-access-mark { height: 42px; margin-bottom: 10px; width: 42px; }
+    .abk-parent-access-brand strong { font-size: 40px; }
+    .abk-parent-access-visual > p { margin-top: 20px; }
+    .abk-parent-access-form-wrap { padding: 14px 5px 5px; }
+    .abk-parent-access-form-card { max-width: none; }
+    .abk-parent-access-back { margin-top: 14px; }
 }
 
 @media (max-width: 480px) {
-    .abk-parent-access-main { padding: 24px 12px; }
-    .abk-parent-access-main > h1 { font-size: 15px; margin-bottom: 18px; }
-    .abk-parent-access-frame { border-radius: 20px; }
-    .abk-parent-access-visual { min-height: 220px; padding: 27px; }
-    .abk-parent-access-brand strong { font-size: 36px; }
-    .abk-parent-access-brand small { font-size: 8px; }
+    .abk-parent-access-main { padding: 16px 10px 20px; }
+    .abk-parent-access-main > h1 { font-size: 17px; margin-bottom: 8px; }
+    .abk-parent-access-frame { border-radius: 18px; padding: 7px; }
+    .abk-parent-access-visual { min-height: 150px; padding: 22px; }
+    .abk-parent-access-brand { gap: 5px; }
+    .abk-parent-access-mark { border-radius: 11px; font-size: 12px; height: 38px; margin-bottom: 8px; width: 38px; }
+    .abk-parent-access-brand strong { font-size: clamp(30px, 10vw, 36px); }
+    .abk-parent-access-brand small { font-size: 7px; letter-spacing: .06em; }
     .abk-parent-access-visual > p { display: none; }
-    .abk-parent-access-form-card { padding: 28px 22px 24px; }
+    .abk-parent-access-form-wrap { padding: 10px 3px 3px; }
+    .abk-parent-access-form-card { border-radius: 16px; padding: 24px 18px 20px; }
+    .abk-parent-access-form-card h2 { font-size: 23px; }
+    .abk-parent-access-form-card > p { font-size: 11px; margin-bottom: 20px; }
+    .abk-parent-access-field label { font-size: 11px; }
+    .abk-parent-access-field > div { min-height: 46px; }
+    .abk-parent-access-field input { font-size: 16px; height: 44px; }
+    .abk-parent-access-form-card button, .abk-google-login-button { font-size: 12px; min-height: 46px; }
+    .abk-parent-access-form-card button { margin-top: 18px; }
+    .abk-login-divider { margin: 16px 0; }
+    .abk-parent-access-help { font-size: 9px; margin-top: 18px; padding-top: 14px; }
 }
 
 /* Keep role switching and logout visible while long role menus scroll independently. */

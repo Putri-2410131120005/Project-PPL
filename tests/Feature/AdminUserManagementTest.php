@@ -38,13 +38,16 @@ class AdminUserManagementTest extends TestCase
         $this->guruMapelRole = Role::create(['nama_role' => 'Guru Mapel']);
     }
 
-    public function test_user_management_requires_the_development_admin_role(): void
+    public function test_user_management_requires_an_authenticated_super_admin(): void
     {
-        $this->get(route('dev.admin.users.index'))->assertRedirect(route('dev.login'));
+        $this->get(route('dev.admin.users.index'))->assertRedirect(route('login'));
 
-        $this->withSession(['dev_role' => 'gpk'])
+        $gpk = $this->makeUser('GPK Tanpa Akses Admin', 'gpk-no-admin@example.test', $this->gpkRole);
+        $gpk->forceFill(['google_id' => 'google-gpk-no-admin'])->save();
+        $this->actingAs($gpk, 'staff')
             ->get(route('dev.admin.users.index'))
-            ->assertRedirect(route('dev.preview', 'gpk'));
+            ->assertRedirect(route('login'));
+        $this->assertGuest('staff');
     }
 
     public function test_admin_can_list_search_and_filter_users(): void
@@ -437,7 +440,7 @@ class AdminUserManagementTest extends TestCase
             ->assertSee('Nonaktifkan');
 
         $this->withSession(['dev_role' => 'admin'])
-            ->delete("/_dev/admin/pengguna/{$staff->id_pengguna}")
+            ->delete("/admin/pengguna/{$staff->id_pengguna}")
             ->assertStatus(405);
 
         $this->assertDatabaseHas('pengguna', ['id_pengguna' => $staff->id_pengguna]);
@@ -446,14 +449,15 @@ class AdminUserManagementTest extends TestCase
     public function test_last_active_admin_cannot_be_disabled_or_changed_to_another_role(): void
     {
         $admin = $this->makeUser('Admin Tunggal', 'admin-tunggal@example.test', $this->adminRole);
+        $admin->forceFill(['google_id' => 'google-admin-tunggal', 'is_super_admin' => true])->save();
 
-        $this->withSession(['dev_role' => 'admin'])
+        $this->actingAs($admin, 'staff')
             ->patch(route('dev.admin.users.status', $admin))
             ->assertSessionHas('error');
 
         $this->assertDatabaseHas('pengguna', ['id_pengguna' => $admin->id_pengguna, 'status_akun' => 'Aktif']);
 
-        $this->withSession(['dev_role' => 'admin'])
+        $this->actingAs($admin, 'staff')
             ->from(route('dev.admin.users.edit', $admin))
             ->put(route('dev.admin.users.update', $admin), [
                 'nama' => $admin->nama,

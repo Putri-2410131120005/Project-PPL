@@ -1,6 +1,6 @@
 <x-layouts.preview :role="$role" :roles="$previewRoles" active="mappings" title="Penugasan Guru">
     <x-preview.topbar title="Penugasan Guru" subtitle="Tinjau hubungan Guru Mata Pelajaran dengan kelas dan mata pelajaran yang diampu." :profile="$profile" />
-    <x-preview.breadcrumbs :home="route('dev.preview', 'admin')" :items="[['Hubungan Data', null], ['Penugasan Guru', null]]" />
+    <x-preview.breadcrumbs :home="route('dev.preview')" :items="[['Hubungan Data', null], ['Penugasan Guru', null]]" />
 
     <x-preview.flash-messages />
 
@@ -38,3 +38,5 @@
     </section>
     <x-preview.pagination :paginator="$mappings" />
 </x-layouts.preview>
+
+

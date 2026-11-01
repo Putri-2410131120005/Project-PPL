@@ -1,6 +1,6 @@
 <x-layouts.preview :role="$role" :roles="$previewRoles" active="classes-mapel" :title="$title">
     <x-preview.topbar :title="$title" subtitle="Simpan data kelas sesuai struktur akademik sekolah." :profile="$profile" />
-    <x-preview.breadcrumbs :home="route('dev.preview', 'admin')" :items="[['Kelas & Mata Pelajaran', null], ['Kelas', route('dev.admin.classes.index')], [$title, null]]" />
+    <x-preview.breadcrumbs :home="route('dev.preview')" :items="[['Kelas & Mata Pelajaran', null], ['Kelas', route('dev.admin.classes.index')], [$title, null]]" />
 
     <section class="abk-panel abk-user-form">
         <form method="POST" action="{{ $kelas->exists ? route('dev.admin.classes.update', $kelas) : route('dev.admin.classes.store') }}"
@@ -54,3 +54,5 @@
         </form>
     </section>
 </x-layouts.preview>
+
+

@@ -1,6 +1,6 @@
 <x-layouts.preview :role="$role" :roles="$previewRoles" active="classes-mapel" :title="$title">
     <x-preview.topbar :title="$title" subtitle="Simpan nama mata pelajaran yang dipakai dalam proses pembelajaran." :profile="$profile" />
-    <x-preview.breadcrumbs :home="route('dev.preview', 'admin')" :items="[['Kelas & Mata Pelajaran', null], ['Mata Pelajaran', route('dev.admin.subjects.index')], [$title, null]]" />
+    <x-preview.breadcrumbs :home="route('dev.preview')" :items="[['Kelas & Mata Pelajaran', null], ['Mata Pelajaran', route('dev.admin.subjects.index')], [$title, null]]" />
 
     <section class="abk-panel abk-user-form">
         <form method="POST" action="{{ $mataPelajaran->exists ? route('dev.admin.subjects.update', $mataPelajaran) : route('dev.admin.subjects.store') }}"
@@ -55,3 +55,5 @@
         </form>
     </section>
 </x-layouts.preview>
+
+

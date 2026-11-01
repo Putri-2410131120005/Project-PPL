@@ -13,7 +13,7 @@ class PrincipalExport
     public function pdf(array $documents): string
     {
         $options = new Options(['isRemoteEnabled' => false, 'isPhpEnabled' => false, 'isJavascriptEnabled' => false,
-            'defaultFont' => 'DejaVu Sans', 'chroot' => resource_path('views/dev/principal')]);
+            'defaultFont' => 'DejaVu Serif', 'chroot' => resource_path('views/dev/principal')]);
         $pdf = new Dompdf($options);
         $pdf->loadHtml(view('dev.principal.pdf', compact('documents'))->render(), 'UTF-8');
         $pdf->setPaper('A4', 'portrait');

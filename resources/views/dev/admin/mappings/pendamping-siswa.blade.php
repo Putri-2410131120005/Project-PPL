@@ -1,6 +1,6 @@
 <x-layouts.preview :role="$role" :roles="$previewRoles" active="mappings" title="Hubungan Pendamping dan Siswa">
     <x-preview.topbar title="Hubungan Pendamping dan Siswa" subtitle="Tinjau GPK atau Tim Inklusi yang mendampingi setiap siswa ABK." :profile="$profile" />
-    <x-preview.breadcrumbs :home="route('dev.preview', 'admin')" :items="[['Hubungan Data', null], ['Pendamping Siswa', null]]" />
+    <x-preview.breadcrumbs :home="route('dev.preview')" :items="[['Hubungan Data', null], ['Pendamping Siswa', null]]" />
 
     <x-preview.flash-messages />
 
@@ -38,3 +38,5 @@
     </section>
     <x-preview.pagination :paginator="$mappings" />
 </x-layouts.preview>
+
+

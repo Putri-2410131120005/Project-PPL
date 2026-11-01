@@ -8,14 +8,12 @@ use App\Http\Controllers\Dev\AdminUserController;
 use App\Http\Controllers\Dev\GpkController;
 use App\Http\Controllers\Dev\PrincipalController;
 use App\Http\Controllers\Dev\TimInklusiController;
-use App\Http\Controllers\GoogleAuthController;
 use App\Http\Controllers\StaffDashboardController;
 use App\Http\Middleware\EnsureGoogleStaff;
+use App\Http\Middleware\PreventAuthenticatedPageCaching;
 use Illuminate\Support\Facades\Route;
 
-Route::post('/keluar', [GoogleAuthController::class, 'logout'])->name('dev.logout');
-
-Route::middleware(EnsureGoogleStaff::class.':Admin,Admin / Pengelola')->group(function () {
+Route::middleware([EnsureGoogleStaff::class.':Admin,Admin / Pengelola', PreventAuthenticatedPageCaching::class])->group(function () {
     Route::get('/admin/dashboard', [StaffDashboardController::class, 'admin'])->name('dev.preview');
 
     Route::prefix('admin/tahun-ajaran')->name('dev.admin.academic-years.')->group(function () {
@@ -86,7 +84,7 @@ Route::middleware(EnsureGoogleStaff::class.':Admin,Admin / Pengelola')->group(fu
     });
 });
 
-Route::middleware(EnsureGoogleStaff::class.':Tim Inklusi')->prefix('tim-inklusi')->name('dev.tim-inklusi.')->group(function () {
+Route::middleware([EnsureGoogleStaff::class.':Tim Inklusi', PreventAuthenticatedPageCaching::class])->prefix('tim-inklusi')->name('dev.tim-inklusi.')->group(function () {
     Route::get('/dashboard', [TimInklusiController::class, 'dashboard'])->name('dashboard');
     Route::get('/siswa', [TimInklusiController::class, 'students'])->name('students.index');
     Route::get('/siswa/{siswa}', [TimInklusiController::class, 'student'])->name('students.show');
@@ -100,7 +98,7 @@ Route::middleware(EnsureGoogleStaff::class.':Tim Inklusi')->prefix('tim-inklusi'
     Route::put('/catatan/{catatan}', [TimInklusiController::class, 'updateNote'])->name('notes.update');
 });
 
-Route::middleware(EnsureGoogleStaff::class.':GPK')->prefix('gpk')->name('dev.gpk.')->group(function () {
+Route::middleware([EnsureGoogleStaff::class.':GPK', PreventAuthenticatedPageCaching::class])->prefix('gpk')->name('dev.gpk.')->group(function () {
     Route::get('/dashboard', [GpkController::class, 'dashboard'])->name('dashboard');
     Route::get('/siswa', [GpkController::class, 'students'])->name('students.index');
     Route::get('/siswa/{siswa}', [GpkController::class, 'student'])->name('students.show');
@@ -123,13 +121,16 @@ Route::middleware(EnsureGoogleStaff::class.':GPK')->prefix('gpk')->name('dev.gpk
     Route::get('/orang-tua', [GpkController::class, 'parents'])->name('parents.index');
 });
 
-Route::middleware(EnsureGoogleStaff::class.':Kepala Sekolah')->prefix('kepala-sekolah')->name('dev.principal.')->group(function () {
+Route::middleware([EnsureGoogleStaff::class.':Kepala Sekolah', PreventAuthenticatedPageCaching::class])->prefix('kepala-sekolah')->name('dev.principal.')->group(function () {
     Route::get('dashboard', [PrincipalController::class, 'dashboard'])->name('dashboard');
     Route::get('siswa', [PrincipalController::class, 'students'])->name('students');
     Route::get('siswa/{siswa}', [PrincipalController::class, 'student'])->whereNumber('siswa')->name('student');
     Route::get('rekap', [PrincipalController::class, 'recaps'])->name('recaps');
+    Route::get('rekap/unduh-zip', [PrincipalController::class, 'downloadVerifiedRecapsZip'])->name('recaps.zip.download');
     Route::get('rekap/ekspor/{format}', [PrincipalController::class, 'exportRecaps'])->name('recaps.export');
     Route::get('rekap/siswa/{siswa}', [PrincipalController::class, 'verifiedRecap'])->whereNumber('siswa')->name('verified-recap');
+    Route::get('rekap/siswa/{siswa}/pratinjau-pdf', [PrincipalController::class, 'previewVerifiedRecap'])->whereNumber('siswa')->name('verified-recap.preview');
+    Route::get('rekap/siswa/{siswa}/unduh-pdf', [PrincipalController::class, 'downloadVerifiedRecap'])->whereNumber('siswa')->name('verified-recap.download');
     Route::get('rekap/{rekap}', [PrincipalController::class, 'recap'])->whereNumber('rekap')->name('recap');
     Route::get('rekap/{rekap}/semester', [PrincipalController::class, 'semester'])->whereNumber('rekap')->name('semester');
     Route::get('rekap/{rekap}/catatan/{link}', [PrincipalController::class, 'note'])->whereNumber(['rekap', 'link'])->name('note');

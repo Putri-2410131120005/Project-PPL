@@ -44,10 +44,16 @@ GOOGLE_REDIRECT_URI=http://127.0.0.1:8000/auth/google/callback
 ```
 
 Setelah menarik perubahan, jalankan `composer install` dan `php artisan migrate`.
-Halaman `/masuk` menyediakan pilihan login Kepala Sekolah, Guru Mata Pelajaran,
-GPK, Tim Inklusi, dan Super Admin. Setiap pilihan memulai OAuth dengan konteks role
-yang disimpan di session, sedangkan seluruh role tetap memakai callback bersama
-`/auth/google/callback`.
+Halaman `/masuk` adalah satu-satunya halaman login. Orang Tua/Wali menggunakan
+username dan password yang dibuat Admin, sedangkan staf sekolah menggunakan tombol
+`Masuk dengan Google`. Callback bersama `/auth/google/callback` mencocokkan email
+Google terverifikasi dengan akun aktif pada tabel `pengguna`; aplikasi tidak membuat
+akun atau menerima role dari URL maupun profil Google. Dashboard tujuan selalu
+ditentukan oleh role yang tersimpan di database.
+
+Route lama `/_dev`, dropdown role, dan session login development sudah dihapus.
+Logout seluruh role menggunakan `POST /keluar`, mengakhiri semua guard terkait,
+menginvalidasi session, meregenerasi token CSRF, lalu kembali ke `/masuk`.
 
 Super Admin tetap dibuat atau dipulihkan dari terminal server menggunakan command
 `php artisan app:super-admin` dengan password minimal 12 karakter. Jika Google ID

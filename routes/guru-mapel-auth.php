@@ -1,17 +1,16 @@
 <?php
 
-use App\Http\Controllers\Dev\GuruMapelAuthController;
 use App\Http\Controllers\Dev\GuruMapelController;
 use App\Http\Controllers\GoogleAuthController;
 use App\Http\Middleware\EnsureGuruMapelAuthenticated;
+use App\Http\Middleware\PreventAuthenticatedPageCaching;
 use Illuminate\Support\Facades\Route;
 
 Route::prefix('guru-mapel')->name('guru-mapel.')->group(function () {
     Route::get('masuk', [GoogleAuthController::class, 'roleLogin'])->defaults('role', 'guru-mapel')->name('login');
-    Route::post('masuk', [GuruMapelAuthController::class, 'store'])->middleware('throttle:6,1')->name('login.store');
 
-    Route::middleware(EnsureGuruMapelAuthenticated::class)->group(function () {
-        Route::post('keluar', [GuruMapelAuthController::class, 'destroy'])->name('logout');
+    Route::middleware([EnsureGuruMapelAuthenticated::class, PreventAuthenticatedPageCaching::class])->group(function () {
+        Route::post('keluar', [GoogleAuthController::class, 'logout'])->name('logout');
         Route::get('dashboard', [GuruMapelController::class, 'dashboard'])->name('dashboard');
         Route::get('siswa', [GuruMapelController::class, 'students'])->name('students.index');
         Route::get('siswa/{siswa}', [GuruMapelController::class, 'student'])->whereNumber('siswa')->name('students.show');

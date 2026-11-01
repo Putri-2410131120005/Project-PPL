@@ -28,7 +28,7 @@ class AdminModulePagesTest extends TestCase
     public function test_admin_can_open_every_registered_admin_page(): void
     {
         $urls = [
-            route('dev.preview', 'admin'),
+            route('dev.preview'),
             route('dev.admin.academic-years.index'),
             route('dev.admin.academic-years.create'),
             route('dev.admin.users.index'),
@@ -56,6 +56,13 @@ class AdminModulePagesTest extends TestCase
                 ->assertSee('INKLUSI')
                 ->assertDontSee('Development only');
         }
+
+        $this->withSession(['dev_role' => 'admin', 'dev_pengguna_id' => $this->superAdmin->getKey()])
+            ->get(route('dev.admin.users.index'))
+            ->assertSee('data-navigation-parent="'.route('dev.preview').'"', false);
+        $this->withSession(['dev_role' => 'admin', 'dev_pengguna_id' => $this->superAdmin->getKey()])
+            ->get(route('dev.admin.users.create'))
+            ->assertSee('data-navigation-parent="'.route('dev.admin.users.index').'"', false);
     }
 
     public function test_user_form_keeps_common_fields_in_a_consistent_order_for_every_role(): void
@@ -123,3 +130,5 @@ class AdminModulePagesTest extends TestCase
             ->assertDontSee('/2 siswa dipilih');
     }
 }
+
+

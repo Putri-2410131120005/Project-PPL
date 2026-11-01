@@ -55,13 +55,13 @@ class ConnectivityAuditTest extends TestCase
             $this->withSession(['dev_role' => 'admin'])->get(route('dev.admin.'.$route))->assertOk();
         }
 
-        $this->actingAs($teacher, 'guru_dev')->withSession([
+        $this->actingAs($teacher, 'guru_mapel')->withSession([
             'dev_role' => 'guru-mapel', 'dev_pengguna_id' => $teacher->getKey(),
         ]);
         foreach (['dashboard', 'students.index', 'notes.status'] as $route) {
-            $this->get(route('dev.guru-mapel.'.$route))->assertOk();
+            $this->get(route('guru-mapel.'.$route))->assertOk();
         }
-        $this->get(route('dev.guru-mapel.students.show', $student))->assertOk()->assertSee('Nadia Audit Integrasi');
+        $this->get(route('guru-mapel.students.show', $student))->assertOk()->assertSee('Nadia Audit Integrasi');
 
         $this->withSession(['dev_role' => 'tim-inklusi', 'dev_pengguna_id' => $companion->getKey()]);
         foreach (['dashboard', 'students.index', 'notes.index'] as $route) {
@@ -97,3 +97,5 @@ class ConnectivityAuditTest extends TestCase
         $this->assertSame('Admin', $admin->role->nama_role);
     }
 }
+
+

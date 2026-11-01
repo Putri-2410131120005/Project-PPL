@@ -1,1 +1,1 @@
-<!doctype html><html lang="id"><head><meta charset="utf-8"><title>Laporan Perkembangan {{ $period }}</title>@include('dev.gpk.pdf.styles')</head><body>@include('dev.gpk.pdf.report-sheet')</body></html>
+<!doctype html><html lang="id"><head><meta charset="utf-8"><title>Laporan Perkembangan {{ $period }}</title>@include('dev.gpk.pdf.styles')</head><body class="abk-pdf-document">@include('dev.gpk.pdf.report-sheet')</body></html>

@@ -1,6 +1,6 @@
 <x-layouts.preview role="admin" :roles="$previewRoles" active="users" :title="$parent->exists ? 'Ubah Akun Orang Tua/Wali' : 'Buat Akun Orang Tua/Wali'">
     <x-preview.topbar :title="$parent->exists ? 'Ubah Akun Orang Tua/Wali' : 'Buat Akun Orang Tua/Wali'" subtitle="Akun Orang Tua/Wali terhubung langsung ke data siswa." :profile="$profile" />
-    <x-preview.breadcrumbs :home="route('dev.preview', 'admin')" :items="[['Pengguna', route('dev.admin.users.index', array_filter(['role' => $parent->id_role]))], [$parent->exists ? 'Ubah Akun Orang Tua/Wali' : 'Buat Akun Orang Tua/Wali', null]]" />
+    <x-preview.breadcrumbs :home="route('dev.preview')" :items="[['Pengguna', route('dev.admin.users.index', array_filter(['role' => $parent->id_role]))], [$parent->exists ? 'Ubah Akun Orang Tua/Wali' : 'Buat Akun Orang Tua/Wali', null]]" />
 
     <section class="abk-panel abk-user-form">
         <div class="abk-login-note mt-0">
@@ -129,3 +129,5 @@
         </script>
     @endif
 </x-layouts.preview>
+
+

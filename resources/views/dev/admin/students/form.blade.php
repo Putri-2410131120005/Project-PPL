@@ -1,6 +1,6 @@
 <x-layouts.preview :role="$role" :roles="$previewRoles" active="students" :title="$title">
     <x-preview.topbar :title="$title" subtitle="Lengkapi data induk siswa sesuai dokumen sekolah." :profile="$profile" />
-    <x-preview.breadcrumbs :home="route('dev.preview', 'admin')" :items="[['Siswa ABK', route('dev.admin.students.index')], [$title, null]]" />
+    <x-preview.breadcrumbs :home="route('dev.preview')" :items="[['Siswa ABK', route('dev.admin.students.index')], [$title, null]]" />
 
     <section class="abk-panel abk-user-form">
         <form method="POST" enctype="multipart/form-data" action="{{ $student->exists ? route('dev.admin.students.update', $student) : route('dev.admin.students.store') }}"
@@ -71,3 +71,5 @@
         </form>
     </section>
 </x-layouts.preview>
+
+

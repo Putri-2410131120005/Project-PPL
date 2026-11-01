@@ -7,6 +7,7 @@ use App\Models\CatatanPerkembangan;
 use App\Models\AktivitasGpk;
 use App\Models\Pengguna;
 use App\Models\VerifikasiCatatan;
+use App\Jobs\SendParentNotePush;
 use DomainException;
 use Illuminate\Support\Facades\DB;
 use InvalidArgumentException;
@@ -18,6 +19,8 @@ use InvalidArgumentException;
  */
 class GpkVerifikasiService
 {
+    public function __construct(private readonly WorkflowPushNotifier $pushNotifier) {}
+
     public function mulaiMeninjau(string $jenis, int $idCatatan, int $idGpk): void
     {
         DB::transaction(function () use ($jenis, $idCatatan, $idGpk): void {
@@ -62,7 +65,7 @@ class GpkVerifikasiService
             throw new DomainException('Alasan revisi wajib diisi.');
         }
 
-        return DB::transaction(function () use ($jenis, $idCatatan, $idGpk, $keputusan, $alasan) {
+        $verifikasi = DB::transaction(function () use ($jenis, $idCatatan, $idGpk, $keputusan, $alasan) {
             $this->pastikanGpkAktif($idGpk);
             [$modelClass, $kolomId] = $this->jenisCatatan($jenis);
             $catatan = $modelClass::query()->lockForUpdate()->findOrFail($idCatatan);
@@ -121,6 +124,17 @@ class GpkVerifikasiService
 
             return $verifikasi;
         });
+
+        if ($keputusan === 'Terverifikasi') {
+            $studentId = $jenis === 'perkembangan'
+                ? CatatanPerkembangan::query()->findOrFail($idCatatan)->id_siswa
+                : CatatanPendampingan::query()->findOrFail($idCatatan)->id_siswa;
+            SendParentNotePush::dispatch($studentId, $jenis, $idCatatan);
+        } elseif ($keputusan === 'Perlu Revisi') {
+            $this->pushNotifier->revisionRequested($jenis, $idCatatan);
+        }
+
+        return $verifikasi;
     }
 
     private function pastikanGpkAktif(int $idPengguna): void

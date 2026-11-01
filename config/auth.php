@@ -47,10 +47,6 @@ return [
             'driver' => 'session',
             'provider' => 'pengguna',
         ],
-        'guru_dev' => [
-            'driver' => 'session',
-            'provider' => 'pengguna',
-        ],
         'web' => [
             'driver' => 'session',
             'provider' => 'users',

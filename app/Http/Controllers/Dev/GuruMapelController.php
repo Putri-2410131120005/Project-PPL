@@ -15,19 +15,14 @@ class GuruMapelController extends Controller
 {
     public function __construct(private GuruMapelAccess $access) {}
 
-    private function realMode(): bool
-    {
-        return request()->routeIs('guru-mapel.*');
-    }
-
     private function routeName(string $name): string
     {
-        return ($this->realMode() ? 'guru-mapel.' : 'dev.guru-mapel.').$name;
+        return 'guru-mapel.'.$name;
     }
 
     private function guru()
     {
-        return Auth::guard($this->realMode() ? 'guru_mapel' : 'guru_dev')->user();
+        return Auth::guard('guru_mapel')->user();
     }
 
     private function page(string $view, array $data = [])
@@ -42,7 +37,7 @@ class GuruMapelController extends Controller
             'roles' => ['guru-mapel' => $profile],
             'profile' => $profile,
             'labels' => GuruMapelNoteService::LABELS,
-            'guruRoutePrefix' => $this->realMode() ? 'guru-mapel.' : 'dev.guru-mapel.',
+            'guruRoutePrefix' => 'guru-mapel.',
         ]);
     }
 

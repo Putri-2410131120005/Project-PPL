@@ -94,19 +94,17 @@ class PrincipalModuleTest extends TestCase
         return compact('note', 'verification', 'recap', 'link', 'report');
     }
 
-    public function test_dropdown_empty_states_and_read_only_routes(): void
+    public function test_authenticated_principal_empty_states_and_read_only_routes(): void
     {
-        $this->post(route('dev.login.store'), ['role' => 'kepala-sekolah'])->assertRedirect(route('dev.preview', 'kepala-sekolah'));
-        $this->get(route('dev.preview', 'kepala-sekolah'))->assertRedirect(route('dev.principal.dashboard'));
         foreach (['dashboard', 'students', 'recaps', 'archives'] as $page) {
             $response = $this->get(route('dev.principal.'.$page))->assertOk();
             $this->review('empty-'.$page, $response);
         }
         $this->get(route('dev.principal.dashboard'))
-            ->assertSee('action="'.route('dev.logout').'"', false)
-            ->assertSee('data-confirm-title="Keluar?"', false)
+            ->assertSee('action="'.route('logout').'"', false)
+            ->assertSee('data-confirm-title="Keluar akun?"', false)
             ->assertSee('id="abkConfirmationModal"', false);
-        $this->get('/_dev/kepala-sekolah/konfirmasi-keluar')->assertNotFound();
+        $this->get('/kepala-sekolah/konfirmasi-keluar')->assertNotFound();
         $this->get(route('dev.principal.dashboard'))->assertSee('Belum ada laporan resmi');
         $this->get(route('dev.principal.recaps.export', 'zip'))->assertNotFound();
         $this->get(route('dev.principal.period', ['periode' => 'September 2026']))->assertNotFound();
@@ -115,26 +113,21 @@ class PrincipalModuleTest extends TestCase
         foreach (['post', 'put', 'patch', 'delete'] as $method) {
             $this->$method(route('dev.principal.recaps'))->assertStatus(405);
         }
-        $this->post(route('dev.logout'))
-            ->assertRedirect(route('dev.login'))
-            ->assertSessionMissing('dev_role');
+        $this->post(route('logout'))->assertRedirect(route('login'));
+        $this->assertGuest('staff');
     }
 
-    public function test_role_guard_also_protects_exports_and_is_disabled_in_production(): void
+    public function test_role_guard_protects_pages_and_exports_for_every_environment(): void
     {
         foreach (['admin', 'guru-mapel', 'gpk', 'tim-inklusi', 'orang-tua'] as $role) {
             $this->withSession(['dev_role' => $role]);
-            foreach (['dashboard', 'students', 'recaps', 'archives'] as $page) {
-                $this->get(route('dev.principal.'.$page))->assertForbidden();
-            }
-            $this->get(route('dev.principal.recaps.export', 'zip'))->assertForbidden();
-            $this->get(route('dev.principal.recap.export', ['rekap' => 1, 'format' => 'pdf']))->assertForbidden();
-            $this->get(route('dev.principal.period.export', ['format' => 'xlsx', 'periode' => 'September 2026']))->assertForbidden();
+            $this->get(route('dev.principal.dashboard'))->assertRedirect(route('login'));
+            $this->get(route('dev.principal.recaps.export', 'zip'))->assertRedirect(route('login'));
+            $this->get(route('dev.principal.recap.export', ['rekap' => 1, 'format' => 'pdf']))->assertRedirect(route('login'));
+            $this->get(route('dev.principal.period.export', ['format' => 'xlsx', 'periode' => 'September 2026']))->assertRedirect(route('login'));
         }
         $this->flushSession();
-        $this->get(route('dev.principal.dashboard'))->assertRedirect(route('dev.login'));
-        $this->app->detectEnvironment(fn () => 'production');
-        $this->withSession(['dev_role' => 'kepala-sekolah'])->get(route('dev.principal.dashboard'))->assertNotFound();
+        $this->get(route('dev.principal.dashboard'))->assertRedirect(route('login'));
     }
 
     public function test_database_student_search_class_filter_and_real_students_are_visible(): void
@@ -170,16 +163,32 @@ class PrincipalModuleTest extends TestCase
 
         $this->assertDatabaseCount('rekap_perkembangan', 0);
         $this->assertDatabaseCount('laporan_perkembangan', 0);
-        $this->get(route('dev.principal.recaps'))
+        $period = ['semester' => 'ganjil', 'tahun_ajaran' => '2026/2027'];
+        $this->get(route('dev.principal.recaps', $period))
             ->assertOk()
             ->assertSee($this->student->nama_siswa)
             ->assertSee('1 catatan')
+            ->assertSee('Unduh ZIP')
+            ->assertSee('Lihat Detail')
             ->assertSee(route('dev.principal.verified-recap', $this->student), false);
-        $this->get(route('dev.principal.verified-recap', $this->student))
+        $this->get(route('dev.principal.verified-recap', ['siswa' => $this->student] + $period))
             ->assertOk()
+            ->assertSee('Pratinjau PDF')
             ->assertSee('Rafi memerlukan bantuan visual.')
             ->assertSee('Guru menggunakan kartu pecahan.')
             ->assertSee('Rafi dapat menyelesaikan latihan.');
+        $this->get(route('dev.principal.verified-recap.preview', ['siswa' => $this->student] + $period))
+            ->assertOk()->assertSee('Pratinjau PDF Rekap Perkembangan')->assertSee($this->student->nama_siswa);
+        $pdf = $this->get(route('dev.principal.verified-recap.download', ['siswa' => $this->student] + $period))
+            ->assertOk()->assertHeader('Content-Type', 'application/pdf');
+        $this->assertStringStartsWith('%PDF-', $pdf->getContent());
+        $zip = $this->get(route('dev.principal.recaps.zip.download', $period))
+            ->assertOk()->assertHeader('Content-Type', 'application/zip');
+        $entries = $this->unzip($zip->getContent());
+        $this->assertCount(3, $entries);
+        foreach ($entries as $entry) {
+            $this->assertStringStartsWith('%PDF-', $entry);
+        }
     }
 
     public function test_individual_reports_sources_and_filters_use_relations(): void
@@ -303,7 +312,18 @@ class PrincipalModuleTest extends TestCase
         $this->assertCount(1, $files);
         $this->assertStringStartsWith('%PDF-', reset($files));
         $this->assertStringContainsString('2026001', array_key_first($files));
-        $this->get(route('dev.principal.period.preview', ['periode' => 'September 2026']))->assertOk()->assertSee('iframe', false);
+        $periodBackUrl = route('dev.principal.period', ['periode' => 'September 2026']);
+        $this->get(route('dev.principal.period.preview', ['periode' => 'September 2026']))->assertOk()
+            ->assertDontSee('<iframe', false)->assertSee('Kembali ke Detail Laporan')
+            ->assertSee('data-navigation-parent="'.$periodBackUrl.'"', false)
+            ->assertSee($periodBackUrl)->assertSee('abk-pdf-preview-stage', false)
+            ->assertSee('Cakupan Siswa')->assertSee('Jumlah Catatan')
+            ->assertSee($this->student->nama_siswa)->assertSee('abk-pdf-download-button', false);
+        $recapBackUrl = route('dev.principal.recap', $f['recap']->getKey());
+        $this->get(route('dev.principal.recap.preview', $f['recap']->getKey()))->assertOk()
+            ->assertSee('Pratinjau PDF Rekap Perkembangan')->assertSee('Kembali ke Detail Rekap')
+            ->assertSee($recapBackUrl)->assertSee('Rekomendasi / Tindak Lanjut')
+            ->assertSee('Ringkasan Peristiwa')->assertDontSee('Cakupan Siswa');
         $this->get(route('dev.principal.recaps.export', ['format' => 'zip', 'q' => 'nonexistent']))->assertNotFound();
         $this->get(route('dev.principal.recaps.export', ['format' => 'exe']))->assertNotFound();
         $this->assertSame($before, $this->snapshot());
@@ -340,9 +360,9 @@ class PrincipalModuleTest extends TestCase
         DB::disableQueryLog();
         $this->assertLessThanOrEqual($small + 1, $large);
         $before = $this->snapshot();
-        $this->post('/_dev/guru-mapel/siswa/'.$this->student->getKey().'/catatan', ['materi_kegiatan' => 'Unauthorized'])->assertRedirect();
-        $this->post('/_dev/kepala-sekolah/rekap/1/publikasikan')->assertNotFound();
-        $this->delete('/_dev/kepala-sekolah/rekap/1')->assertStatus(405);
+        $this->post('/guru-mapel/siswa/'.$this->student->getKey().'/catatan', ['materi_kegiatan' => 'Unauthorized'])->assertRedirect();
+        $this->post('/kepala-sekolah/rekap/1/publikasikan')->assertNotFound();
+        $this->delete('/kepala-sekolah/rekap/1')->assertStatus(405);
         $this->assertSame($before, $this->snapshot());
     }
 
@@ -364,12 +384,18 @@ class PrincipalModuleTest extends TestCase
             @$dom->loadHTML('<?xml encoding="utf-8" ?>'.$response->getContent());
             $xpath = new \DOMXPath($dom);
             $nav = '//nav[@aria-label="Breadcrumb"]';
-            $this->assertCount(1, $xpath->query($nav), $page);
-            $this->assertCount(1, $xpath->query($nav.'//li[last()]/span[@aria-current="page"]'), $page);
-            foreach ($xpath->query($nav.'//a') as $link) {
-                $this->get($link->getAttribute('href'))->assertOk();
+            $isPreview = in_array($page, ['recap.preview', 'period.preview'], true);
+            if ($isPreview) {
+                $this->assertCount(0, $xpath->query($nav), $page);
+                $this->assertCount(1, $xpath->query('//nav[@aria-label="Navigasi pratinjau PDF"]'), $page);
+            } else {
+                $this->assertCount(1, $xpath->query($nav), $page);
+                $this->assertCount(1, $xpath->query($nav.'//li[last()]/span[@aria-current="page"]'), $page);
+                foreach ($xpath->query($nav.'//a') as $link) {
+                    $this->get($link->getAttribute('href'))->assertOk();
+                }
             }
-            if (in_array($page, ['student', 'recap', 'semester', 'recap.preview', 'note'])) {
+            if (in_array($page, ['student', 'recap', 'semester', 'note'])) {
                 $this->assertStringContainsString($this->student->nama_siswa, $xpath->query($nav)->item(0)->textContent);
             }
             $this->review(str_replace('.', '-', $page), $response);

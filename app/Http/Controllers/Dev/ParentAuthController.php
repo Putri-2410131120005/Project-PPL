@@ -20,7 +20,7 @@ class ParentAuthController extends Controller
             return $this->redirectAfterLogin(Auth::guard('parent')->user());
         }
 
-        return view('dev.parent-auth.login');
+        return redirect()->route('login');
     }
 
     public function store(Request $request): RedirectResponse
@@ -44,8 +44,9 @@ class ParentAuthController extends Controller
         }
 
         Auth::guard('parent')->login($parent);
+        Auth::guard('staff')->logout();
+        Auth::guard('guru_mapel')->logout();
         $request->session()->regenerate();
-        $request->session()->forget('dev_role');
 
         return $this->redirectAfterLogin($parent);
     }
@@ -77,9 +78,7 @@ class ParentAuthController extends Controller
             'password_diubah_pada' => now(),
         ]);
 
-        $request->session()->put('dev_role', 'orang-tua');
-
-        return redirect()->route('dev.preview', 'orang-tua')
+        return redirect()->route('dev.parent.dashboard')
             ->with('success', 'Password berhasil diubah. Gunakan password baru untuk login berikutnya.');
     }
 
@@ -89,8 +88,6 @@ class ParentAuthController extends Controller
             return redirect()->route('dev.parent.password.edit');
         }
 
-        session()->put('dev_role', 'orang-tua');
-
-        return redirect()->route('dev.preview', 'orang-tua');
+        return redirect()->route('dev.parent.dashboard');
     }
 }

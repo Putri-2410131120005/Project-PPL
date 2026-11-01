@@ -1,6 +1,6 @@
 <x-layouts.preview :role="$role" :roles="$previewRoles" active="students" title="Kelola Data Siswa ABK">
     <x-preview.topbar title="Kelola Data Siswa ABK" subtitle="Kelola data induk siswa, kelas, kebutuhan khusus, dan status keaktifan." :profile="$profile" />
-    <x-preview.breadcrumbs :home="route('dev.preview', 'admin')" :items="[['Siswa ABK', null]]" />
+    <x-preview.breadcrumbs :home="route('dev.preview')" :items="[['Siswa ABK', null]]" />
 
     <x-preview.flash-messages />
 
@@ -79,3 +79,5 @@
 
     <x-preview.pagination :paginator="$students" />
 </x-layouts.preview>
+
+

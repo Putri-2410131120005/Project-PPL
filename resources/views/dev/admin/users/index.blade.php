@@ -1,6 +1,6 @@
 <x-layouts.preview :role="$role" :roles="$previewRoles" active="users" title="Kelola Pengguna">
     <x-preview.topbar title="Kelola Pengguna" subtitle="Master akun seluruh pengguna, termasuk Orang Tua/Wali. Gunakan filter untuk memilih role." :profile="$profile" />
-    <x-preview.breadcrumbs :home="route('dev.preview', 'admin')" :items="[['Pengguna', null]]" />
+    <x-preview.breadcrumbs :home="route('dev.preview')" :items="[['Pengguna', null]]" />
 
     <x-preview.flash-messages />
     @if (session('temporary_parent_password'))
@@ -114,3 +114,5 @@
     </section>
     <x-preview.pagination :paginator="$users" />
 </x-layouts.preview>
+
+

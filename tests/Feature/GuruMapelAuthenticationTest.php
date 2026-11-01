@@ -61,59 +61,68 @@ class GuruMapelAuthenticationTest extends TestCase
         ]);
     }
 
-    private function login(string $identity = 'guru.budi', string $password = 'password-rahasia')
+    private function login(string $identity = 'guru.budi'): Pengguna
     {
-        return $this->post(route('guru-mapel.login.store'), [
-            'login' => $identity,
-            'password' => $password,
-        ]);
+        $teacher = Pengguna::query()
+            ->where('username', $identity)
+            ->orWhere('email', $identity)
+            ->firstOrFail();
+
+        $this->actingAs($teacher, 'staff')->actingAs($teacher, 'guru_mapel');
+
+        return $teacher;
     }
 
     public function test_google_login_page_uses_shared_role_composition(): void
     {
-        $this->get('/guru-mapel/masuk')
+        $this->get('/guru-mapel/masuk')->assertRedirect(route('login'));
+
+        $this->get(route('login'))
             ->assertOk()
-            ->assertSee('Masuk Guru Mata Pelajaran')
-            ->assertSee('Selamat datang, Guru Mata Pelajaran')
             ->assertSee('Masuk dengan Google')
-            ->assertSee('abk-parent-access-frame', false)
-            ->assertSee(route('auth.google.role.redirect', 'guru-mapel'), false);
+            ->assertSee('Guru Mata Pelajaran');
     }
 
-    public function test_teacher_can_login_with_username_or_email_and_profile_comes_from_database(): void
+    public function test_google_authenticated_teacher_profile_comes_from_database(): void
     {
-        $this->login()->assertRedirect(route('guru-mapel.dashboard'));
+        $this->login();
         $this->assertAuthenticatedAs($this->guru, 'guru_mapel');
-        $this->assertGuest('guru_dev');
         $this->get(route('guru-mapel.dashboard'))
             ->assertOk()
             ->assertSee('Budi Santoso')
             ->assertDontSee('Ganti Peran')
-            ->assertSee('action="'.route('guru-mapel.logout').'"', false);
+            ->assertSee('action="'.route('logout').'"', false);
 
-        $this->post(route('guru-mapel.logout'))->assertRedirect(route('guru-mapel.login'));
+        $this->post(route('logout'))->assertRedirect(route('login'));
         $this->assertGuest('guru_mapel');
 
-        $this->login('budi@sekolah.test')->assertRedirect(route('guru-mapel.dashboard'));
+        $this->login('budi@sekolah.test');
         $this->assertAuthenticatedAs($this->guru, 'guru_mapel');
     }
 
-    public function test_invalid_password_and_unknown_identity_are_rejected(): void
+    public function test_teacher_password_login_endpoint_is_not_available(): void
     {
-        $this->login('guru.budi', 'salah')->assertSessionHasErrors('login');
-        $this->assertGuest('guru_mapel');
-        $this->login('tidak.ada')->assertSessionHasErrors('login');
+        $this->post('/guru-mapel/masuk', [
+            'login' => 'guru.budi',
+            'password' => 'password-rahasia',
+        ])->assertStatus(405);
+
         $this->assertGuest('guru_mapel');
     }
 
-    public function test_inactive_and_non_teacher_accounts_are_rejected(): void
+    public function test_inactive_and_non_teacher_sessions_are_rejected(): void
     {
         $inactive = $this->user($this->guruRole, 'guru.nonaktif', 'Guru Nonaktif', 'nonaktif@sekolah.test', 'Nonaktif');
         $gpk = $this->user($this->gpkRole, 'gpk.sekolah', 'GPK Sekolah', 'gpk@sekolah.test');
 
-        $this->login($inactive->username)->assertSessionHasErrors('login');
+        $this->actingAs($inactive, 'guru_mapel')
+            ->get(route('guru-mapel.dashboard'))
+            ->assertRedirect(route('guru-mapel.login'));
         $this->assertGuest('guru_mapel');
-        $this->login($gpk->username)->assertSessionHasErrors('login');
+
+        $this->actingAs($gpk, 'guru_mapel')
+            ->get(route('guru-mapel.dashboard'))
+            ->assertRedirect(route('guru-mapel.login'));
         $this->assertGuest('guru_mapel');
     }
 
@@ -121,8 +130,7 @@ class GuruMapelAuthenticationTest extends TestCase
     {
         $this->get(route('guru-mapel.dashboard'))->assertRedirect(route('guru-mapel.login'));
 
-        $this->actingAs($this->guru, 'guru_dev')
-            ->withSession(['dev_role' => 'guru-mapel', 'dev_pengguna_id' => $this->guru->getKey()])
+        $this->actingAs($this->guru, 'staff')
             ->get(route('guru-mapel.dashboard'))
             ->assertRedirect(route('guru-mapel.login'));
     }
@@ -169,7 +177,7 @@ class GuruMapelAuthenticationTest extends TestCase
     {
         $unassigned = $this->user($this->guruRole, 'guru.baru', 'Guru Baru', 'baru@sekolah.test');
 
-        $this->login($unassigned->username)->assertRedirect(route('guru-mapel.dashboard'));
+        $this->login($unassigned->username);
         $this->get(route('guru-mapel.dashboard'))
             ->assertOk()
             ->assertSee('Guru Baru')
@@ -179,15 +187,12 @@ class GuruMapelAuthenticationTest extends TestCase
             ->assertSee('Total 0 siswa terdaftar');
     }
 
-    public function test_development_login_still_uses_its_own_guard(): void
+    public function test_development_login_is_no_longer_available(): void
     {
-        $this->post(route('dev.login.store'), [
-            'role' => 'guru-mapel',
-            'guru_mapel_id' => $this->guru->getKey(),
-        ])->assertRedirect(route('dev.preview', 'guru-mapel'));
-
-        $this->assertAuthenticatedAs($this->guru, 'guru_dev');
+        $this->post('/_dev/login', ['role' => 'guru-mapel'])->assertNotFound();
         $this->assertGuest('guru_mapel');
-        $this->get(route('dev.guru-mapel.dashboard'))->assertOk()->assertSee('Ganti Peran');
+        $this->get(route('guru-mapel.dashboard'))->assertRedirect(route('guru-mapel.login'));
     }
 }
+
+

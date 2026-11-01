@@ -4,10 +4,12 @@ namespace Tests\Feature;
 
 use App\Models\CatatanPendampingan;
 use App\Models\CatatanPerkembangan;
+use App\Jobs\SendPushNotification;
 use App\Services\GpkVerifikasiService;
 use DomainException;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Queue;
 use Tests\TestCase;
 
 class GpkVerifikasiServiceTest extends TestCase
@@ -84,12 +86,17 @@ class GpkVerifikasiServiceTest extends TestCase
 
     public function test_pendamping_note_sent_back_for_revision_is_not_available_to_parent(): void
     {
+        Queue::fake();
         $id = $this->pendampingan();
         $svc = app(GpkVerifikasiService::class);
         $verifikasi = $svc->verifikasi('pendampingan', $id, $this->idGpk, 'Perlu Revisi', 'Lengkapi hasil.');
         $this->assertEquals(0, CatatanPendampingan::dipublikasikan()->count());
         $this->assertNull($verifikasi->id_publikator);
         $this->assertNull($verifikasi->tanggal_publikasi);
+        Queue::assertPushed(SendPushNotification::class, fn (SendPushNotification $job) =>
+            $job->userIds === [$this->idPendamping]
+            && $job->payload['title'] === 'Catatan perlu diperbaiki'
+            && str_contains($job->payload['url'], "/tim-inklusi/catatan/{$id}"));
     }
 
     public function test_only_active_gpk_may_verify(): void

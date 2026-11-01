@@ -7,6 +7,7 @@ use App\Models\CatatanPerkembangan;
 use App\Models\LaporanPerkembangan;
 use App\Models\RekapPerkembangan;
 use App\Models\Siswa;
+use Carbon\CarbonInterface;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Support\Collection;
 
@@ -90,10 +91,14 @@ class PrincipalReports
     }
 
     /** Students that already have a GPK-verified note, independent of a formal report. */
-    public function studentsWithVerifiedNotes(array $filters = []): Builder
+    public function studentsWithVerifiedNotes(array $filters = [], ?CarbonInterface $start = null, ?CarbonInterface $end = null): Builder
     {
         $development = $this->notes('perkembangan', false);
         $assistance = $this->notes('pendampingan', false);
+        if ($start && $end) {
+            $development->whereBetween('tanggal_catatan', [$start->toDateString(), $end->toDateString()]);
+            $assistance->whereBetween('tanggal_catatan', [$start->toDateString(), $end->toDateString()]);
+        }
 
         return $this->studentFilters($this->students(), $filters)
             ->where(function (Builder $query) use ($development, $assistance) {
@@ -117,10 +122,37 @@ class PrincipalReports
             ], 'tanggal_catatan');
     }
 
-    public function verifiedSources(Siswa $student): Collection
+    /** All active students shown in semester recap, including students with zero notes. */
+    public function studentsForVerifiedRecap(array $filters, CarbonInterface $start, CarbonInterface $end): Builder
     {
         $development = $this->notes('perkembangan', false)
-            ->where('id_siswa', $student->getKey())
+            ->whereBetween('tanggal_catatan', [$start->toDateString(), $end->toDateString()]);
+        $assistance = $this->notes('pendampingan', false)
+            ->whereBetween('tanggal_catatan', [$start->toDateString(), $end->toDateString()]);
+
+        return $this->studentFilters($this->students()->where('status_siswa', 'Aktif'), $filters)
+            ->with('kelas')
+            ->withCount([
+                'catatanPerkembangan as verified_development_count' => fn (Builder $query) => $query
+                    ->whereIn('id_catatan_perkembangan', (clone $development)->select('id_catatan_perkembangan')),
+                'catatanPendampingan as verified_assistance_count' => fn (Builder $query) => $query
+                    ->whereIn('id_catatan_pendampingan', (clone $assistance)->select('id_catatan_pendampingan')),
+            ]);
+    }
+
+    public function verifiedSources(Siswa $student, ?CarbonInterface $start = null, ?CarbonInterface $end = null): Collection
+    {
+        $development = $this->notes('perkembangan', false)
+            ->where('id_siswa', $student->getKey());
+        $assistance = $this->notes('pendampingan', false)
+            ->where('id_siswa', $student->getKey());
+        if ($start && $end) {
+            $range = [$start->toDateString(), $end->toDateString()];
+            $development->whereBetween('tanggal_catatan', $range);
+            $assistance->whereBetween('tanggal_catatan', $range);
+        }
+
+        $development = $development
             ->with(['pembuat', 'mataPelajaran'])
             ->get()
             ->map(fn (CatatanPerkembangan $note) => [
@@ -131,8 +163,7 @@ class PrincipalReports
                 'material' => $note->materi_kegiatan, 'extra' => $note->catatan_tambahan,
             ]);
 
-        $assistance = $this->notes('pendampingan', false)
-            ->where('id_siswa', $student->getKey())
+        $assistance = $assistance
             ->with('pembuat')
             ->get()
             ->map(fn (CatatanPendampingan $note) => [
@@ -209,7 +240,8 @@ class PrincipalReports
         return ['id' => $recap->getKey(), 'student' => $recap->siswa->nama_siswa, 'nis' => $recap->siswa->nis,
             'class' => $recap->siswa->kelas->nama_kelas, 'period' => $report?->periode ?? $recap->periode,
             'summary' => $recap->ringkasan_perkembangan, 'report' => $report?->isi_laporan ?? $recap->laporanPerkembangan->map(fn ($r) => $r->periode.': '.$r->isi_laporan)->implode("\n\n"),
-            'author' => $recap->pembuat->nama, 'published' => ($report ?? $recap->laporanPerkembangan->first())?->tanggal_publikasi?->format('d-m-Y H:i'),
+            'author' => $recap->pembuat->nama, 'author_nip' => $recap->pembuat->nip,
+            'published' => ($report ?? $recap->laporanPerkembangan->first())?->tanggal_publikasi?->format('d-m-Y H:i'),
             'sources' => $this->sources($recap)->all()];
     }
 }

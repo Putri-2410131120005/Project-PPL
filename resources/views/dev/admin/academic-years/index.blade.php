@@ -1,6 +1,6 @@
 <x-layouts.preview :role="$role" :roles="$previewRoles" active="academic-years" title="Tahun Ajaran">
     <x-preview.topbar title="Tahun Ajaran" subtitle="Atur periode akademik yang menjadi acuan kelas, rekap, dan laporan." :profile="$profile" />
-    <x-preview.breadcrumbs :home="route('dev.preview', 'admin')" :items="[['Tahun Ajaran', null]]" />
+    <x-preview.breadcrumbs :home="route('dev.preview')" :items="[['Tahun Ajaran', null]]" />
     <x-preview.flash-messages />
 
     <section class="abk-panel abk-users-toolbar">
@@ -24,3 +24,5 @@
     </table></div></section>
     <x-preview.pagination :paginator="$academicYears" />
 </x-layouts.preview>
+
+

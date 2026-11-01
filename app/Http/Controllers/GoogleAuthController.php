@@ -18,49 +18,12 @@ use Throwable;
 
 class GoogleAuthController extends Controller
 {
-    private const LOGIN_CONTEXT_SESSION = 'google_login_role';
-
-    private const ROLE_CONTEXTS = [
-        'kepala-sekolah' => [
-            'page_title' => 'Masuk Kepala Sekolah',
-            'form_title' => 'Selamat datang, Kepala Sekolah',
-            'description' => 'Masuk menggunakan akun Google Kepala Sekolah yang telah didaftarkan oleh Super Admin.',
-            'label' => 'Kepala Sekolah',
-            'database_roles' => ['Kepala Sekolah'],
-            'login_route' => 'auth.role.principal.login',
-        ],
-        'guru-mapel' => [
-            'page_title' => 'Masuk Guru Mata Pelajaran',
-            'form_title' => 'Selamat datang, Guru Mata Pelajaran',
-            'description' => 'Masuk menggunakan akun Google Guru Mata Pelajaran yang telah didaftarkan oleh Super Admin.',
-            'label' => 'Guru Mata Pelajaran',
-            'database_roles' => ['Guru Mapel'],
-            'login_route' => 'guru-mapel.login',
-        ],
-        'gpk' => [
-            'page_title' => 'Masuk Guru Pendamping Khusus',
-            'form_title' => 'Selamat datang, GPK',
-            'description' => 'Masuk menggunakan akun Google GPK yang telah didaftarkan oleh Super Admin.',
-            'label' => 'Guru Pendamping Khusus (GPK)',
-            'database_roles' => ['GPK'],
-            'login_route' => 'auth.role.gpk.login',
-        ],
-        'tim-inklusi' => [
-            'page_title' => 'Masuk Tim Inklusi',
-            'form_title' => 'Selamat datang, Tim Inklusi',
-            'description' => 'Masuk menggunakan akun Google Tim Inklusi yang telah didaftarkan oleh Super Admin.',
-            'label' => 'Tim Inklusi',
-            'database_roles' => ['Tim Inklusi'],
-            'login_route' => 'auth.role.tim-inklusi.login',
-        ],
-        'admin' => [
-            'page_title' => 'Masuk Super Admin',
-            'form_title' => 'Selamat datang, Super Admin',
-            'description' => 'Masuk menggunakan akun Google Super Admin yang telah terdaftar.',
-            'label' => 'Super Admin',
-            'database_roles' => ['Admin', 'Admin / Pengelola'],
-            'login_route' => 'auth.role.admin.login',
-        ],
+    private const STAFF_LOGIN_ROLES = [
+        'kepala-sekolah',
+        'guru-mapel',
+        'gpk',
+        'tim-inklusi',
+        'admin',
     ];
 
     private const INTERNAL_ROLES = [
@@ -78,83 +41,57 @@ class GoogleAuthController extends Controller
             return $this->redirectFor(Auth::guard('staff')->user()->loadMissing('role'));
         }
 
+        if (Auth::guard('parent')->check()) {
+            return redirect()->route('dev.parent.dashboard');
+        }
+
         return view('auth.login', $this->loginViewData());
     }
 
-    public function roleLogin(Request $request, string $role): View|RedirectResponse
+    public function roleLogin(string $role): View|RedirectResponse
     {
-        $context = $this->roleContext($role);
-        $account = Auth::guard('staff')->user()?->loadMissing('role');
+        $this->roleContext($role);
 
-        if ($account && $this->accountMatchesContext($account, $role)) {
-            return $this->redirectFor($account);
-        }
-
-        return view('auth.login', $this->loginViewData(
-            $role,
-            $account ? 'Anda masih masuk dengan role lain. Keluar terlebih dahulu sebelum menggunakan halaman login ini.' : null,
-        ));
+        return redirect()->route('login');
     }
 
     public function redirectWithoutRole(): RedirectResponse
     {
-        return redirect()->route('login')->withErrors([
-            'google' => 'Pilih halaman login sesuai role sebelum melanjutkan dengan Google.',
-        ]);
-    }
-
-    public function redirect(Request $request, string $role): RedirectResponse
-    {
-        $context = $this->roleContext($role);
-
         if (! $this->googleConfigured()) {
-            return redirect()->route($context['login_route'])->withErrors([
+            return redirect()->route('login')->withErrors([
                 'google' => 'Google Login belum dikonfigurasi oleh pengelola sistem.',
             ]);
         }
 
-        $account = Auth::guard('staff')->user()?->loadMissing('role');
-        if ($account) {
-            if ($this->accountMatchesContext($account, $role)) {
-                return $this->redirectFor($account);
-            }
-
-            return redirect()->route($context['login_route'])->withErrors([
-                'google' => 'Keluar dari akun yang sedang aktif sebelum masuk menggunakan role lain.',
-            ]);
+        if ($account = Auth::guard('staff')->user()?->loadMissing('role')) {
+            return $this->redirectFor($account);
         }
-
-        $request->session()->put(self::LOGIN_CONTEXT_SESSION, $role);
 
         return Socialite::driver('google')->redirect();
     }
 
+    public function redirect(string $role): RedirectResponse
+    {
+        $this->roleContext($role);
+
+        return $this->redirectWithoutRole();
+    }
+
     public function callback(Request $request): RedirectResponse
     {
-        $role = $request->session()->pull(self::LOGIN_CONTEXT_SESSION);
-        $context = is_string($role) && array_key_exists($role, self::ROLE_CONTEXTS)
-            ? self::ROLE_CONTEXTS[$role]
-            : null;
-
-        if (! $context) {
-            return redirect()->route('login')->withErrors([
-                'google' => 'Konteks login tidak valid atau sudah kedaluwarsa. Pilih kembali halaman login sesuai role.',
-            ]);
-        }
-
         if (! $this->googleConfigured()) {
-            return redirect()->route($context['login_route'])->withErrors([
+            return redirect()->route('login')->withErrors([
                 'google' => 'Google Login belum dikonfigurasi oleh pengelola sistem.',
             ]);
         }
 
         try {
             $googleUser = Socialite::driver('google')->user();
-            $account = $this->resolveAccount($googleUser, $role);
+            $account = $this->resolveAccount($googleUser);
         } catch (ValidationException $exception) {
-            return redirect()->route($context['login_route'])->withErrors($exception->errors());
+            return redirect()->route('login')->withErrors($exception->errors());
         } catch (InvalidStateException) {
-            return redirect()->route($context['login_route'])->withErrors([
+            return redirect()->route('login')->withErrors([
                 'google' => 'Sesi Google Login tidak valid atau sudah kedaluwarsa. Silakan coba kembali.',
             ]);
         } catch (Throwable $exception) {
@@ -162,19 +99,19 @@ class GoogleAuthController extends Controller
                 'exception' => $exception::class,
             ]);
 
-            return redirect()->route($context['login_route'])->withErrors([
+            return redirect()->route('login')->withErrors([
                 'google' => 'Google Login tidak dapat diproses saat ini. Silakan coba kembali.',
             ]);
         }
 
         Auth::guard('staff')->login($account);
+        Auth::guard('parent')->logout();
         if ($account->role?->nama_role === 'Guru Mapel') {
             Auth::guard('guru_mapel')->login($account);
         } else {
             Auth::guard('guru_mapel')->logout();
         }
-        Auth::guard('guru_dev')->logout();
-        $request->session()->forget(['dev_role', 'dev_pengguna_id', 'guru_note_creation_token']);
+        $request->session()->forget('guru_note_creation_token');
         $request->session()->regenerate();
 
         return $this->redirectFor($account);
@@ -184,6 +121,7 @@ class GoogleAuthController extends Controller
     {
         Auth::guard('staff')->logout();
         Auth::guard('guru_mapel')->logout();
+        Auth::guard('parent')->logout();
         $request->session()->forget('guru_note_creation_token');
         $request->session()->invalidate();
         $request->session()->regenerateToken();
@@ -191,7 +129,7 @@ class GoogleAuthController extends Controller
         return redirect()->route('login');
     }
 
-    private function resolveAccount(SocialiteUser $googleUser, string $roleContext): Pengguna
+    private function resolveAccount(SocialiteUser $googleUser): Pengguna
     {
         $googleId = trim((string) $googleUser->getId());
         $email = mb_strtolower(trim((string) $googleUser->getEmail()));
@@ -207,7 +145,7 @@ class GoogleAuthController extends Controller
         }
 
         try {
-            return DB::transaction(function () use ($googleId, $email, $roleContext): Pengguna {
+            return DB::transaction(function () use ($googleId, $email): Pengguna {
                 $account = Pengguna::query()
                     ->with('role')
                     ->where('google_id', $googleId)
@@ -222,7 +160,7 @@ class GoogleAuthController extends Controller
                         ->first();
 
                     if ($account && $account->google_id === null) {
-                        $this->ensureAllowed($account, $roleContext);
+                        $this->ensureAllowed($account);
                         $account->forceFill(['google_id' => $googleId])->save();
                     }
                 }
@@ -240,7 +178,7 @@ class GoogleAuthController extends Controller
                     ]);
                 }
 
-                $this->ensureAllowed($account, $roleContext);
+                $this->ensureAllowed($account);
 
                 return $account;
             }, 3);
@@ -251,7 +189,7 @@ class GoogleAuthController extends Controller
         }
     }
 
-    private function ensureAllowed(Pengguna $account, ?string $roleContext = null): void
+    private function ensureAllowed(Pengguna $account): void
     {
         $role = $account->role?->nama_role;
         if ($account->status_akun !== 'Aktif' || ! in_array($role, self::INTERNAL_ROLES, true)) {
@@ -266,22 +204,16 @@ class GoogleAuthController extends Controller
             ]);
         }
 
-        if ($roleContext !== null && ! $this->accountMatchesContext($account, $roleContext)) {
-            throw ValidationException::withMessages([
-                'google' => 'Akun Google tidak memiliki akses untuk halaman login yang dipilih.',
-            ]);
-        }
     }
 
     private function redirectFor(Pengguna $account): RedirectResponse
     {
-        $production = ! app()->environment(['local', 'testing']);
         $route = match ($account->role?->nama_role) {
-            'Admin', 'Admin / Pengelola' => $production ? 'dev.preview' : 'staff.admin.dashboard',
-            'GPK' => $production ? 'dev.gpk.dashboard' : 'staff.gpk.dashboard',
-            'Tim Inklusi' => $production ? 'dev.tim-inklusi.dashboard' : 'staff.tim-inklusi.dashboard',
+            'Admin', 'Admin / Pengelola' => 'dev.preview',
+            'GPK' => 'dev.gpk.dashboard',
+            'Tim Inklusi' => 'dev.tim-inklusi.dashboard',
             'Guru Mapel' => 'guru-mapel.dashboard',
-            'Kepala Sekolah' => 'staff.principal.dashboard',
+            'Kepala Sekolah' => 'dev.principal.dashboard',
             default => 'login',
         };
 
@@ -295,34 +227,13 @@ class GoogleAuthController extends Controller
             && filled(config('services.google.redirect'));
     }
 
-    private function roleContext(string $role): array
+    private function roleContext(string $role): void
     {
-        abort_unless(array_key_exists($role, self::ROLE_CONTEXTS), 404);
-
-        return self::ROLE_CONTEXTS[$role];
+        abort_unless(in_array($role, self::STAFF_LOGIN_ROLES, true), 404);
     }
 
-    private function accountMatchesContext(Pengguna $account, string $role): bool
+    private function loginViewData(): array
     {
-        $context = $this->roleContext($role);
-        $databaseRole = $account->role?->nama_role;
-
-        return $account->status_akun === 'Aktif'
-            && in_array($databaseRole, $context['database_roles'], true)
-            && ($role !== 'admin' || $account->is_super_admin);
-    }
-
-    private function loginViewData(?string $role = null, ?string $loginError = null): array
-    {
-        $loginContext = $role === null ? null : ['key' => $role] + $this->roleContext($role);
-        $roleOptions = collect(self::ROLE_CONTEXTS)->map(fn (array $context, string $key) => [
-            'label' => $context['label'],
-            'description' => $context['page_title'],
-            'url' => route($context['login_route']),
-        ])->values()->all();
-
-        return compact('loginContext', 'roleOptions', 'loginError') + [
-            'googleConfigured' => $this->googleConfigured(),
-        ];
+        return ['googleConfigured' => $this->googleConfigured()];
     }
 }

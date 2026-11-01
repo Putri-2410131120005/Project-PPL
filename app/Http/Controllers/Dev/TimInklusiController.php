@@ -7,6 +7,7 @@ use App\Models\CatatanPendampingan;
 use App\Models\CatatanPerkembangan;
 use App\Models\Pengguna;
 use App\Models\Siswa;
+use App\Services\WorkflowPushNotifier;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
@@ -127,7 +128,7 @@ class TimInklusiController extends Controller
         ]));
     }
 
-    public function storeNote(Request $request): RedirectResponse
+    public function storeNote(Request $request, WorkflowPushNotifier $pushNotifier): RedirectResponse
     {
         $pendamping = $this->pendamping($request);
         $data = $this->validateNote($request);
@@ -160,6 +161,10 @@ class TimInklusiController extends Controller
             return $note;
         });
 
+        if ($submit && $note->wasRecentlyCreated) {
+            $pushNotifier->noteSubmitted('pendampingan', (int) $note->getKey());
+        }
+
         return redirect()->route('dev.tim-inklusi.notes.show', $note)
             ->with('success', $submit ? 'Catatan berhasil dikirim ke GPK.' : 'Draft catatan berhasil disimpan.');
     }
@@ -177,7 +182,7 @@ class TimInklusiController extends Controller
         ]));
     }
 
-    public function updateNote(Request $request, CatatanPendampingan $catatan): RedirectResponse
+    public function updateNote(Request $request, CatatanPendampingan $catatan, WorkflowPushNotifier $pushNotifier): RedirectResponse
     {
         $pendamping = $this->pendamping($request);
         $this->ensureEditable($pendamping, $catatan);
@@ -196,6 +201,10 @@ class TimInklusiController extends Controller
                 'tanggal_kirim' => $submit ? now() : $locked->tanggal_kirim,
             ])->save();
         });
+
+        if ($submit) {
+            $pushNotifier->noteSubmitted('pendampingan', (int) $catatan->getKey());
+        }
 
         return redirect()->route('dev.tim-inklusi.notes.show', $catatan)
             ->with('success', $submit ? 'Catatan berhasil dikirim untuk verifikasi.' : 'Perubahan catatan berhasil disimpan.');

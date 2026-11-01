@@ -64,14 +64,19 @@ class ParentCredentialFlowTest extends TestCase
             'password' => 'Ahmad12345',
         ])->assertRedirect(route('dev.parent.password.edit'));
 
-        $this->withSession(['dev_role' => 'orang-tua'])
-            ->get(route('dev.preview', 'orang-tua'))
+        $this->get(route('dev.parent.dashboard'))
             ->assertRedirect(route('dev.parent.password.edit'));
+
+        $this->get(route('dev.parent.password.edit'))
+            ->assertOk()
+            ->assertSee('aria-controls="password"', false)
+            ->assertSee('aria-controls="password_confirmation"', false)
+            ->assertSeeInOrder(['Password baru', 'Ulangi password baru']);
 
         $this->put(route('dev.parent.password.update'), [
             'password' => 'PasswordBaru!123',
             'password_confirmation' => 'PasswordBaru!123',
-        ])->assertRedirect(route('dev.preview', 'orang-tua'));
+        ])->assertRedirect(route('dev.parent.dashboard'));
 
         $parent = Pengguna::where('username', 'ortu_12345')->firstOrFail();
         $this->assertFalse($parent->wajib_ganti_password);
@@ -79,21 +84,21 @@ class ParentCredentialFlowTest extends TestCase
         $this->assertTrue(Hash::check('PasswordBaru!123', $parent->password));
         $this->assertFalse(Hash::check('Ahmad12345', $parent->password));
 
-        $this->post(route('dev.logout'))->assertRedirect(route('dev.login'));
+        $this->post(route('logout'))->assertRedirect(route('login'));
         $this->assertFalse(Auth::guard('parent')->check());
 
-        $this->from(route('dev.parent.login'))
+        $this->from(route('login'))
             ->post(route('dev.parent.login.store'), [
                 'username' => 'ortu_12345',
                 'password' => 'Ahmad12345',
             ])
-            ->assertRedirect(route('dev.parent.login'))
+            ->assertRedirect(route('login'))
             ->assertSessionHasErrors('username');
 
         $this->post(route('dev.parent.login.store'), [
             'username' => 'ortu_12345',
             'password' => 'PasswordBaru!123',
-        ])->assertRedirect(route('dev.preview', 'orang-tua'));
+        ])->assertRedirect(route('dev.parent.dashboard'));
 
         $this->withSession(['dev_role' => 'admin'])
             ->get(route('dev.admin.users.index', ['role' => $this->parentRole->id_role]))

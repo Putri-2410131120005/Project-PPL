@@ -1,6 +1,6 @@
 <x-layouts.preview :role="$role" :roles="$previewRoles" active="mappings" title="Hubungan Orang Tua dan Siswa">
     <x-preview.topbar title="Hubungan Orang Tua dan Siswa" subtitle="Tinjau akun Orang Tua/Wali dan siswa yang menjadi tanggung jawabnya." :profile="$profile" />
-    <x-preview.breadcrumbs :home="route('dev.preview', 'admin')" :items="[['Hubungan Data', null], ['Orang Tua Siswa', null]]" />
+    <x-preview.breadcrumbs :home="route('dev.preview')" :items="[['Hubungan Data', null], ['Orang Tua Siswa', null]]" />
 
     <x-preview.flash-messages />
 
@@ -38,3 +38,5 @@
     </section>
     <x-preview.pagination :paginator="$mappings" />
 </x-layouts.preview>
+
+

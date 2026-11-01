@@ -2,6 +2,7 @@
 
 namespace Tests\Feature;
 
+use App\Jobs\SendPushNotification;
 use App\Models\CatatanPendampingan;
 use App\Models\CatatanPerkembangan;
 use App\Models\Kelas;
@@ -17,36 +18,30 @@ use App\Models\VerifikasiCatatan;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Str;
+use Illuminate\Support\Facades\Queue;
 use Tests\TestCase;
 
 class GpkModuleTest extends TestCase
 {
     use RefreshDatabase;
 
-    public function test_development_login_and_middleware_require_an_active_gpk_identity(): void
+    public function test_gpk_middleware_requires_a_real_active_gpk_session(): void
     {
         $gpk = $this->user('GPK Aktif', 'GPK');
         $nonGpk = $this->user('Bukan GPK', 'Tim Inklusi');
         $inactive = $this->user('GPK Nonaktif', 'GPK', 'Nonaktif');
+        $gpk->forceFill(['google_id' => 'google-gpk-aktif'])->save();
+        $nonGpk->forceFill(['google_id' => 'google-bukan-gpk'])->save();
+        $inactive->forceFill(['google_id' => 'google-gpk-nonaktif'])->save();
 
-        $this->post(route('dev.login.store'), ['role' => 'gpk', 'gpk_id' => $gpk->getKey()])
-            ->assertRedirect(route('dev.preview', 'gpk'))
-            ->assertSessionHas('dev_pengguna_id', $gpk->getKey());
-        $this->get(route('dev.preview', 'gpk'))->assertRedirect(route('dev.gpk.dashboard'));
-        $this->get(route('dev.gpk.dashboard'))->assertOk()->assertSee($gpk->nama)
+        $this->actingAs($gpk, 'staff')->get(route('dev.gpk.dashboard'))->assertOk()->assertSee($gpk->nama)
             ->assertSee('Verifikasi Catatan')->assertSee('Riwayat Verifikasi');
 
         foreach ([$nonGpk, $inactive] as $invalid) {
-            $this->from(route('dev.login'))->post(route('dev.login.store'), [
-                'role' => 'gpk', 'gpk_id' => $invalid->getKey(),
-            ])->assertRedirect(route('dev.login'))->assertSessionHasErrors('gpk_id');
+            $this->actingAs($invalid, 'staff')->get(route('dev.gpk.dashboard'))
+                ->assertRedirect(route('login'));
+            $this->assertGuest('staff');
         }
-
-        $this->withSession(['dev_role' => 'gpk', 'dev_pengguna_id' => $nonGpk->getKey()])
-            ->get(route('dev.gpk.dashboard'))->assertRedirect(route('dev.login'))
-            ->assertSessionMissing(['dev_role', 'dev_pengguna_id']);
-        $this->withSession(['dev_role' => 'admin'])
-            ->get(route('dev.gpk.dashboard'))->assertRedirect(route('dev.preview', 'admin'));
     }
 
     public function test_gpk_only_sees_assigned_students_and_read_only_parent_data(): void
@@ -61,6 +56,9 @@ class GpkModuleTest extends TestCase
 
         $this->asGpk($gpk)->get(route('dev.gpk.students.index'))
             ->assertOk()->assertSee($assigned->nama_siswa)->assertDontSee($outside->nama_siswa);
+        $this->get(route('dev.gpk.students.show', $assigned))
+            ->assertOk()
+            ->assertSee('data-navigation-parent="'.route('dev.gpk.students.index').'"', false);
         $this->get(route('dev.gpk.students.show', $outside))->assertNotFound();
         $this->get(route('dev.gpk.parents.index'))
             ->assertOk()->assertSee('Wali Siswa')->assertDontSee('Wali Di Luar')
@@ -253,10 +251,14 @@ class GpkModuleTest extends TestCase
             'siswa' => $outside, 'semester' => 'ganjil', 'tahun_ajaran' => '2026/2027',
         ]))->assertOk()->assertDownload();
 
+        $recapDetailUrl = route('dev.gpk.recaps.show', [
+            'siswa' => $outside, 'semester' => 'ganjil', 'tahun_ajaran' => '2026/2027',
+        ]);
         $this->get(route('dev.gpk.recaps.pdf.preview', [
             'siswa' => $outside, 'semester' => 'ganjil', 'tahun_ajaran' => '2026/2027',
-        ]))->assertOk()->assertSee('Pratinjau PDF Laporan Perkembangan')
-            ->assertSee($headmaster->nama)->assertSee($gpk->nama)->assertSee('Kepala Sekolah');
+        ]))->assertOk()->assertSee('Pratinjau PDF Rekap Perkembangan')
+            ->assertSee($headmaster->nama)->assertSee($gpk->nama)->assertSee('Kepala Sekolah')
+            ->assertSee('Kembali ke Detail Rekap')->assertSee($recapDetailUrl);
         $this->get(route('dev.gpk.recaps.pdf.download', [
             'siswa' => $outside, 'semester' => 'ganjil', 'tahun_ajaran' => '2026/2027',
         ]))->assertOk()->assertDownload()->assertHeader('content-type', 'application/pdf');
@@ -266,6 +268,7 @@ class GpkModuleTest extends TestCase
 
     public function test_monthly_report_appears_at_month_end_and_only_needs_publication(): void
     {
+        Queue::fake();
         $this->travelTo(Carbon::parse('2026-10-23 10:00:00'));
         [$gpk, $assigned, $outside] = $this->fixture();
         $headmaster = $this->user('Kepala Sekolah Laporan', 'Kepala Sekolah');
@@ -295,7 +298,10 @@ class GpkModuleTest extends TestCase
             ->assertOk()->assertSee($assigned->nama_siswa)->assertSee($outside->nama_siswa)
             ->assertSee('Ada perkembangan.')->assertSee('Publikasikan');
         $this->get(route('dev.gpk.reports.pdf.preview', $report))->assertOk()
-            ->assertSee('Pratinjau PDF Laporan Perkembangan')->assertSee($headmaster->nama)->assertSee($gpk->nama);
+            ->assertSee('Pratinjau PDF Laporan Perkembangan')->assertSee($headmaster->nama)->assertSee($gpk->nama)
+            ->assertSee('Kembali ke Detail Laporan')
+            ->assertSee('href="'.route('dev.gpk.reports.show', $report).'"', false)
+            ->assertSee('abk-primary-button abk-pdf-download-button', false);
         $this->get(route('dev.gpk.reports.pdf.download', $report))
             ->assertOk()->assertDownload()->assertHeader('content-type', 'application/pdf');
 
@@ -308,6 +314,10 @@ class GpkModuleTest extends TestCase
             'id_gpk' => $gpk->getKey(), 'id_laporan_bulanan' => $report->getKey(),
             'jenis_aktivitas' => 'Publikasi Laporan',
         ]);
+        Queue::assertPushed(SendPushNotification::class, fn (SendPushNotification $job) =>
+            in_array((int) $headmaster->getKey(), $job->userIds, true)
+            && $job->payload['title'] === 'Laporan bulanan tersedia'
+            && str_contains($job->payload['url'], '/kepala-sekolah/laporan?bulan=2026-10'));
         $this->post(route('dev.gpk.reports.publish', $report))->assertSessionHasErrors('publikasi');
         $this->assertFalse(app('router')->has('dev.gpk.reports.store'));
         $this->assertFalse(app('router')->has('dev.gpk.reports.update'));
@@ -322,8 +332,8 @@ class GpkModuleTest extends TestCase
         $this->get(route('dev.gpk.reports.index'))->assertOk()->assertSee('Belum ada laporan');
         $this->assertDatabaseCount('siswa', 0);
         $this->assertDatabaseCount('catatan_perkembangan', 0);
-        $this->post(route('dev.logout'))->assertRedirect(route('dev.login'))
-            ->assertSessionMissing(['dev_role', 'dev_pengguna_id']);
+        $this->post(route('logout'))->assertRedirect(route('login'));
+        $this->assertGuest('staff');
     }
 
     private function asGpk(Pengguna $gpk): static
@@ -375,3 +385,5 @@ class GpkModuleTest extends TestCase
         ]);
     }
 }
+
+

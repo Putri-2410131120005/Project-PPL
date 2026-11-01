@@ -1,6 +1,6 @@
 <x-layouts.preview :role="$role" :roles="$previewRoles" active="users" :title="$title">
     <x-preview.topbar :title="$title" subtitle="Lengkapi data akun pengguna sesuai kebutuhan sekolah." :profile="$profile" />
-    <x-preview.breadcrumbs :home="route('dev.preview', 'admin')" :items="[['Pengguna', route('dev.admin.users.index')], [$title, null]]" />
+    <x-preview.breadcrumbs :home="route('dev.preview')" :items="[['Pengguna', route('dev.admin.users.index')], [$title, null]]" />
     <section class="abk-panel abk-user-form">
         @unless ($user->exists)
             <div class="alert alert-info abk-alert mb-4">
@@ -169,3 +169,5 @@
         syncRelatedClasses();
     </script>
 </x-layouts.preview>
+
+

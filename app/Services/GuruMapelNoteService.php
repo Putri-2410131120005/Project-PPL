@@ -11,9 +11,11 @@ class GuruMapelNoteService
 {
     public const LABELS = ['Draft' => 'Draft', 'Dikirim' => 'Menunggu Verifikasi', 'Terverifikasi' => 'Terverifikasi', 'Perlu Revisi' => 'Dikembalikan'];
 
+    public function __construct(private readonly WorkflowPushNotifier $pushNotifier) {}
+
     public function save(Pengguna $guru, int $siswaId, array $input, ?int $noteId = null): CatatanPerkembangan
     {
-        return DB::transaction(function () use ($guru, $siswaId, $input, $noteId) {
+        $note = DB::transaction(function () use ($guru, $siswaId, $input, $noteId) {
             $access = app(GuruMapelAccess::class);
             $siswa = $access->student($guru, $siswaId);
             $note = $noteId ? $access->notes($guru)->lockForUpdate()->findOrFail($noteId) : new CatatanPerkembangan;
@@ -47,5 +49,11 @@ class GuruMapelNoteService
 
             return $note;
         });
+
+        if ($note->status_pengajuan === 'Dikirim') {
+            $this->pushNotifier->noteSubmitted('perkembangan', (int) $note->getKey());
+        }
+
+        return $note;
     }
 }

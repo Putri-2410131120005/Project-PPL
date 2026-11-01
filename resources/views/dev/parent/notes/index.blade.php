@@ -5,8 +5,14 @@
     <section class="abk-panel abk-parent-date-filter">
         <div><strong>Cari catatan berdasarkan tanggal</strong><small>Pilih bulan atau tanggal pada kalender.</small></div>
         <form method="GET" action="{{ route('dev.parent.notes.index') }}">
-            <input class="form-control" type="month" name="bulan" value="{{ $filters['bulan'] }}" aria-label="Pilih bulan">
-            <input class="form-control" type="date" name="tanggal" value="{{ $filters['tanggal'] }}" aria-label="Pilih tanggal">
+            <label class="abk-parent-date-field">
+                <span>Bulan</span>
+                <input class="form-control" type="month" name="bulan" value="{{ $filters['bulan'] }}" aria-label="Pilih bulan">
+            </label>
+            <label class="abk-parent-date-field">
+                <span>Tanggal</span>
+                <input class="form-control" type="date" name="tanggal" value="{{ $filters['tanggal'] }}" aria-label="Pilih tanggal">
+            </label>
             <button class="abk-button" type="submit">Terapkan</button>
             <a class="abk-parent-reset" href="{{ route('dev.parent.notes.index') }}">Tampilkan Semua</a>
         </form>

@@ -2,11 +2,13 @@
 
 namespace Tests\Feature;
 
+use App\Jobs\SendPushNotification;
 use App\Models\CatatanPerkembangan;
 use App\Models\Pengguna;
 use App\Services\GpkVerifikasiService;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Queue;
 use Tests\TestCase;
 
 class GuruMapelModuleTest extends TestCase
@@ -45,7 +47,8 @@ class GuruMapelModuleTest extends TestCase
 
     private function loginGuru(): void
     {
-        $this->actingAs($this->guru, 'guru_dev')->withSession(['dev_role' => 'guru-mapel', 'dev_pengguna_id' => $this->guru->getKey()]);
+        $this->guru->forceFill(['google_id' => 'google-budi-santoso'])->save();
+        $this->actingAs($this->guru, 'staff')->actingAs($this->guru, 'guru_mapel');
     }
 
     private function payload(string $action = 'draft'): array
@@ -57,7 +60,7 @@ class GuruMapelModuleTest extends TestCase
 
     private function createNote(string $action = 'draft'): CatatanPerkembangan
     {
-        $this->post(route('dev.guru-mapel.notes.store', $this->student), $this->payload($action))->assertRedirect();
+        $this->post(route('guru-mapel.notes.store', $this->student), $this->payload($action))->assertRedirect();
 
         return CatatanPerkembangan::orderByDesc('id_catatan_perkembangan')->firstOrFail();
     }
@@ -100,119 +103,120 @@ class GuruMapelModuleTest extends TestCase
         file_put_contents($dir.'/'.$name.'.html', $html);
     }
 
-    public function test_role_selector_alone_cannot_read_or_write_real_data(): void
+    public function test_guest_cannot_read_or_write_real_data(): void
     {
-        $this->withSession(['dev_role' => 'guru-mapel'])->get(route('dev.guru-mapel.students.index'))->assertRedirect(route('dev.login'));
-        $this->post(route('dev.guru-mapel.notes.store', $this->student), $this->payload())->assertRedirect(route('dev.login'));
+        $this->get(route('guru-mapel.students.index'))->assertRedirect(route('guru-mapel.login'));
+        $this->post(route('guru-mapel.notes.store', $this->student), $this->payload())->assertRedirect(route('guru-mapel.login'));
         $this->assertDatabaseCount('catatan_perkembangan', 0);
     }
 
-    public function test_dropdown_resolves_database_teacher_and_clears_identity_on_role_change(): void
+    public function test_real_guard_resolves_database_teacher_and_logout_clears_identity(): void
     {
         DB::table('relasi_guru_mapel_kelas')->insert(['id_pengguna' => $this->other->getKey(), 'id_mapel' => $this->subject, 'id_kelas' => $this->class]);
-        $this->post(route('dev.login.store'), ['role' => 'guru-mapel', 'guru_mapel_id' => $this->other->getKey()])
-            ->assertRedirect(route('dev.preview', 'guru-mapel'))->assertSessionHas('dev_pengguna_id', $this->other->getKey());
-        $this->assertAuthenticatedAs($this->other, 'guru_dev');
-        $this->post(route('dev.change-role'))->assertRedirect()->assertSessionMissing('dev_pengguna_id');
-        $this->assertGuest('guru_dev');
+        $this->actingAs($this->other, 'staff')->actingAs($this->other, 'guru_mapel')
+            ->get(route('guru-mapel.dashboard'))->assertOk()->assertSee($this->other->nama);
+        $this->post(route('logout'))->assertRedirect(route('login'));
+        $this->assertGuest('guru_mapel');
     }
 
-    public function test_sidebar_only_keeps_logout_and_role_change_actions(): void
+    public function test_sidebar_only_keeps_the_real_logout_action(): void
     {
         $this->loginGuru();
-        $response = $this->get(route('dev.guru-mapel.dashboard'))->assertOk();
-        foreach (['dev.logout', 'dev.change-role'] as $route) {
-            $response->assertSee('action="'.route($route).'"', false);
-        }
-        $response->assertDontSee('Ganti Guru')
-            ->assertSee('data-confirm-title="Keluar?"', false)
+        $response = $this->get(route('guru-mapel.dashboard'))->assertOk();
+        $response->assertSee('action="'.route('logout').'"', false)
+            ->assertDontSee('Ganti Guru')->assertDontSee('Ganti Peran')
+            ->assertSee('data-confirm-title="Keluar akun?"', false)
             ->assertSee('id="abkConfirmationModal"', false);
-        $this->post(route('dev.change-role'))->assertRedirect(route('dev.login'))->assertSessionMissing('dev_role');
-        $this->assertGuest('guru_dev');
-        $this->loginGuru();
-        $this->post(route('dev.logout'))->assertRedirect(route('dev.login'))->assertSessionMissing('dev_role');
-        $this->assertGuest('guru_dev');
+        $this->post(route('logout'))->assertRedirect(route('login'));
+        $this->assertGuest('guru_mapel');
     }
 
     public function test_all_pages_render_and_student_search_and_level_are_scoped(): void
     {
         $this->loginGuru();
-        $this->get(route('dev.guru-mapel.students.index'))->assertOk()->assertSee('Siswa Terhubung')->assertDontSee('Siswa Rahasia');
-        $this->get(route('dev.guru-mapel.students.index', ['q' => 'absent']))->assertOk()->assertSee('Tidak ada data yang cocok');
-        $this->get(route('dev.guru-mapel.students.index', ['tingkat' => 'X']))->assertOk()->assertDontSee('Siswa Terhubung');
-        $this->get(route('dev.guru-mapel.students.index', ['tingkat' => 'XI', 'per_page' => 30]))->assertOk()->assertSee('Siswa Terhubung');
+        $this->get(route('guru-mapel.students.index'))->assertOk()->assertSee('Siswa Terhubung')->assertDontSee('Siswa Rahasia');
+        $this->get(route('guru-mapel.students.index', ['q' => 'absent']))->assertOk()->assertSee('Tidak ada data yang cocok');
+        $this->get(route('guru-mapel.students.index', ['tingkat' => 'X']))->assertOk()->assertDontSee('Siswa Terhubung');
+        $this->get(route('guru-mapel.students.index', ['tingkat' => 'XI', 'per_page' => 30]))->assertOk()->assertSee('Siswa Terhubung');
         foreach (['dashboard', 'notes.status', 'students.index'] as $page) {
-            $response = $this->get(route('dev.guru-mapel.'.$page))->assertOk();
+            $response = $this->get(route('guru-mapel.'.$page))->assertOk();
             $this->review($page, $response);
         }
         foreach (['students.show', 'notes.create', 'recommendations.show'] as $page) {
-            $response = $this->get(route('dev.guru-mapel.'.$page, $this->student))->assertOk();
+            $response = $this->get(route('guru-mapel.'.$page, $this->student))->assertOk();
             $this->review($page, $response);
         }
-        $this->get(route('dev.guru-mapel.notes.create', $this->student))
+        $this->get(route('guru-mapel.notes.create', $this->student))
             ->assertOk()
             ->assertSee('Matematika')
             ->assertDontSee('name="id_mapel"', false)
             ->assertDontSee('Pilih mata pelajaran');
-        $this->get(route('dev.guru-mapel.students.show', $this->outsider))->assertNotFound();
-        $this->get(route('dev.guru-mapel.recommendations.show', $this->student))->assertSee('Rekomendasi resmi belum tersedia');
-        $this->get(route('dev.guru-mapel.students.show', $this->student))
-            ->assertOk()->assertDontSee('Lihat Seluruh Riwayat Siswa');
-        $this->get('/_dev/guru-mapel/riwayat?siswa='.$this->student)->assertNotFound();
+        $this->get(route('guru-mapel.students.show', $this->outsider))->assertNotFound();
+        $this->get(route('guru-mapel.recommendations.show', $this->student))->assertSee('Rekomendasi resmi belum tersedia');
+        $this->get(route('guru-mapel.students.show', $this->student))
+            ->assertOk()
+            ->assertSee('data-navigation-parent="'.route('guru-mapel.students.index').'"', false)
+            ->assertDontSee('Lihat Seluruh Riwayat Siswa');
+        $this->get('/guru-mapel/riwayat?siswa='.$this->student)->assertNotFound();
     }
 
     public function test_draft_submission_revision_resubmission_and_verification_keep_decisions(): void
     {
+        Queue::fake();
         $this->loginGuru();
         $note = $this->createNote();
-        $this->review('notes.draft', $this->get(route('dev.guru-mapel.notes.show', $note->getKey()))->assertOk());
+        $this->review('notes.draft', $this->get(route('guru-mapel.notes.show', $note->getKey()))->assertOk());
         $this->assertSame('Draft', $note->status_pengajuan);
         $this->assertNull($note->tanggal_kirim);
-        $this->get(route('dev.guru-mapel.notes.show', $note->getKey()))->assertOk()->assertSee('Draft Tersimpan');
-        $this->get(route('dev.guru-mapel.notes.revise', $note->getKey()))->assertOk();
-        $url = route('dev.guru-mapel.notes.update', $note->getKey());
+        $this->get(route('guru-mapel.notes.show', $note->getKey()))->assertOk()->assertSee('Draft Tersimpan');
+        $this->get(route('guru-mapel.notes.revise', $note->getKey()))->assertOk();
+        $url = route('guru-mapel.notes.update', $note->getKey());
         $this->put($url, $this->payload('kirim') + ['revision_token' => $this->token($note)])->assertRedirect();
         $this->assertSame('Dikirim', $note->fresh()->status_pengajuan);
         $this->assertNotNull($note->fresh()->tanggal_kirim);
-        $this->review('notes.waiting', $this->get(route('dev.guru-mapel.notes.show', $note->getKey()))->assertOk());
+        Queue::assertPushed(SendPushNotification::class, fn (SendPushNotification $job) =>
+            in_array((int) $this->gpk->getKey(), $job->userIds, true)
+            && $job->payload['title'] === 'Catatan menunggu verifikasi'
+            && str_contains($job->payload['url'], "/gpk/catatan/perkembangan/{$note->getKey()}"));
+        $this->review('notes.waiting', $this->get(route('guru-mapel.notes.show', $note->getKey()))->assertOk());
         $this->put($url, $this->payload() + ['revision_token' => $this->token($note)])->assertStatus(409);
         app(GpkVerifikasiService::class)->verifikasi('perkembangan', $note->getKey(), $this->gpk->getKey(), 'Perlu Revisi', 'Perjelas respons.');
-        $this->get(route('dev.guru-mapel.notes.revise', $note->getKey()))->assertOk()->assertSee('Perjelas respons.');
-        $this->review('notes.revision', $this->get(route('dev.guru-mapel.notes.revise', $note->getKey()))->assertOk());
+        $this->get(route('guru-mapel.notes.revise', $note->getKey()))->assertOk()->assertSee('Perjelas respons.');
+        $this->review('notes.revision', $this->get(route('guru-mapel.notes.revise', $note->getKey()))->assertOk());
         $this->put($url, $this->payload() + ['revision_token' => $this->token($note)])->assertRedirect();
         $this->assertSame(2, $note->fresh()->versi_pengajuan);
         $this->assertSame('Draft', $note->fresh()->status_pengajuan);
-        $this->review('notes.revision-draft', $this->get(route('dev.guru-mapel.notes.show', $note->getKey()))->assertOk());
+        $this->review('notes.revision-draft', $this->get(route('guru-mapel.notes.show', $note->getKey()))->assertOk());
         $this->put($url, $this->payload('kirim') + ['revision_token' => $this->token($note)])->assertRedirect();
         $this->assertSame(2, $note->fresh()->versi_pengajuan);
         app(GpkVerifikasiService::class)->verifikasi('perkembangan', $note->getKey(), $this->gpk->getKey(), 'Terverifikasi');
         $this->assertDatabaseCount('verifikasi_catatan', 2);
-        $this->get(route('dev.guru-mapel.notes.show', $note->getKey()))->assertOk()->assertSee('Perjelas respons.')->assertSee('Dipublikasikan');
-        $history = route('dev.guru-mapel.references.show', ['source' => 'perkembangan', 'id' => $note->getKey()]);
+        $this->get(route('guru-mapel.notes.show', $note->getKey()))->assertOk()->assertSee('Perjelas respons.')->assertSee('Dipublikasikan');
+        $history = route('guru-mapel.references.show', ['source' => 'perkembangan', 'id' => $note->getKey()]);
         $this->get($history)->assertOk()->assertSee('Materi Uji');
         $this->review('reference.show', $this->get($history)->assertOk());
-        $this->get(route('dev.guru-mapel.notes.status', ['status' => 'Terverifikasi', 'q' => 'Terhubung']))->assertOk()->assertSee('Siswa Terhubung');
+        $this->get(route('guru-mapel.notes.status', ['status' => 'Terverifikasi', 'q' => 'Terhubung']))->assertOk()->assertSee('Siswa Terhubung');
     }
 
     public function test_subject_and_identity_are_server_owned_and_stale_updates_are_rejected(): void
     {
         $this->loginGuru();
-        $this->post(route('dev.guru-mapel.notes.store', $this->outsider), $this->payload())->assertNotFound();
+        $this->post(route('guru-mapel.notes.store', $this->outsider), $this->payload())->assertNotFound();
         $input = $this->payload();
         $input['id_mapel'] = 99999;
         $input['id_pembuat'] = $this->other->getKey();
         $input['status_pengajuan'] = 'Terverifikasi';
         $input['versi_pengajuan'] = 99;
-        $this->post(route('dev.guru-mapel.notes.store', $this->student), $input)->assertRedirect();
+        $this->post(route('guru-mapel.notes.store', $this->student), $input)->assertRedirect();
         $note = CatatanPerkembangan::firstOrFail();
         $this->assertSame($this->subject, $note->id_mapel);
         $this->assertEquals($this->guru->getKey(), $note->id_pembuat);
         $this->assertSame('Draft', $note->status_pengajuan);
         $this->assertSame(1, $note->versi_pengajuan);
-        $this->put(route('dev.guru-mapel.notes.update', $note->getKey()), $this->payload() + ['revision_token' => 'stale'])->assertStatus(409);
-        $this->actingAs($this->other, 'guru_dev')->withSession(['dev_role' => 'guru-mapel', 'dev_pengguna_id' => $this->other->getKey()]);
-        $this->get(route('dev.guru-mapel.notes.show', $note->getKey()))->assertNotFound();
-        $this->put(route('dev.guru-mapel.notes.update', $note->getKey()), $this->payload())->assertNotFound();
+        $this->put(route('guru-mapel.notes.update', $note->getKey()), $this->payload() + ['revision_token' => 'stale'])->assertStatus(409);
+        $this->actingAs($this->other, 'guru_mapel');
+        $this->get(route('guru-mapel.notes.show', $note->getKey()))->assertNotFound();
+        $this->put(route('guru-mapel.notes.update', $note->getKey()), $this->payload())->assertNotFound();
     }
 
     public function test_archived_assignments_retain_read_access_and_block_writes_and_inactive_actor_is_denied(): void
@@ -220,10 +224,11 @@ class GuruMapelModuleTest extends TestCase
         $this->loginGuru();
         $note = $this->createNote();
         DB::table('kelas')->where('id_kelas', $this->class)->update(['status_kelas' => 'Arsip']);
-        $this->get(route('dev.guru-mapel.students.show', $this->student))->assertOk();
-        $this->post(route('dev.guru-mapel.notes.store', $this->student), $this->payload())->assertForbidden();
+        $this->get(route('guru-mapel.students.show', $this->student))->assertOk();
+        $this->post(route('guru-mapel.notes.store', $this->student), $this->payload())->assertForbidden();
         $this->guru->update(['status_akun' => 'Nonaktif']);
-        $this->get(route('dev.guru-mapel.dashboard'))->assertForbidden();
+        $this->get(route('guru-mapel.dashboard'))->assertRedirect(route('guru-mapel.login'));
+        $this->assertGuest('guru_mapel');
     }
 
     public function test_conflicting_admin_subject_assignments_block_note_creation(): void
@@ -236,11 +241,11 @@ class GuruMapelModuleTest extends TestCase
             'id_kelas' => $this->class,
         ]);
 
-        $this->get(route('dev.guru-mapel.notes.create', $this->student))
+        $this->get(route('guru-mapel.notes.create', $this->student))
             ->assertOk()
             ->assertSee('Terdapat lebih dari satu mata pelajaran aktif')
             ->assertSee('disabled', false);
-        $this->post(route('dev.guru-mapel.notes.store', $this->student), $this->payload())
+        $this->post(route('guru-mapel.notes.store', $this->student), $this->payload())
             ->assertStatus(409);
         $this->assertDatabaseCount('catatan_perkembangan', 0);
     }
@@ -250,10 +255,10 @@ class GuruMapelModuleTest extends TestCase
         $this->loginGuru();
         $this->withSession(['guru_note_creation_token' => 'test-token']);
         $data = ['creation_token' => 'test-token', 'aksi' => 'kirim', 'tanggal_catatan' => '2026-01-10', 'materi_kegiatan' => 'Materi'];
-        $this->post(route('dev.guru-mapel.notes.store', $this->student), $data)->assertSessionHasErrors(['kendala_peristiwa', 'tindakan', 'hasil_tindakan']);
+        $this->post(route('guru-mapel.notes.store', $this->student), $data)->assertSessionHasErrors(['kendala_peristiwa', 'tindakan', 'hasil_tindakan']);
         $this->assertDatabaseCount('catatan_perkembangan', 0);
         $data['aksi'] = 'draft';
-        $this->post(route('dev.guru-mapel.notes.store', $this->student), $data)->assertRedirect();
+        $this->post(route('guru-mapel.notes.store', $this->student), $data)->assertRedirect();
         $this->assertDatabaseCount('catatan_perkembangan', 1);
     }
 
@@ -261,7 +266,7 @@ class GuruMapelModuleTest extends TestCase
     {
         $this->loginGuru();
         $payload = $this->payload('kirim');
-        $url = route('dev.guru-mapel.notes.store', $this->student);
+        $url = route('guru-mapel.notes.store', $this->student);
         $this->post($url, $payload)->assertRedirect();
         $this->post($url, $payload)->assertStatus(409);
         $this->assertDatabaseCount('catatan_perkembangan', 1);
@@ -274,13 +279,13 @@ class GuruMapelModuleTest extends TestCase
         $service = app(GpkVerifikasiService::class);
         $service->verifikasi('perkembangan', $note->getKey(), $this->gpk->getKey(), 'Perlu Revisi', 'Lengkapi.');
         $payload = $this->payload('kirim') + ['revision_token' => $this->token($note)];
-        $this->put(route('dev.guru-mapel.notes.update', $note->getKey()), $payload)->assertRedirect();
+        $this->put(route('guru-mapel.notes.update', $note->getKey()), $payload)->assertRedirect();
         $this->assertSame(2, $note->fresh()->versi_pengajuan);
         $service->verifikasi('perkembangan', $note->getKey(), $this->gpk->getKey(), 'Terverifikasi');
         // A stale published decision is insufficient for a different current version.
         $note->fresh()->forceFill(['versi_pengajuan' => 3])->save();
-        $this->get(route('dev.guru-mapel.references.show', ['source' => 'perkembangan', 'id' => $note->getKey()]))->assertNotFound();
-        $this->get(route('dev.guru-mapel.notes.revise', $note->getKey()))->assertStatus(409);
+        $this->get(route('guru-mapel.references.show', ['source' => 'perkembangan', 'id' => $note->getKey()]))->assertNotFound();
+        $this->get(route('guru-mapel.notes.revise', $note->getKey()))->assertStatus(409);
     }
 
     public function test_inclusion_history_requires_publication_and_assigned_student(): void
@@ -294,13 +299,13 @@ class GuruMapelModuleTest extends TestCase
             app(GpkVerifikasiService::class)->verifikasi('pendampingan', $id, $this->gpk->getKey(), 'Terverifikasi');
             $ids[] = $id;
         }
-        $response = $this->get(route('dev.guru-mapel.references.show', ['source' => 'pendampingan', 'id' => $ids[0]]))->assertOk()->assertSee('Kegiatan Tim Uji')->assertSee('Lanjut uji');
+        $response = $this->get(route('guru-mapel.references.show', ['source' => 'pendampingan', 'id' => $ids[0]]))->assertOk()->assertSee('Kegiatan Tim Uji')->assertSee('Lanjut uji');
         $this->review('reference.inclusion', $response);
-        $this->get(route('dev.guru-mapel.references.show', ['source' => 'pendampingan', 'id' => $ids[1]]))->assertNotFound();
-        $this->get(route('dev.guru-mapel.students.show', ['siswa' => $this->student, 'sumber' => 'pendampingan']))
+        $this->get(route('guru-mapel.references.show', ['source' => 'pendampingan', 'id' => $ids[1]]))->assertNotFound();
+        $this->get(route('guru-mapel.students.show', ['siswa' => $this->student, 'sumber' => 'pendampingan']))
             ->assertOk()
             ->assertViewHas('history', fn ($history) => $history->count() === 1 && $history->first()['source'] === 'pendampingan');
-        $this->get(route('dev.guru-mapel.students.show', ['siswa' => $this->student, 'sumber' => 'perkembangan']))
+        $this->get(route('guru-mapel.students.show', ['siswa' => $this->student, 'sumber' => 'perkembangan']))
             ->assertOk()
             ->assertViewHas('history', fn ($history) => $history->isEmpty());
     }
@@ -311,15 +316,17 @@ class GuruMapelModuleTest extends TestCase
         for ($i = 0; $i < 12; $i++) {
             DB::table('siswa')->insert(['id_kelas' => $this->class, 'nis' => '2028'.str_pad((string) $i, 4, '0', STR_PAD_LEFT), 'nama_siswa' => 'Siswa Tambahan '.$i]);
         }
-        $response = $this->get(route('dev.guru-mapel.students.index', ['q' => 'Siswa', 'tingkat' => 'XI', 'per_page' => 10]))->assertOk();
+        $response = $this->get(route('guru-mapel.students.index', ['q' => 'Siswa', 'tingkat' => 'XI', 'per_page' => 10]))->assertOk();
         $this->assertSame(13, $response->viewData('students')->total());
         $this->assertSame(10, $response->viewData('students')->count());
         $this->assertStringContainsString('tingkat=XI', $response->viewData('students')->nextPageUrl());
-        $this->get(route('dev.guru-mapel.students.index', ['q' => 'Siswa', 'tingkat' => 'XI', 'page' => 2]))->assertOk()->assertViewHas('students', fn ($s) => $s->count() === 3);
+        $this->get(route('guru-mapel.students.index', ['q' => 'Siswa', 'tingkat' => 'XI', 'page' => 2]))->assertOk()->assertViewHas('students', fn ($s) => $s->count() === 3);
         $note = $this->createNote();
         DB::table('relasi_guru_mapel_kelas')->where('id_pengguna', $this->guru->getKey())->delete();
-        $this->get(route('dev.guru-mapel.students.show', $this->student))->assertNotFound();
-        $this->get(route('dev.guru-mapel.notes.show', $note->getKey()))->assertNotFound();
-        $this->post(route('dev.guru-mapel.notes.store', $this->student), $this->payload())->assertNotFound();
+        $this->get(route('guru-mapel.students.show', $this->student))->assertNotFound();
+        $this->get(route('guru-mapel.notes.show', $note->getKey()))->assertNotFound();
+        $this->post(route('guru-mapel.notes.store', $this->student), $this->payload())->assertNotFound();
     }
 }
+
+

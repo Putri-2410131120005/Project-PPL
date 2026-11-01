@@ -1,6 +1,6 @@
 <x-layouts.preview :role="$role" :roles="$previewRoles" active="mappings" title="Hak Akses Pengguna">
     <x-preview.topbar title="Hak Akses Pengguna" subtitle="Ringkasan peran yang tersedia dan jumlah akun yang ditetapkan pada setiap peran." :profile="$profile" />
-    <x-preview.breadcrumbs :home="route('dev.preview', 'admin')" :items="[['Pemetaan Data', null], ['Hak Akses Pengguna', null]]" />
+    <x-preview.breadcrumbs :home="route('dev.preview')" :items="[['Pemetaan Data', null], ['Hak Akses Pengguna', null]]" />
 
     <section class="abk-panel overflow-hidden">
         <div class="table-responsive">
@@ -23,3 +23,5 @@
 
     <x-preview.pagination :paginator="$roles" />
 </x-layouts.preview>
+
+

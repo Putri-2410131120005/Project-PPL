@@ -4,9 +4,12 @@ namespace App\Http\Controllers\Dev;
 
 use App\Http\Controllers\Controller;
 use App\Models\Pengguna;
+use App\Models\TahunAjaran;
 use App\Services\PrincipalExport;
 use App\Services\PrincipalReports;
+use Carbon\CarbonImmutable;
 use Illuminate\Http\Request;
+use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Str;
 
@@ -14,13 +17,25 @@ class PrincipalController extends Controller
 {
     public function __construct(private PrincipalReports $data) {}
 
+    private function principal(): ?Pengguna
+    {
+        $principal = Auth::guard('staff')->user();
+        if ($principal?->role?->nama_role === 'Kepala Sekolah') {
+            return $principal;
+        }
+
+        return null;
+    }
+
     private function filters(Request $request): array
     {
-        $filters = $request->validate(['q' => 'nullable|string|max:100', 'tingkat' => 'nullable|in:Semua,X,XI,XII',
+        $filters = $request->validate(['q' => 'nullable|string|max:100', 'cari' => 'nullable|string|max:100', 'tingkat' => 'nullable|in:Semua,X,XI,XII',
             'periode' => 'nullable|string|max:30', 'tahun_ajaran' => 'nullable|string|max:20', 'siswa' => 'nullable|integer|min:1',
+            'semester' => 'nullable|in:ganjil,genap',
             'bulan' => 'nullable|integer|between:1,12', 'tahun' => 'nullable|integer|between:2000,2100', 'per_page' => 'nullable|integer|in:10,30,50,100',
             'per_halaman' => 'nullable|integer|in:10,30,50,100']);
         $filters['per_page'] = $filters['per_halaman'] ?? $filters['per_page'] ?? 10;
+        $filters['q'] = $filters['q'] ?? $filters['cari'] ?? null;
         if (! empty($filters['siswa'])) {
             $this->data->students()->findOrFail($filters['siswa']);
         }
@@ -30,12 +45,7 @@ class PrincipalController extends Controller
 
     private function page(string $view, array $data = [])
     {
-        $principal = Auth::guard('staff')->user();
-        if ($principal?->role?->nama_role !== 'Kepala Sekolah') {
-            $principal = Pengguna::query()->where('status_akun', 'Aktif')
-            ->whereHas('role', fn ($role) => $role->where('nama_role', 'Kepala Sekolah'))
-            ->orderBy('id_pengguna')->first();
-        }
+        $principal = $this->principal();
 
         return view('dev.principal.'.$view, $data + ['profile' => [
             'name' => $principal?->nama ?? 'Kepala Sekolah',
@@ -82,20 +92,131 @@ class PrincipalController extends Controller
     public function recaps(Request $r)
     {
         $f = $this->filters($r);
-        $verifiedStudents = $this->data->studentsWithVerifiedNotes($f)
+        $schoolYears = $this->schoolYears();
+        [$semester, $schoolYear, $period, $periodStart, $periodEnd] = $this->recapPeriod($r, $schoolYears);
+        $f['tahun_ajaran'] = $schoolYear;
+        $verifiedStudents = $this->data->studentsForVerifiedRecap($f, $periodStart, $periodEnd)
             ->orderBy('nama_siswa')->paginate($f['per_page'] ?? 10, ['*'], 'catatan_page')->withQueryString();
-        $schoolYears = $this->data->students()->with('kelas')->get()
-            ->pluck('kelas.tahun_ajaran')->filter()->unique()->sort()->values();
+        $filters = ['cari' => $f['q'] ?? '', 'tingkat' => $f['tingkat'] ?? 'Semua',
+            'semester' => $semester, 'tahun_ajaran' => $schoolYear];
 
-        return $this->page('recaps', compact('verifiedStudents', 'schoolYears'));
+        return $this->page('recaps', compact('verifiedStudents', 'schoolYears', 'filters', 'period'));
     }
 
-    public function verifiedRecap(int $siswa)
+    public function verifiedRecap(Request $r, int $siswa)
     {
-        $student = $this->data->studentsWithVerifiedNotes()->findOrFail($siswa);
-        $sources = $this->data->verifiedSources($student);
+        $schoolYears = $this->schoolYears();
+        [$semester, $schoolYear, $period, $periodStart, $periodEnd] = $this->recapPeriod($r, $schoolYears);
+        $student = $this->data->studentsForVerifiedRecap(['tahun_ajaran' => $schoolYear], $periodStart, $periodEnd)->findOrFail($siswa);
+        $sources = $this->data->verifiedSources($student, $periodStart, $periodEnd);
 
-        return $this->page('verified-recap', compact('student', 'sources'));
+        return $this->page('verified-recap', compact('student', 'sources', 'semester', 'schoolYear', 'period'));
+    }
+
+    public function downloadVerifiedRecapsZip(Request $r, PrincipalExport $export)
+    {
+        $f = $this->filters($r);
+        $schoolYears = $this->schoolYears();
+        [$semester, $schoolYear, $period, $periodStart, $periodEnd] = $this->recapPeriod($r, $schoolYears);
+        $f['tahun_ajaran'] = $schoolYear;
+        $students = $this->data->studentsForVerifiedRecap($f, $periodStart, $periodEnd)
+            ->orderBy('nama_siswa')->limit(101)->get();
+        abort_if($students->count() > 100, 422, 'Pilih maksimal 100 siswa untuk satu unduhan.');
+        abort_if($students->isEmpty(), 404, 'Belum ada catatan terverifikasi untuk pilihan ini.');
+        $documents = $students->map(fn ($student) => $this->verifiedDocument(
+            $student,
+            $this->data->verifiedSources($student, $periodStart, $periodEnd),
+            $period,
+        ))->all();
+        $classSuffix = ! empty($f['tingkat']) && $f['tingkat'] !== 'Semua' ? '-kelas-'.Str::lower($f['tingkat']) : '';
+        $filename = 'rekap-semua-siswa'.$classSuffix.'-'.Str::slug(str_replace('/', '-', $period)).'.zip';
+
+        return response($export->zip($documents), 200, ['Content-Type' => 'application/zip',
+            'Content-Disposition' => 'attachment; filename="'.$filename.'"', 'Cache-Control' => 'private, no-store']);
+    }
+
+    public function previewVerifiedRecap(Request $r, int $siswa)
+    {
+        [$document, $student, $semester, $schoolYear] = $this->verifiedRecapDocument($r, $siswa);
+        $documents = [$document];
+        $pdfUrl = route('dev.principal.verified-recap.download', ['siswa' => $student->getKey(),
+            'semester' => $semester, 'tahun_ajaran' => $schoolYear, 'inline' => 1]);
+        $backUrl = route('dev.principal.verified-recap', ['siswa' => $student->getKey(),
+            'semester' => $semester, 'tahun_ajaran' => $schoolYear]);
+
+        return $this->page('preview', compact('documents', 'pdfUrl', 'backUrl'));
+    }
+
+    public function downloadVerifiedRecap(Request $r, int $siswa, PrincipalExport $export)
+    {
+        [$document] = $this->verifiedRecapDocument($r, $siswa);
+        $filename = 'rekap-perkembangan-'.Str::slug($document['student']).'-'.Str::slug(str_replace('/', '-', $document['period'])).'.pdf';
+
+        return response($export->pdf([$document]), 200, ['Content-Type' => 'application/pdf',
+            'Content-Disposition' => ($r->query('inline') === '1' ? 'inline' : 'attachment').'; filename="'.$filename.'"',
+            'Cache-Control' => 'private, no-store', 'X-Content-Type-Options' => 'nosniff']);
+    }
+
+    private function verifiedRecapDocument(Request $r, int $siswa): array
+    {
+        $schoolYears = $this->schoolYears();
+        [$semester, $schoolYear, $period, $periodStart, $periodEnd] = $this->recapPeriod($r, $schoolYears);
+        $student = $this->data->studentsForVerifiedRecap(['tahun_ajaran' => $schoolYear], $periodStart, $periodEnd)->findOrFail($siswa);
+        $document = $this->verifiedDocument($student, $this->data->verifiedSources($student, $periodStart, $periodEnd), $period);
+
+        return [$document, $student, $semester, $schoolYear];
+    }
+
+    private function verifiedDocument($student, Collection $sources, string $period): array
+    {
+        $principal = $this->principal();
+        $gpk = Pengguna::query()->where('status_akun', 'Aktif')
+            ->whereHas('role', fn ($role) => $role->where('nama_role', 'GPK'))->orderBy('id_pengguna')->first();
+
+        return ['id' => null, 'student' => $student->nama_siswa, 'nis' => $student->nis,
+            'class' => $student->kelas?->nama_kelas ?: '—', 'period' => $period,
+            'summary' => 'Rekap catatan perkembangan dan pendampingan yang telah diverifikasi GPK.', 'report' => null,
+            'author' => $gpk?->nama ?? 'Guru Pembimbing Khusus (GPK)', 'author_nip' => $gpk?->nip,
+            'published' => null, 'sources' => $sources->map(function (array $source) {
+                $source['date'] = $source['date']->format('Y-m-d');
+
+                return $source;
+            })->all(), 'headmaster' => $principal?->nama, 'headmaster_nip' => $principal?->nip,
+            'printed_date' => now('Asia/Makassar')->locale('id')->translatedFormat('d F Y')];
+    }
+
+    private function schoolYears(): Collection
+    {
+        $years = TahunAjaran::query()->orderByRaw("status = 'Aktif' desc")->orderByDesc('mulai_ganjil')->pluck('nama');
+
+        return $years->isNotEmpty() ? $years : $this->data->students()->with('kelas')->get()
+            ->pluck('kelas.tahun_ajaran')->filter()->unique()->sortDesc()->values();
+    }
+
+    private function recapPeriod(Request $r, Collection $schoolYears): array
+    {
+        $now = CarbonImmutable::now('Asia/Makassar');
+        $defaultYear = TahunAjaran::aktif()?->nama ?: ($now->month >= 7 ? $now->year.'/'.($now->year + 1) : ($now->year - 1).'/'.$now->year);
+        $schoolYear = trim((string) $r->query('tahun_ajaran', ''));
+        if (! preg_match('/^\d{4}\/\d{4}$/', $schoolYear)) {
+            $schoolYear = $schoolYears->contains($defaultYear) ? $defaultYear : (string) ($schoolYears->first() ?: $defaultYear);
+        }
+        $semester = strtolower((string) $r->query('semester', ''));
+        if (! in_array($semester, ['ganjil', 'genap'], true)) {
+            $semester = $now->month >= 7 ? 'ganjil' : 'genap';
+        }
+        $master = TahunAjaran::query()->where('nama', $schoolYear)->first();
+        if ($master) {
+            $start = CarbonImmutable::parse($semester === 'ganjil' ? $master->mulai_ganjil : $master->mulai_genap)->startOfDay();
+            $end = CarbonImmutable::parse($semester === 'ganjil' ? $master->selesai_ganjil : $master->selesai_genap)->endOfDay();
+        } else {
+            [$startYear, $endYear] = array_map('intval', explode('/', $schoolYear));
+            abort_unless($endYear === $startYear + 1, 422, 'Tahun ajaran tidak valid.');
+            $start = CarbonImmutable::create($semester === 'ganjil' ? $startYear : $endYear, $semester === 'ganjil' ? 7 : 1, 1)->startOfDay();
+            $end = $semester === 'ganjil' ? CarbonImmutable::create($startYear, 12, 31)->endOfDay() : CarbonImmutable::create($endYear, 6, 30)->endOfDay();
+        }
+
+        return [$semester, $schoolYear, 'Semester '.ucfirst($semester).' '.$schoolYear, $start, $end];
     }
 
     public function recap(int $rekap)
@@ -181,9 +302,8 @@ class PrincipalController extends Controller
     {
         $f = $this->filters($r);
         if ($id) {
-            return [$this->data->document($this->data->detail($id))];
-        }
-        if ($kind === 'reports') {
+            $documents = [$this->data->document($this->data->detail($id))];
+        } elseif ($kind === 'reports') {
             $reports = $this->data->reports($f)->orderBy('id_laporan')->limit(101)->get();
             abort_if($reports->count() > 100, 422, 'Pilih maksimal 100 laporan untuk satu unduhan.');
             $recaps = $this->data->loadDetails($this->data->recaps()->whereIn('id_rekap', $reports->pluck('id_rekap')))->get()->keyBy('id_rekap');
@@ -195,7 +315,13 @@ class PrincipalController extends Controller
         }
         abort_unless(count($documents) > 0, 404, 'Belum ada laporan resmi yang tersedia untuk pilihan ini.');
 
-        return $documents;
+        $principal = $this->principal();
+
+        return collect($documents)->map(fn (array $document) => $document + [
+            'headmaster' => $principal?->nama,
+            'headmaster_nip' => $principal?->nip,
+            'printed_date' => now('Asia/Makassar')->locale('id')->translatedFormat('d F Y'),
+        ])->all();
     }
 
     public function preview(Request $r, ?int $rekap = null)

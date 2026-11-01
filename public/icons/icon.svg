@@ -1,0 +1,8 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" role="img" aria-labelledby="title">
+  <title id="title">SMART-ABK</title>
+  <rect width="512" height="512" rx="112" fill="#2563eb"/>
+  <path d="M256 106c-76 0-138 62-138 138 0 82 68 139 138 164 70-25 138-82 138-164 0-76-62-138-138-138Z" fill="#dbeafe"/>
+  <path d="M256 146c-22 0-40 18-40 40s18 40 40 40 40-18 40-40-18-40-40-40Zm-76 154c0-38 31-69 69-69h14c38 0 69 31 69 69v18H180v-18Z" fill="#2563eb"/>
+  <path d="M136 351c35 38 75 61 120 77 45-16 85-39 120-77" fill="none" stroke="#fff" stroke-linecap="round" stroke-width="20"/>
+  <circle cx="142" cy="163" r="15" fill="#fbbf24"/><circle cx="370" cy="163" r="15" fill="#fbbf24"/>
+</svg>

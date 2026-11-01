@@ -23,16 +23,14 @@ class ParentPortalTest extends TestCase
 {
     use RefreshDatabase;
 
-    public function test_role_preview_without_parent_identity_does_not_expose_students(): void
+    public function test_guest_cannot_open_parent_dashboard_or_expose_students(): void
     {
         [$parent, $student] = $this->family('Wali Aman', 'Anak Rahasia', 'PT-001');
 
-        $this->withSession(['dev_role' => 'orang-tua'])
-            ->get(route('dev.preview', 'orang-tua'))
+        $this->followingRedirects()->get(route('dev.parent.dashboard'))
             ->assertOk()
+            ->assertSee('Masuk SMART-ABK')
             ->assertDontSee($student->nama_siswa);
-
-        $this->get(route('dev.parent.dashboard'))->assertRedirect(route('dev.parent.login'));
     }
 
     public function test_parent_who_must_change_password_cannot_bypass_that_flow(): void
@@ -102,6 +100,7 @@ class ParentPortalTest extends TestCase
 
         $this->get(route('dev.parent.notes.show', ['perkembangan', $target->getKey()]))
             ->assertOk()
+            ->assertSee('data-navigation-parent="'.route('dev.parent.notes.index').'"', false)
             ->assertSee('Matematika')
             ->assertSee('Guru Mata Pelajaran')
             ->assertDontSee('Ubah')

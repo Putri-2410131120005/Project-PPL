@@ -1,6 +1,6 @@
 <x-layouts.preview :role="$role" :roles="$roles" title="Dashboard Super Admin" active="dashboard">
     <x-preview.topbar title="Dashboard Super Admin" subtitle="Ringkasan data sekolah dan akses cepat ke seluruh pengelolaan SMART-ABK." :profile="$profile" />
-    <x-preview.breadcrumbs :home="route('dev.preview', 'admin')" />
+    <x-preview.breadcrumbs :home="route('dev.preview')" />
 
     <div class="row g-3 abk-stat-grid abk-stat-grid-4">
         <div class="col-12 col-md-6 col-xl-3"><x-preview.stat-card :value="$dashboardStats['users']" label="Total Pengguna" /></div>
@@ -39,3 +39,5 @@
         </table></div>
     </section>
 </x-layouts.preview>
+
+

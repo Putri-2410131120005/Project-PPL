@@ -18,6 +18,8 @@ use Illuminate\Support\Facades\DB;
 
 class LaporanBulananService
 {
+    public function __construct(private readonly WorkflowPushNotifier $pushNotifier) {}
+
     public function publish(LaporanBulanan $report, Pengguna $gpk): void
     {
         DB::transaction(function () use ($report, $gpk): void {
@@ -39,6 +41,9 @@ class LaporanBulananService
             ]);
             $this->synchronizeOfficialProjection($locked, $gpk);
         });
+
+        $report->refresh();
+        $this->pushNotifier->monthlyReportPublished($report);
     }
 
     /** Keep the monthly report compatible with Principal and Parent projections. */

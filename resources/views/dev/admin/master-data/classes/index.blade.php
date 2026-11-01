@@ -1,6 +1,6 @@
 <x-layouts.preview :role="$role" :roles="$previewRoles" active="classes-mapel" title="Kelola Kelas">
     <x-preview.topbar title="Kelola Kelas" subtitle="Atur kelas aktif dan arsip tahun ajaran tanpa menghapus riwayat siswa." :profile="$profile" />
-    <x-preview.breadcrumbs :home="route('dev.preview', 'admin')" :items="[['Kelas & Mata Pelajaran', null], ['Kelas', null]]" />
+    <x-preview.breadcrumbs :home="route('dev.preview')" :items="[['Kelas & Mata Pelajaran', null], ['Kelas', null]]" />
 
     <x-preview.flash-messages />
 
@@ -105,3 +105,5 @@
     </section>
     <x-preview.pagination :paginator="$classes" />
 </x-layouts.preview>
+
+

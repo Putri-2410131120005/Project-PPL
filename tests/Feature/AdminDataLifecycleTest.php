@@ -105,7 +105,7 @@ class AdminDataLifecycleTest extends TestCase
             ->assertDontSee('Hapus data siswa secara permanen');
 
         $this->withSession(['dev_role' => 'admin'])
-            ->delete("/_dev/admin/siswa/{$student->id_siswa}")
+            ->delete("/admin/siswa/{$student->id_siswa}")
             ->assertStatus(405);
 
         $this->assertDatabaseHas('siswa', ['id_siswa' => $student->id_siswa]);

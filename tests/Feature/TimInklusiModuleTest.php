@@ -2,6 +2,7 @@
 
 namespace Tests\Feature;
 
+use App\Jobs\SendPushNotification;
 use App\Models\CatatanPendampingan;
 use App\Models\Kelas;
 use App\Models\Pengguna;
@@ -11,48 +12,34 @@ use App\Models\Siswa;
 use App\Models\VerifikasiCatatan;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Str;
+use Illuminate\Support\Facades\Queue;
 use Tests\TestCase;
 
 class TimInklusiModuleTest extends TestCase
 {
     use RefreshDatabase;
 
-    public function test_development_login_can_bind_a_specific_active_companion(): void
+    public function test_real_session_uses_the_authenticated_active_companion(): void
     {
         $first = $this->makeUser('Pendamping Pertama', 'Tim Inklusi');
         $selected = $this->makeUser('Pendamping Terpilih', 'Tim Inklusi');
 
-        $this->post(route('dev.login.store'), [
-            'role' => 'tim-inklusi',
-            'pendamping_id' => $selected->getKey(),
-        ])->assertRedirect(route('dev.preview', 'tim-inklusi'))
-            ->assertSessionHas('dev_pengguna_id', $selected->getKey());
-
-        $this->get(route('dev.preview', 'tim-inklusi'))
-            ->assertRedirect(route('dev.tim-inklusi.dashboard'));
-
-        $this->get(route('dev.tim-inklusi.dashboard'))
+        $selected->forceFill(['google_id' => 'google-pendamping-terpilih'])->save();
+        $this->actingAs($selected, 'staff')->get(route('dev.tim-inklusi.dashboard'))
             ->assertOk()
             ->assertSee($selected->nama)
             ->assertDontSee($first->nama);
     }
 
-    public function test_gpk_cannot_be_used_as_tim_inklusi_identity_even_in_development_mode(): void
+    public function test_gpk_cannot_be_used_as_tim_inklusi_identity(): void
     {
         $gpk = $this->makeUser('GPK Bukan Pendamping', 'GPK');
 
-        $this->from(route('dev.login'))->post(route('dev.login.store'), [
-            'role' => 'tim-inklusi',
-            'pendamping_id' => $gpk->getKey(),
-        ])->assertRedirect(route('dev.login'))
-            ->assertSessionHasErrors('pendamping_id')
-            ->assertSessionMissing(['dev_role', 'dev_pengguna_id']);
-
-        $this->withSession(['dev_role' => 'tim-inklusi', 'dev_pengguna_id' => $gpk->getKey()])
+        $gpk->forceFill(['google_id' => 'google-gpk-bukan-pendamping'])->save();
+        $this->actingAs($gpk, 'staff')
             ->get(route('dev.tim-inklusi.dashboard'))
-            ->assertRedirect(route('dev.login'))
-            ->assertSessionHasErrors('pendamping_id')
-            ->assertSessionMissing(['dev_role', 'dev_pengguna_id']);
+            ->assertRedirect(route('login'));
+        $this->assertGuest('staff');
     }
 
     public function test_dashboard_and_student_list_only_show_assigned_data(): void
@@ -75,6 +62,7 @@ class TimInklusiModuleTest extends TestCase
 
         $this->get(route('dev.tim-inklusi.students.show', $assigned))
             ->assertOk()
+            ->assertSee('data-navigation-parent="'.route('dev.tim-inklusi.students.index').'"', false)
             ->assertSee('/storage/foto-siswa/siswa-dampingan.jpg', false);
 
         $this->get(route('dev.tim-inklusi.students.show', $outside))->assertNotFound();
@@ -152,7 +140,9 @@ class TimInklusiModuleTest extends TestCase
 
     public function test_sent_note_is_locked_and_other_companion_cannot_access_it(): void
     {
+        Queue::fake();
         [$pendamping, $assigned] = $this->fixture();
+        $gpk = $this->makeUser('GPK Penerima', 'GPK');
         $other = $this->makeUser('Pendamping Lain', 'Tim Inklusi');
         RelasiPendampingSiswa::query()->create(['id_pengguna' => $other->getKey(), 'id_siswa' => $assigned->getKey()]);
 
@@ -169,6 +159,10 @@ class TimInklusiModuleTest extends TestCase
         $note = CatatanPendampingan::query()->firstOrFail();
         $this->assertSame('Dikirim', $note->status_pengajuan);
         $this->assertNotNull($note->tanggal_kirim);
+        Queue::assertPushed(SendPushNotification::class, fn (SendPushNotification $job) =>
+            in_array((int) $gpk->getKey(), $job->userIds, true)
+            && $job->payload['title'] === 'Catatan menunggu verifikasi'
+            && str_contains($job->payload['url'], "/gpk/catatan/pendampingan/{$note->getKey()}"));
         $this->get(route('dev.tim-inklusi.notes.edit', $note))->assertForbidden();
 
         $this->asTimInklusi($other)->get(route('dev.tim-inklusi.notes.show', $note))->assertForbidden();
