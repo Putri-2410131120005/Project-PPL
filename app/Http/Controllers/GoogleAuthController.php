@@ -18,6 +18,7 @@ use Throwable;
 
 class GoogleAuthController extends Controller
 {
+    // Controller ini menangani login Google, pemetaan role, callback, dan logout.
     private const STAFF_LOGIN_ROLES = [
         'kepala-sekolah',
         'guru-mapel',
@@ -37,6 +38,7 @@ class GoogleAuthController extends Controller
 
     public function login(): View|RedirectResponse
     {
+        // Menampilkan login utama atau langsung meneruskan sesi yang sudah aktif.
         if (Auth::guard('staff')->check()) {
             return $this->redirectFor(Auth::guard('staff')->user()->loadMissing('role'));
         }
@@ -79,6 +81,7 @@ class GoogleAuthController extends Controller
 
     public function callback(Request $request): RedirectResponse
     {
+        // Memproses identitas Google dan mengarahkan pengguna sesuai role database.
         if (! $this->googleConfigured()) {
             return redirect()->route('login')->withErrors([
                 'google' => 'Google Login belum dikonfigurasi oleh pengelola sistem.',
@@ -119,6 +122,7 @@ class GoogleAuthController extends Controller
 
     public function logout(Request $request): RedirectResponse
     {
+        // Mengakhiri seluruh guard dan membersihkan sesi aplikasi.
         Auth::guard('staff')->logout();
         Auth::guard('guru_mapel')->logout();
         Auth::guard('parent')->logout();

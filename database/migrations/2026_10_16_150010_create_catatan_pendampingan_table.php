@@ -6,6 +6,7 @@ use Illuminate\Support\Facades\Schema;
 
 return new class extends Migration
 {
+    // Menjalankan perubahan struktur database untuk fitur terkait.
     public function up(): void
     {
         Schema::create('catatan_pendampingan', function (Blueprint $table) {
@@ -25,6 +26,7 @@ return new class extends Migration
         });
     }
 
+    // Mengembalikan perubahan struktur saat migration dibatalkan.
     public function down(): void
     {
         Schema::dropIfExists('catatan_pendampingan');

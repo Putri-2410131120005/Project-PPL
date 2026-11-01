@@ -31,6 +31,7 @@ use ZipArchive;
 
 class GpkController extends Controller
 {
+    // Controller GPK menangani verifikasi catatan, rekap, laporan, dan akses orang tua.
     public function __construct(
         private readonly GpkVerifikasiService $verifikasiService,
         private readonly LaporanBulananService $laporanBulananService,
@@ -38,6 +39,7 @@ class GpkController extends Controller
 
     public function dashboard(Request $request): View
     {
+        // Menampilkan ringkasan aktivitas GPK dan catatan yang perlu ditindaklanjuti.
         $gpk = $this->gpk($request);
         $notes = $this->notesFor();
         $pending = $notes->filter(fn ($item) => $item['is_pending']);
@@ -55,6 +57,7 @@ class GpkController extends Controller
 
     public function students(Request $request): View
     {
+        // Menampilkan daftar siswa yang dapat dipantau oleh GPK.
         $gpk = $this->gpk($request);
         $search = trim((string) $request->query('cari'));
         $level = $this->level($request);
@@ -78,6 +81,7 @@ class GpkController extends Controller
 
     public function student(Request $request, Siswa $siswa): View
     {
+        // Menampilkan detail siswa dan catatan perkembangan yang relevan.
         $gpk = $this->gpk($request);
         $this->ensureAssigned($gpk, $siswa);
         $siswa->load([
@@ -98,6 +102,7 @@ class GpkController extends Controller
 
     public function notes(Request $request): View
     {
+        // Menampilkan antrean catatan yang menunggu pemeriksaan GPK.
         $gpk = $this->gpk($request);
         $search = trim((string) $request->query('cari'));
         $status = (string) $request->query('status');
@@ -136,6 +141,7 @@ class GpkController extends Controller
 
     public function claimNote(Request $request, string $type, int $id): RedirectResponse
     {
+        // Mengunci satu catatan untuk ditinjau oleh GPK yang sedang aktif.
         $gpk = $this->gpk($request);
         $this->ensureReviewable($type, $this->findNote($type, $id));
         try {
@@ -150,6 +156,7 @@ class GpkController extends Controller
 
     public function verify(Request $request, string $type, int $id): RedirectResponse
     {
+        // Menyimpan keputusan verifikasi sesuai aturan workflow GPK.
         $gpk = $this->gpk($request);
         $note = $this->findNote($type, $id);
         $data = $request->validate([
@@ -171,6 +178,7 @@ class GpkController extends Controller
 
     public function history(Request $request): View
     {
+        // Menampilkan riwayat aktivitas dan keputusan verifikasi GPK.
         $gpk = $this->gpk($request);
         $search = trim((string) $request->query('cari'));
         $source = (string) $request->query('sumber');
@@ -199,6 +207,7 @@ class GpkController extends Controller
 
     public function recaps(Request $request): View
     {
+        // Menampilkan rekap perkembangan siswa berdasarkan periode yang dipilih.
         $gpk = $this->gpk($request);
         $search = trim((string) $request->query('cari'));
         $level = $this->level($request);
@@ -228,6 +237,7 @@ class GpkController extends Controller
 
     public function recap(Request $request, Siswa $siswa): View
     {
+        // Menampilkan detail rekap dan sumber catatan seorang siswa.
         $gpk = $this->gpk($request);
         abort_unless($siswa->status_siswa === 'Aktif', 404);
         $siswa->load('kelas');
@@ -242,6 +252,7 @@ class GpkController extends Controller
 
     public function downloadRecapsZip(Request $request): Response
     {
+        // Menggabungkan dokumen rekap yang tersedia ke dalam arsip ZIP.
         $gpk = $this->gpk($request);
         $schoolYears = $this->schoolYears();
         [$semester, $schoolYear, $period, $periodStart, $periodEnd] = $this->periodContext($request, $schoolYears);
@@ -312,6 +323,7 @@ class GpkController extends Controller
 
     public function exportRecap(Request $request, Siswa $siswa): StreamedResponse
     {
+        // Menghasilkan ekspor data rekap dalam format yang diminta pengguna.
         $this->gpk($request);
         abort_unless($siswa->status_siswa === 'Aktif', 404);
         $schoolYears = $this->schoolYears();
@@ -343,6 +355,7 @@ class GpkController extends Controller
 
     public function previewRecapPdf(Request $request, Siswa $siswa): View
     {
+        // Menampilkan pratinjau rekap sebelum dibuat menjadi PDF.
         $gpk = $this->gpk($request);
         $document = $this->recapPdfData($request, $siswa, $gpk);
 
@@ -351,6 +364,7 @@ class GpkController extends Controller
 
     public function downloadRecapPdf(Request $request, Siswa $siswa): Response
     {
+        // Menghasilkan dan mengunduh PDF rekap perkembangan siswa.
         $gpk = $this->gpk($request);
         $document = $this->recapPdfData($request, $siswa, $gpk);
         $filename = 'rekap-perkembangan-'.Str::slug($siswa->nama_siswa).'-'.Str::slug($document['period']).'.pdf';
@@ -362,6 +376,7 @@ class GpkController extends Controller
 
     public function reports(Request $request): View
     {
+        // Menampilkan daftar laporan bulanan yang dikelola GPK.
         $gpk = $this->gpk($request);
         $this->laporanBulananService->synchronizeCompletedMonths();
         $schoolYears = $this->schoolYears();
@@ -421,6 +436,7 @@ class GpkController extends Controller
 
     public function publishReport(Request $request, LaporanBulanan $laporan): RedirectResponse
     {
+        // Mempublikasikan laporan bulanan setelah pemeriksaan selesai.
         $gpk = $this->gpk($request);
 
         try {

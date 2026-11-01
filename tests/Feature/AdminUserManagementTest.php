@@ -470,6 +470,26 @@ class AdminUserManagementTest extends TestCase
         $this->assertDatabaseHas('pengguna', ['id_pengguna' => $admin->id_pengguna, 'status_akun' => 'Aktif']);
     }
 
+    public function test_changing_a_google_staff_email_requires_a_new_google_link(): void
+    {
+        $admin = $this->makeUser('Admin Email Lama', 'admin-lama@example.test', $this->adminRole);
+        $admin->forceFill(['google_id' => 'google-admin-lama', 'is_super_admin' => true])->save();
+
+        $this->actingAs($admin, 'staff')
+            ->put(route('dev.admin.users.update', $admin), [
+                'nama' => $admin->nama,
+                'username' => 'admin-email-baru',
+                'email' => 'admin-baru@example.test',
+                'id_role' => $this->adminRole->getKey(),
+                'status_akun' => 'Aktif',
+            ])
+            ->assertRedirect(route('dev.admin.users.index'));
+
+        $admin->refresh();
+        $this->assertSame('admin-baru@example.test', $admin->email);
+        $this->assertNull($admin->google_id);
+    }
+
     public function test_super_admin_is_protected_but_can_update_own_profile_and_password(): void
     {
         $superAdmin = $this->makeUser('Super Admin Sekolah', 'superadmin@example.test', $this->adminRole);

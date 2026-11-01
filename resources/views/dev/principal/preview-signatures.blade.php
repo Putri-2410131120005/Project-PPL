@@ -1,3 +1,4 @@
+{{-- Area tanda tangan yang disiapkan pada pratinjau dokumen. --}}
 <section class="abk-pdf-approval">
     <p class="abk-pdf-date">Banjarmasin, {{ $document['printed_date'] }}</p>
     <table class="abk-pdf-signatures">

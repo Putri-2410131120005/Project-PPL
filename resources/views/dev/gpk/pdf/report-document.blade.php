@@ -1,1 +1,2 @@
+{{-- Dokumen HTML utama untuk PDF laporan perkembangan bulanan GPK. --}}
 <!doctype html><html lang="id"><head><meta charset="utf-8"><title>Laporan Perkembangan {{ $period }}</title>@include('dev.gpk.pdf.styles')</head><body class="abk-pdf-document">@include('dev.gpk.pdf.report-sheet')</body></html>

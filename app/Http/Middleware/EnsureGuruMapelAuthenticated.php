@@ -11,6 +11,7 @@ class EnsureGuruMapelAuthenticated
 {
     public function handle(Request $request, Closure $next)
     {
+        // Guru mata pelajaran menggunakan guard terpisah dari staf sekolah lainnya.
         $guard = Auth::guard('guru_mapel');
 
         if (! $guard->check()) {
@@ -19,6 +20,7 @@ class EnsureGuruMapelAuthenticated
 
         $guru = $guard->user()->loadMissing('role');
         if ($guru->status_akun !== 'Aktif' || $guru->role?->nama_role !== 'Guru Mapel') {
+            // Sesi dibersihkan agar akun yang tidak lagi sesuai tidak dapat melanjutkan akses.
             $guard->logout();
             Auth::guard('staff')->logout();
             $request->session()->forget('guru_note_creation_token');

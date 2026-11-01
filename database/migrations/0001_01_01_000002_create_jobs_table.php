@@ -9,6 +9,7 @@ return new class extends Migration
     /**
      * Run the migrations.
      */
+    // Menjalankan perubahan struktur database untuk fitur terkait.
     public function up(): void
     {
         Schema::create('jobs', function (Blueprint $table) {
@@ -48,6 +49,7 @@ return new class extends Migration
     /**
      * Reverse the migrations.
      */
+    // Mengembalikan perubahan struktur saat migration dibatalkan.
     public function down(): void
     {
         Schema::dropIfExists('jobs');

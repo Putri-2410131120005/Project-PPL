@@ -12,24 +12,36 @@ class ProvisionSuperAdmin extends Command
 {
     protected $signature = 'app:super-admin
         {--name= : Nama Super Admin sekolah}
-        {--username= : Username}
-        {--email= : Email}
+        {--username= : Username (default: lunashofa)}
+        {--email= : Email (default: lunashofaazzura3@gmail.com)}
         {--password= : Password baru}';
 
     protected $description = 'Membuat atau memperbarui satu-satunya akun Super Admin sekolah';
 
     public function handle(): int
     {
-        $name = (string) ($this->option('name') ?: env('SUPER_ADMIN_NAME', 'Super Admin Sekolah'));
-        $username = (string) ($this->option('username') ?: env('SUPER_ADMIN_USERNAME', 'superadmin'));
-        $email = (string) ($this->option('email') ?: env('SUPER_ADMIN_EMAIL', 'superadmin@sekolah.test'));
+        $name = (string) ($this->option('name') ?: env('SUPER_ADMIN_NAME', 'Super Admin SMART-ABK'));
+        $username = (string) ($this->option('username') ?: env('SUPER_ADMIN_USERNAME', 'lunashofa'));
+        $email = mb_strtolower(trim((string) ($this->option('email') ?: env('SUPER_ADMIN_EMAIL', 'lunashofaazzura3@gmail.com'))));
         $password = (string) ($this->option('password') ?: env('SUPER_ADMIN_PASSWORD', ''));
+        if ($password === '' && $this->input->isInteractive()) {
+            $password = (string) $this->secret('Password Super Admin (minimal 12 karakter)');
+        }
         if ($password === '' || strlen($password) < 12) {
             $this->error('Password Super Admin wajib diisi dan minimal 12 karakter.');
             return self::FAILURE;
         }
+        if (! filter_var($email, FILTER_VALIDATE_EMAIL)) {
+            $this->error('Email Super Admin tidak valid.');
+            return self::FAILURE;
+        }
 
         $role = Role::query()->whereIn('nama_role', ['Admin', 'Admin / Pengelola'])->firstOrFail();
+        $existingByEmail = Pengguna::query()->where('email', $email)->first();
+        if ($existingByEmail && $existingByEmail->username !== $username) {
+            $this->error('Email tersebut sudah dipakai akun lain.');
+            return self::FAILURE;
+        }
         DB::transaction(function () use ($role, $name, $username, $email, $password): void {
             Pengguna::query()->where('is_super_admin', true)->update(['is_super_admin' => false, 'status_akun' => 'Nonaktif']);
             $account = Pengguna::query()->where('username', $username)->first() ?? new Pengguna;

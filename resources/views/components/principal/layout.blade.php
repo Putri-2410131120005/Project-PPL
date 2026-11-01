@@ -1,3 +1,4 @@
+{{-- Layout khusus Kepala Sekolah untuk halaman monitoring dan laporan. --}}
 @props(['profile','title','subtitle'=>'','active'=>'dashboard','detail'=>false,'breadcrumbs'=>[],'showBreadcrumbs'=>true])
 @php($navigation = app(\App\Support\NavigationHierarchy::class)->resolve(request()))
 <!doctype html>

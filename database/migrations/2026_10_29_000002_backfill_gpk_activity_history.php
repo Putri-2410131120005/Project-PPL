@@ -5,6 +5,7 @@ use Illuminate\Support\Facades\DB;
 
 return new class extends Migration
 {
+    // Menjalankan perubahan struktur database untuk fitur terkait.
     public function up(): void
     {
         DB::table('verifikasi_catatan')->orderBy('id_verifikasi')->get()->each(function ($verification): void {
@@ -38,6 +39,7 @@ return new class extends Migration
             });
     }
 
+    // Mengembalikan perubahan struktur saat migration dibatalkan.
     public function down(): void
     {
         // Riwayat audit dipertahankan; migration skema sebelumnya akan menghapus tabel saat rollback penuh.

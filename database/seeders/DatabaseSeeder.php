@@ -8,6 +8,8 @@ class DatabaseSeeder extends Seeder
 {
     public function run(): void
     {
-        $this->call(RealisticDemoSeeder::class);
+        // Only stable reference data belongs in the default seeder. Operational
+        // records must be created through the application workflow.
+        $this->call(RoleSeeder::class);
     }
 }

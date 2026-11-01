@@ -1,3 +1,4 @@
+{{-- Menampilkan isi laporan periode pada pratinjau PDF. --}}
 <article class="abk-pdf-sheet">
     <header class="abk-pdf-letterhead">
         <p class="abk-pdf-school">SMAN 4 BANJARMASIN</p>

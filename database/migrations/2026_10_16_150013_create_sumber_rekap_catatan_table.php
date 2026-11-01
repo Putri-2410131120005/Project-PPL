@@ -7,6 +7,7 @@ use Illuminate\Support\Facades\DB;
 
 return new class extends Migration
 {
+    // Menjalankan perubahan struktur database untuk fitur terkait.
     public function up(): void
     {
         Schema::create('sumber_rekap_catatan', function (Blueprint $table) {
@@ -28,6 +29,7 @@ return new class extends Migration
         }
     }
 
+    // Mengembalikan perubahan struktur saat migration dibatalkan.
     public function down(): void
     {
         Schema::dropIfExists('sumber_rekap_catatan');

@@ -5,6 +5,7 @@ use App\Http\Controllers\Dev\ParentPortalController;
 use App\Http\Middleware\PreventAuthenticatedPageCaching;
 use Illuminate\Support\Facades\Route;
 
+// Route portal orang tua dan middleware yang menjaga sesi akun.
 Route::prefix('orang-tua')->name('dev.parent.')->group(function () {
     Route::get('masuk', [ParentAuthController::class, 'create'])->name('login');
 

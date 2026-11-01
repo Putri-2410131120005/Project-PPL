@@ -11,6 +11,7 @@ class EnsureParentAuthenticated
 {
     public function handle(Request $request, Closure $next): Response
     {
+        // Memastikan sesi berasal dari akun orang tua yang aktif.
         $parent = Auth::guard('parent')->user();
 
         if (! $parent
@@ -22,6 +23,7 @@ class EnsureParentAuthenticated
         }
 
         if ($parent->wajib_ganti_password && ! $request->routeIs('dev.parent.password.*')) {
+            // Password sementara harus diganti sebelum portal dapat digunakan.
             return redirect()->route('dev.parent.password.edit');
         }
 

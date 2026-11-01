@@ -19,8 +19,10 @@ use Illuminate\View\View;
 
 class TimInklusiController extends Controller
 {
+    // Controller Tim Inklusi mengelola pendampingan dan catatan perkembangan siswa.
     public function dashboard(Request $request): View
     {
+        // Menampilkan ringkasan siswa dan catatan milik pendamping.
         $pendamping = $this->pendamping($request);
         $catatan = CatatanPendampingan::query()->where('id_pembuat', $pendamping->getKey());
 
@@ -40,6 +42,7 @@ class TimInklusiController extends Controller
 
     public function students(Request $request): View
     {
+        // Menampilkan siswa yang ditugaskan kepada pendamping aktif.
         $pendamping = $this->pendamping($request);
         $perPage = $this->perPage($request);
         $search = trim((string) $request->query('cari'));
@@ -66,6 +69,7 @@ class TimInklusiController extends Controller
 
     public function student(Request $request, Siswa $siswa): View
     {
+        // Menampilkan profil dan riwayat pendampingan seorang siswa.
         $pendamping = $this->pendamping($request);
         $this->ensureAssigned($pendamping, $siswa);
         $historySource = in_array($request->query('sumber'), ['perkembangan', 'pendampingan'], true)
@@ -78,6 +82,7 @@ class TimInklusiController extends Controller
 
     public function recommendation(Request $request, Siswa $siswa): View
     {
+        // Menampilkan rekomendasi berdasarkan perkembangan siswa.
         $pendamping = $this->pendamping($request);
         $this->ensureAssigned($pendamping, $siswa);
 
@@ -118,6 +123,7 @@ class TimInklusiController extends Controller
 
     public function createNote(Request $request, Siswa $siswa): View
     {
+        // Menampilkan form pembuatan catatan pendampingan.
         $pendamping = $this->pendamping($request);
         $this->ensureAssigned($pendamping, $siswa);
 
@@ -130,6 +136,7 @@ class TimInklusiController extends Controller
 
     public function storeNote(Request $request, WorkflowPushNotifier $pushNotifier): RedirectResponse
     {
+        // Memvalidasi dan menyimpan catatan pendampingan baru.
         $pendamping = $this->pendamping($request);
         $data = $this->validateNote($request);
         $siswa = Siswa::query()->findOrFail($data['id_siswa']);
@@ -171,6 +178,7 @@ class TimInklusiController extends Controller
 
     public function editNote(Request $request, CatatanPendampingan $catatan): View
     {
+        // Menampilkan catatan yang masih boleh diperbaiki.
         $pendamping = $this->pendamping($request);
         $this->ensureEditable($pendamping, $catatan);
 
@@ -184,6 +192,7 @@ class TimInklusiController extends Controller
 
     public function updateNote(Request $request, CatatanPendampingan $catatan, WorkflowPushNotifier $pushNotifier): RedirectResponse
     {
+        // Menyimpan revisi catatan pendampingan sesuai status workflow.
         $pendamping = $this->pendamping($request);
         $this->ensureEditable($pendamping, $catatan);
         $data = $this->validateNote($request, false);
@@ -212,6 +221,7 @@ class TimInklusiController extends Controller
 
     public function notes(Request $request): View
     {
+        // Menampilkan daftar catatan pendampingan dengan filter dan pagination.
         $pendamping = $this->pendamping($request);
         $search = trim((string) $request->query('cari'));
         $status = (string) $request->query('status');
@@ -236,6 +246,7 @@ class TimInklusiController extends Controller
 
     public function showNote(Request $request, CatatanPendampingan $catatan): View
     {
+        // Menampilkan detail satu catatan pendampingan.
         $pendamping = $this->pendamping($request);
         $this->ensureOwnedAndAssigned($pendamping, $catatan);
         $catatan->load(['siswa.kelas', 'verifikasi.verifikator']);
@@ -248,6 +259,7 @@ class TimInklusiController extends Controller
 
     public function showDevelopmentNote(Request $request, Siswa $siswa, CatatanPerkembangan $catatan): View
     {
+        // Menampilkan catatan perkembangan yang terkait dengan siswa.
         $pendamping = $this->pendamping($request);
         $this->ensureAssigned($pendamping, $siswa);
         abort_unless((int) $catatan->id_siswa === (int) $siswa->getKey() && $catatan->status_pengajuan !== 'Draft', 404);

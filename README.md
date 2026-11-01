@@ -1,10 +1,9 @@
 <p align="center"><a href="https://laravel.com" target="_blank"><img src="https://raw.githubusercontent.com/laravel/art/master/logo-lockup/5%20SVG/2%20CMYK/1%20Full%20Color/laravel-logolockup-cmyk-red.svg" width="400" alt="Laravel Logo"></a></p>
 
-## Setup SMART-ABK dan data demo
+## Setup SMART-ABK untuk production
 
-Isi database MySQL tidak disimpan langsung di Git. Data demo SMART-ABK disimpan dalam
-`database/seeders/RealisticDemoSeeder.php` sehingga setiap anggota tim dapat membuat
-database yang sama setelah mengambil kode terbaru.
+`db:seed` hanya memasukkan data referensi role. Data pengguna, siswa, kelas, catatan,
+verifikasi, rekap, dan laporan harus dimasukkan melalui alur operasional aplikasi.
 
 Untuk instalasi baru, siapkan koneksi database di `.env`, lalu jalankan:
 
@@ -12,16 +11,8 @@ Untuk instalasi baru, siapkan koneksi database di `.env`, lalu jalankan:
 composer run setup
 ```
 
-Perintah tersebut menjalankan migrasi sekaligus memasukkan data demo. Jika proyek dan
-database sudah pernah dibuat sebelumnya, ambil kode terbaru lalu jalankan:
-
-```bash
-composer run seed-demo
-```
-
-Seeder aman dijalankan ulang karena data utama dibuat dengan `updateOrCreate` atau
-`firstOrCreate`. Jangan memakai `php artisan migrate:fresh --seed` pada database yang
-berisi data penting karena perintah itu menghapus seluruh tabel terlebih dahulu.
+Perintah tersebut menjalankan migrasi dan hanya memasukkan role yang diperlukan aplikasi.
+Jangan memakai `php artisan migrate:fresh --seed` pada database yang berisi data penting.
 
 ## Google Login staf sekolah
 
@@ -55,8 +46,11 @@ Route lama `/_dev`, dropdown role, dan session login development sudah dihapus.
 Logout seluruh role menggunakan `POST /keluar`, mengakhiri semua guard terkait,
 menginvalidasi session, meregenerasi token CSRF, lalu kembali ke `/masuk`.
 
-Super Admin tetap dibuat atau dipulihkan dari terminal server menggunakan command
-`php artisan app:super-admin` dengan password minimal 12 karakter. Jika Google ID
+Super Admin dibuat atau dipulihkan dari terminal server menggunakan command
+`php artisan app:super-admin`. Tanpa opsi `--password`, password diminta secara
+interaktif dan tidak disimpan di source code. Command tersebut menyiapkan akun
+`lunashofa` dengan email `lunashofaazzura3@gmail.com` sebagai satu-satunya Super Admin.
+Jika Google ID
 Super Admin perlu dilepas karena pemulihan akun, lakukan perubahan database secara
 terkendali oleh pengelola server setelah identitas pemohon diverifikasi dan simpan
 catatan audit operasional. Aplikasi sengaja tidak menyediakan tombol reset Google ID

@@ -15,6 +15,7 @@ use Illuminate\Support\Str;
 
 class PrincipalController extends Controller
 {
+    // Controller Kepala Sekolah menyediakan tampilan baca, pratinjau, dan ekspor laporan.
     public function __construct(private PrincipalReports $data) {}
 
     private function principal(): ?Pengguna
@@ -62,6 +63,7 @@ class PrincipalController extends Controller
 
     public function dashboard()
     {
+        // Menampilkan ringkasan laporan dan status publikasi untuk Kepala Sekolah.
         $latest = $this->data->reports()->orderByDesc('tanggal_laporan')->first();
         $stats = ['students' => $this->data->students()->count(),
             'verified' => $this->data->notes('perkembangan', false)->count() + $this->data->notes('pendampingan', false)->count(),
@@ -73,6 +75,7 @@ class PrincipalController extends Controller
 
     public function students(Request $r)
     {
+        // Menampilkan daftar siswa dengan pencarian dan filter kelas.
         $f = $this->filters($r);
         $students = $this->data->studentFilters($this->data->students(), $f)->with(['kelas', 'relasiPendampingSiswa.pendamping.role'])
             ->withMax(['catatanPerkembangan as last_note' => fn ($q) => $q->whereIn('id_catatan_perkembangan', $this->data->notes('perkembangan')->select('id_catatan_perkembangan'))], 'tanggal_catatan')
@@ -83,6 +86,7 @@ class PrincipalController extends Controller
 
     public function student(int $siswa)
     {
+        // Menampilkan ringkasan perkembangan satu siswa.
         $student = $this->data->students()->with(['kelas', 'relasiPendampingSiswa.pendamping.role'])->findOrFail($siswa);
         $recaps = $this->data->recaps(['siswa' => $siswa])->orderByDesc('tanggal_rekap')->get();
 
@@ -91,6 +95,7 @@ class PrincipalController extends Controller
 
     public function recaps(Request $r)
     {
+        // Menampilkan rekap perkembangan yang telah tersedia.
         $f = $this->filters($r);
         $schoolYears = $this->schoolYears();
         [$semester, $schoolYear, $period, $periodStart, $periodEnd] = $this->recapPeriod($r, $schoolYears);
@@ -105,6 +110,7 @@ class PrincipalController extends Controller
 
     public function verifiedRecap(Request $r, int $siswa)
     {
+        // Menampilkan rekap terverifikasi untuk siswa yang dipilih.
         $schoolYears = $this->schoolYears();
         [$semester, $schoolYear, $period, $periodStart, $periodEnd] = $this->recapPeriod($r, $schoolYears);
         $student = $this->data->studentsForVerifiedRecap(['tahun_ajaran' => $schoolYear], $periodStart, $periodEnd)->findOrFail($siswa);
@@ -115,6 +121,7 @@ class PrincipalController extends Controller
 
     public function downloadVerifiedRecapsZip(Request $r, PrincipalExport $export)
     {
+        // Mengunduh kumpulan rekap terverifikasi dalam arsip ZIP.
         $f = $this->filters($r);
         $schoolYears = $this->schoolYears();
         [$semester, $schoolYear, $period, $periodStart, $periodEnd] = $this->recapPeriod($r, $schoolYears);
@@ -137,6 +144,7 @@ class PrincipalController extends Controller
 
     public function previewVerifiedRecap(Request $r, int $siswa)
     {
+        // Menampilkan pratinjau PDF rekap terverifikasi.
         [$document, $student, $semester, $schoolYear] = $this->verifiedRecapDocument($r, $siswa);
         $documents = [$document];
         $pdfUrl = route('dev.principal.verified-recap.download', ['siswa' => $student->getKey(),
@@ -149,6 +157,7 @@ class PrincipalController extends Controller
 
     public function downloadVerifiedRecap(Request $r, int $siswa, PrincipalExport $export)
     {
+        // Menghasilkan dan mengunduh PDF rekap terverifikasi.
         [$document] = $this->verifiedRecapDocument($r, $siswa);
         $filename = 'rekap-perkembangan-'.Str::slug($document['student']).'-'.Str::slug(str_replace('/', '-', $document['period'])).'.pdf';
 
@@ -254,6 +263,7 @@ class PrincipalController extends Controller
 
     public function archives(Request $r)
     {
+        // Menampilkan arsip laporan berdasarkan periode.
         $f = $this->filters($r);
         $archives = $this->archiveQuery($f)->orderByDesc('updated_at')->paginate($f['per_page'] ?? 10)->withQueryString();
         $years = $this->data->reports()->get(['tanggal_laporan'])->map(fn ($l) => $l->tanggal_laporan->year)->unique()->sortDesc()->values();
@@ -263,6 +273,7 @@ class PrincipalController extends Controller
 
     public function period(Request $r)
     {
+        // Menampilkan laporan bulanan untuk periode yang dipilih.
         $f = $this->filters($r);
         abort_unless(! empty($f['periode']) && $this->data->reports(['periode' => $f['periode']])->exists(), 404);
         $reports = $this->data->reports($f)->with(['rekap.siswa.kelas', 'rekap.sumberCatatan'])
@@ -326,6 +337,7 @@ class PrincipalController extends Controller
 
     public function preview(Request $r, ?int $rekap = null)
     {
+        // Menampilkan pratinjau dokumen sebelum ekspor.
         if (! $rekap) {
             $r->validate(['periode' => 'required|string|max:30']);
         }
@@ -340,11 +352,13 @@ class PrincipalController extends Controller
 
     public function exportRecaps(Request $r, string $format, PrincipalExport $export)
     {
+        // Mengekspor seluruh rekap sesuai format yang dipilih.
         return $this->export($r, $format, $export);
     }
 
     public function exportRecap(Request $r, int $rekap, string $format, PrincipalExport $export)
     {
+        // Mengekspor satu rekap perkembangan.
         abort_unless(in_array($format, ['pdf', 'xlsx'], true), 404);
 
         return $this->export($r, $format, $export, $rekap);
@@ -352,6 +366,7 @@ class PrincipalController extends Controller
 
     public function exportPeriod(Request $r, string $format, PrincipalExport $export)
     {
+        // Mengekspor laporan periode Kepala Sekolah.
         abort_unless(in_array($format, ['pdf', 'xlsx'], true), 404);
         $r->validate(['periode' => 'required|string|max:30']);
 

@@ -13,6 +13,7 @@ use Illuminate\Validation\Rule;
 
 class GuruMapelController extends Controller
 {
+    // Controller Guru Mapel membatasi siswa dan catatan berdasarkan penugasan aktif.
     public function __construct(private GuruMapelAccess $access) {}
 
     private function routeName(string $name): string

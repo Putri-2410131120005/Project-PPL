@@ -9,6 +9,7 @@ return new class extends Migration
      * Enforce publication consistency at the database layer for MySQL/MariaDB.
      * SQLite test runs skip these triggers; application service validation remains required.
      */
+    // Menjalankan perubahan struktur database untuk fitur terkait.
     public function up(): void
     {
         if (! in_array(DB::getDriverName(), ['mysql', 'mariadb'], true)) {
@@ -52,6 +53,7 @@ END
 SQL);
     }
 
+    // Mengembalikan perubahan struktur saat migration dibatalkan.
     public function down(): void
     {
         if (! in_array(DB::getDriverName(), ['mysql', 'mariadb'], true)) {

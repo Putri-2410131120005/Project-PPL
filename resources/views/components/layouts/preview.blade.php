@@ -1,3 +1,4 @@
+{{-- Layout bersama untuk halaman role dengan sidebar, topbar, flash message, dan konten utama. --}}
 @props(['role', 'roles', 'title' => 'Preview SMART-ABK', 'active' => 'dashboard'])
 @php($navigation = app(\App\Support\NavigationHierarchy::class)->resolve(request()))
 

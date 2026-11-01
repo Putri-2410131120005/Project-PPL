@@ -7,6 +7,7 @@ use Illuminate\Support\Facades\DB;
 
 return new class extends Migration
 {
+    // Menjalankan perubahan struktur database untuk fitur terkait.
     public function up(): void
     {
         Schema::create('verifikasi_catatan', function (Blueprint $table) {
@@ -39,6 +40,7 @@ return new class extends Migration
         // dan status_verifikasi harus 'Terverifikasi'.
     }
 
+    // Mengembalikan perubahan struktur saat migration dibatalkan.
     public function down(): void
     {
         Schema::dropIfExists('verifikasi_catatan');

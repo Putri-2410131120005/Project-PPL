@@ -1,3 +1,4 @@
+{{-- Menampilkan lembar rekap pertama pada area pratinjau PDF. --}}
 @php($document = $documents[0])
 <article class="abk-pdf-sheet">
     <header class="abk-pdf-letterhead">

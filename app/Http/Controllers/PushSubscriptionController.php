@@ -12,6 +12,7 @@ class PushSubscriptionController extends Controller
 {
     public function vapidKey(): JsonResponse
     {
+        // Mengirim kunci publik agar browser dapat mendaftarkan notifikasi push.
         abort_unless(config('push.vapid.publicKey'), 503, 'Push notification belum dikonfigurasi.');
 
         return response()->json(['publicKey' => config('push.vapid.publicKey')]);
@@ -19,6 +20,7 @@ class PushSubscriptionController extends Controller
 
     public function store(Request $request): JsonResponse
     {
+        // Hanya pengguna yang sedang login yang boleh menyimpan perangkatnya.
         $user = $this->authenticatedUser();
         abort_unless($user, 401);
 
@@ -43,9 +45,12 @@ class PushSubscriptionController extends Controller
 
     private function authenticatedUser(): ?Pengguna
     {
+        // Memeriksa guard sesuai urutan portal yang digunakan aplikasi.
         foreach (['parent', 'staff', 'guru_mapel'] as $guard) {
             $user = Auth::guard($guard)->user();
-            if ($user instanceof Pengguna) return $user;
+            if ($user instanceof Pengguna) {
+                return $user;
+            }
         }
 
         return null;

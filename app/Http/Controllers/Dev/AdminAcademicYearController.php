@@ -13,6 +13,7 @@ class AdminAcademicYearController extends AdminController
 {
     public function index(Request $request): View
     {
+        // Menampilkan tahun ajaran beserta jumlah kelas dan filter pencarian.
         $query = TahunAjaran::query()->withCount('kelas')->orderByDesc('mulai_ganjil');
         if ($search = trim((string) $request->string('cari'))) {
             $query->where('nama', 'like', "%{$search}%");
@@ -32,6 +33,7 @@ class AdminAcademicYearController extends AdminController
 
     public function store(Request $request): RedirectResponse
     {
+        // Menyimpan tahun ajaran baru dalam status belum aktif.
         TahunAjaran::query()->create($this->validatedData($request));
 
         return redirect()->route('dev.admin.academic-years.index')
@@ -45,6 +47,7 @@ class AdminAcademicYearController extends AdminController
 
     public function update(Request $request, TahunAjaran $tahunAjaran): RedirectResponse
     {
+        // Memperbarui periode dan menyamakan nama tahun ajaran pada kelas terkait.
         $data = $this->validatedData($request, $tahunAjaran);
         DB::transaction(function () use ($tahunAjaran, $data): void {
             $tahunAjaran->update($data);
@@ -56,6 +59,7 @@ class AdminAcademicYearController extends AdminController
 
     public function activate(TahunAjaran $tahunAjaran): RedirectResponse
     {
+        // Menjadikan satu periode aktif tanpa menghapus riwayat periode lain.
         DB::transaction(function () use ($tahunAjaran): void {
             TahunAjaran::query()->whereKeyNot($tahunAjaran->getKey())->get()->each(function (TahunAjaran $year) use ($tahunAjaran): void {
                 $year->update(['status' => $year->selesai_genap->lt($tahunAjaran->mulai_ganjil) ? 'Selesai' : 'Akan Datang']);
@@ -77,6 +81,7 @@ class AdminAcademicYearController extends AdminController
 
     private function validatedData(Request $request, ?TahunAjaran $tahunAjaran = null): array
     {
+        // Memvalidasi format periode, urutan tanggal, dan keunikan nama tahun ajaran.
         $uniqueName = Rule::unique('tahun_ajaran', 'nama');
         if ($tahunAjaran) {
             $uniqueName->ignore($tahunAjaran->getKey(), $tahunAjaran->getKeyName());

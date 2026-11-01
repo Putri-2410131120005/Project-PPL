@@ -11,6 +11,7 @@ class EnsureGoogleStaff
 {
     public function handle(Request $request, Closure $next, string ...$roles): Response
     {
+        // Mengambil identitas staf dari guard Google yang telah terdaftar.
         $guard = Auth::guard('staff');
         if (! $guard->check()) {
             return redirect()->guest(route('login'));
@@ -28,6 +29,7 @@ class EnsureGoogleStaff
         }
 
         if (! $valid) {
+            // Mengakhiri semua sesi staf saat akun tidak lagi memenuhi hak akses.
             $guard->logout();
             Auth::guard('guru_mapel')->logout();
             $request->session()->invalidate();
@@ -39,6 +41,8 @@ class EnsureGoogleStaff
         }
 
         $request->attributes->set('staff', $account);
+
+        // Menyediakan identitas khusus untuk controller yang membutuhkan role tertentu.
         if ($role === 'GPK') {
             $request->attributes->set('gpk', $account);
         }

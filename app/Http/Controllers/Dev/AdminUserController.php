@@ -664,6 +664,13 @@ class AdminUserController extends AdminController
                 ]);
             }
 
+            // An email change must require a fresh Google identity link. This
+            // prevents the old Google account from continuing to authenticate
+            // solely through its previous provider ID.
+            if ($account->google_id && strcasecmp((string) $account->email, (string) $data['email']) !== 0) {
+                $data['google_id'] = null;
+            }
+
             $account->update($data);
 
             foreach ($assignments as $assignment) {

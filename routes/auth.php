@@ -4,6 +4,7 @@ use App\Http\Controllers\Dev\ParentAuthController;
 use App\Http\Controllers\GoogleAuthController;
 use Illuminate\Support\Facades\Route;
 
+// Login utama untuk staf melalui Google atau orang tua melalui kredensial.
 Route::get('/masuk', [GoogleAuthController::class, 'login'])->name('login');
 Route::post('/masuk', [ParentAuthController::class, 'store'])
     ->middleware('throttle:6,1')
@@ -12,6 +13,7 @@ Route::get('/kepala-sekolah/masuk', [GoogleAuthController::class, 'roleLogin'])-
 Route::get('/gpk/masuk', [GoogleAuthController::class, 'roleLogin'])->defaults('role', 'gpk')->name('auth.role.gpk.login');
 Route::get('/tim-inklusi/masuk', [GoogleAuthController::class, 'roleLogin'])->defaults('role', 'tim-inklusi')->name('auth.role.tim-inklusi.login');
 Route::get('/admin/masuk', [GoogleAuthController::class, 'roleLogin'])->defaults('role', 'admin')->name('auth.role.admin.login');
+// Alur OAuth Google memakai role yang tersimpan pada akun, bukan pilihan pengguna.
 Route::get('/auth/google/redirect', [GoogleAuthController::class, 'redirectWithoutRole'])->name('auth.google.redirect');
 Route::get('/auth/google/{role}/redirect', [GoogleAuthController::class, 'redirect'])
     ->whereIn('role', ['kepala-sekolah', 'guru-mapel', 'gpk', 'tim-inklusi', 'admin'])

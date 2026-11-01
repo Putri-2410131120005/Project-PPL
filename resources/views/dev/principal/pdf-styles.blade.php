@@ -1,3 +1,4 @@
+{{-- Gaya khusus hasil PDF Kepala Sekolah. --}}
 <style>
     @page { margin: 25mm 25mm 25mm 30mm; size: A4 portrait; }
     .ks-pdf-page-sheet { background: #fff; box-sizing: border-box; color: #111; font-family: "DejaVu Serif", serif; font-size: 11pt; line-height: 1.45; margin: 0 auto 24px; min-height: 900px; padding: 28px 34px; width: 650px; }

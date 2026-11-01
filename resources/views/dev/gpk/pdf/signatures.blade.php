@@ -1,3 +1,4 @@
+{{-- Area tanda tangan untuk pengesahan dokumen laporan. --}}
 <table class="abk-pdf-signatures">
     <tr>
     <td class="abk-pdf-signature">

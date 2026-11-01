@@ -1,3 +1,4 @@
+{{-- Ringkasan siswa yang digunakan pada tampilan laporan beberapa role. --}}
 @props(['student', 'closeUrl', 'viewer' => 'gpk'])
 
 @php

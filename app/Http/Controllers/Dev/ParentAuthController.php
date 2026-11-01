@@ -16,6 +16,7 @@ class ParentAuthController extends Controller
 {
     public function create(): View|RedirectResponse
     {
+        // Mengarahkan orang tua yang sudah login ke halaman yang sesuai.
         if (Auth::guard('parent')->check()) {
             return $this->redirectAfterLogin(Auth::guard('parent')->user());
         }
@@ -25,6 +26,7 @@ class ParentAuthController extends Controller
 
     public function store(Request $request): RedirectResponse
     {
+        // Memvalidasi dan mencocokkan kredensial akun orang tua.
         $credentials = $request->validate([
             'username' => ['required', 'string'],
             'password' => ['required', 'string'],
@@ -53,6 +55,7 @@ class ParentAuthController extends Controller
 
     public function editPassword(): View
     {
+        // Menampilkan form penggantian password sementara.
         return view('dev.parent-auth.change-password', [
             'parent' => Auth::guard('parent')->user(),
         ]);
@@ -60,6 +63,7 @@ class ParentAuthController extends Controller
 
     public function updatePassword(Request $request): RedirectResponse
     {
+        // Menyimpan password baru dan menyelesaikan proses login pertama.
         $data = $request->validate([
             'password' => ['required', 'confirmed', Password::min(8)],
         ]);
@@ -84,6 +88,7 @@ class ParentAuthController extends Controller
 
     private function redirectAfterLogin(Pengguna $parent): RedirectResponse
     {
+        // Akun dengan password sementara wajib melewati halaman penggantian password.
         if ($parent->wajib_ganti_password) {
             return redirect()->route('dev.parent.password.edit');
         }

@@ -10,6 +10,7 @@ class PreventAuthenticatedPageCaching
 {
     public function handle(Request $request, Closure $next): Response
     {
+        // Mencegah halaman yang berisi data pribadi tersimpan di cache browser.
         $response = $next($request);
         $response->headers->set('Cache-Control', 'no-store, no-cache, must-revalidate, private');
         $response->headers->set('Pragma', 'no-cache');

@@ -1,3 +1,4 @@
+{{-- Isi halaman rekap siswa yang dicetak ke PDF. --}}
 <article class="abk-pdf-sheet">
     <header class="abk-pdf-letterhead">
         <p class="abk-pdf-school">{{ $schoolName }}</p>

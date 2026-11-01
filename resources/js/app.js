@@ -1,6 +1,7 @@
 import './bootstrap';
 import { Modal } from 'bootstrap';
 
+// Menyimpan state global yang diperlukan oleh PWA dan alur login Google.
 let serviceWorkerRegistration;
 
 const isInstalledPwa = () => window.matchMedia('(display-mode: standalone)').matches

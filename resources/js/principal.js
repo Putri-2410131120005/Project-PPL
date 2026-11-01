@@ -1,4 +1,4 @@
-// Scoped to A19; downloads announce completion only after a real response blob.
+// Interaksi khusus halaman Kepala Sekolah, termasuk filter, dialog, dan unduhan laporan.
 if (document.body.classList.contains('ks')) {
     document.querySelectorAll('[data-auto-submit]').forEach(input => input.addEventListener('change', () => input.form.requestSubmit()));
     const toast = document.querySelector('.ks-toast');

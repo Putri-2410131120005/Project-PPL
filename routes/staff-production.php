@@ -13,6 +13,7 @@ use App\Http\Middleware\EnsureGoogleStaff;
 use App\Http\Middleware\PreventAuthenticatedPageCaching;
 use Illuminate\Support\Facades\Route;
 
+// Route admin untuk pengelolaan data master dan akun pengguna.
 Route::middleware([EnsureGoogleStaff::class.':Admin,Admin / Pengelola', PreventAuthenticatedPageCaching::class])->group(function () {
     Route::get('/admin/dashboard', [StaffDashboardController::class, 'admin'])->name('dev.preview');
 
@@ -84,6 +85,7 @@ Route::middleware([EnsureGoogleStaff::class.':Admin,Admin / Pengelola', PreventA
     });
 });
 
+// Route Tim Inklusi untuk pendampingan dan catatan perkembangan siswa.
 Route::middleware([EnsureGoogleStaff::class.':Tim Inklusi', PreventAuthenticatedPageCaching::class])->prefix('tim-inklusi')->name('dev.tim-inklusi.')->group(function () {
     Route::get('/dashboard', [TimInklusiController::class, 'dashboard'])->name('dashboard');
     Route::get('/siswa', [TimInklusiController::class, 'students'])->name('students.index');
@@ -98,6 +100,7 @@ Route::middleware([EnsureGoogleStaff::class.':Tim Inklusi', PreventAuthenticated
     Route::put('/catatan/{catatan}', [TimInklusiController::class, 'updateNote'])->name('notes.update');
 });
 
+// Route GPK untuk verifikasi catatan, rekap, dan laporan perkembangan.
 Route::middleware([EnsureGoogleStaff::class.':GPK', PreventAuthenticatedPageCaching::class])->prefix('gpk')->name('dev.gpk.')->group(function () {
     Route::get('/dashboard', [GpkController::class, 'dashboard'])->name('dashboard');
     Route::get('/siswa', [GpkController::class, 'students'])->name('students.index');
@@ -121,6 +124,7 @@ Route::middleware([EnsureGoogleStaff::class.':GPK', PreventAuthenticatedPageCach
     Route::get('/orang-tua', [GpkController::class, 'parents'])->name('parents.index');
 });
 
+// Route Kepala Sekolah untuk membaca, meninjau, dan mengekspor hasil terbit.
 Route::middleware([EnsureGoogleStaff::class.':Kepala Sekolah', PreventAuthenticatedPageCaching::class])->prefix('kepala-sekolah')->name('dev.principal.')->group(function () {
     Route::get('dashboard', [PrincipalController::class, 'dashboard'])->name('dashboard');
     Route::get('siswa', [PrincipalController::class, 'students'])->name('students');

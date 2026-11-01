@@ -15,6 +15,7 @@ class GuruMapelNoteService
 
     public function save(Pengguna $guru, int $siswaId, array $input, ?int $noteId = null): CatatanPerkembangan
     {
+        // Menyimpan draft atau pengiriman catatan dalam satu transaksi database.
         $note = DB::transaction(function () use ($guru, $siswaId, $input, $noteId) {
             $access = app(GuruMapelAccess::class);
             $siswa = $access->student($guru, $siswaId);

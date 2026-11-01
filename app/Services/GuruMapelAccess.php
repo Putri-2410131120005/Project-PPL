@@ -14,6 +14,7 @@ class GuruMapelAccess
 {
     public function actor(Pengguna $guru): Pengguna
     {
+        // Validasi identitas dilakukan ulang agar service aman dipakai di luar middleware.
         $guru = Pengguna::with('role')->findOrFail($guru->getKey());
         abort_unless($guru->status_akun === 'Aktif' && $guru->role?->nama_role === 'Guru Mapel', 403);
 
@@ -22,6 +23,7 @@ class GuruMapelAccess
 
     public function assignments(Pengguna $guru): Builder
     {
+        // Mengambil kelas yang memang ditugaskan kepada guru tersebut.
         $this->actor($guru);
 
         return RelasiGuruMapelKelas::where('id_pengguna', $guru->getKey());
@@ -29,6 +31,7 @@ class GuruMapelAccess
 
     public function activeAssignmentsForStudent(Pengguna $guru, Siswa $siswa): Builder
     {
+        // Penugasan aktif harus berasal dari kelas dan mata pelajaran yang tidak diarsipkan.
         return $this->assignments($guru)
             ->where('id_kelas', $siswa->id_kelas)
             ->whereHas('kelas', fn ($query) => $query
@@ -39,6 +42,7 @@ class GuruMapelAccess
 
     public function assignedSubjectId(Pengguna $guru, Siswa $siswa): int
     {
+        // Catatan hanya boleh memakai satu mata pelajaran aktif dari penugasan admin.
         $subjectIds = $this->activeAssignmentsForStudent($guru, $siswa)
             ->distinct()->pluck('id_mapel');
 
@@ -58,11 +62,13 @@ class GuruMapelAccess
 
     public function student(Pengguna $guru, int $id): Siswa
     {
+        // Detail siswa tetap dibatasi pada kelas yang ditugaskan kepada guru.
         return $this->students($guru)->with(['kelas', 'relasiPendampingSiswa.pendamping.role'])->findOrFail($id);
     }
 
     public function notes(Pengguna $guru): Builder
     {
+        // Daftar catatan dibatasi pada pembuat, siswa, dan mata pelajaran yang sesuai.
         return $this->roleValidatedNotes(CatatanPerkembangan::query())->where('id_pembuat', $this->actor($guru)->getKey())
             ->whereIn('id_siswa', $this->students($guru)->select('id_siswa'))
             ->whereHas('siswa', fn ($s) => $s->whereExists(function ($q) use ($guru) {
@@ -84,6 +90,7 @@ class GuruMapelAccess
 
     public function writable(Pengguna $guru, Siswa $siswa, int $mapel): void
     {
+        // Pemeriksaan terakhir sebelum catatan baru atau revisi disimpan.
         abort_unless($siswa->status_siswa === 'Aktif'
             && $this->activeAssignmentsForStudent($guru, $siswa)->where('id_mapel', $mapel)->exists(), 403);
     }

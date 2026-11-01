@@ -16,8 +16,10 @@ use Illuminate\View\View;
 
 class ParentPortalController extends Controller
 {
+    // Controller portal orang tua hanya menampilkan data anak dan catatan yang telah terbit.
     public function dashboard(): View
     {
+        // Menampilkan ringkasan anak yang terhubung dengan akun orang tua.
         $data = $this->pageData();
         $student = $data['student'];
         $notes = $student ? $this->publishedNotes($student) : collect();
@@ -33,6 +35,7 @@ class ParentPortalController extends Controller
 
     public function notes(Request $request): View
     {
+        // Menampilkan catatan yang sudah dipublikasikan kepada orang tua.
         $data = $this->pageData();
         $student = $data['student'];
         $date = $request->date('tanggal')?->toDateString();
@@ -54,6 +57,7 @@ class ParentPortalController extends Controller
 
     public function note(string $type, int $id): View
     {
+        // Menampilkan detail catatan yang telah lolos verifikasi.
         $data = $this->pageData();
         $student = $data['student'];
         abort_unless($student, 404);
@@ -65,6 +69,7 @@ class ParentPortalController extends Controller
 
     public function reports(Request $request): View
     {
+        // Menampilkan laporan perkembangan yang tersedia untuk orang tua.
         $data = $this->pageData();
         $student = $data['student'];
         $currentSemester = now()->month >= 7 ? 'Ganjil' : 'Genap';

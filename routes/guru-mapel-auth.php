@@ -6,6 +6,7 @@ use App\Http\Middleware\EnsureGuruMapelAuthenticated;
 use App\Http\Middleware\PreventAuthenticatedPageCaching;
 use Illuminate\Support\Facades\Route;
 
+// Route khusus guru mata pelajaran dengan guard dan akses kelas terpisah.
 Route::prefix('guru-mapel')->name('guru-mapel.')->group(function () {
     Route::get('masuk', [GoogleAuthController::class, 'roleLogin'])->defaults('role', 'guru-mapel')->name('login');
 

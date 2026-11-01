@@ -1,3 +1,4 @@
+{{-- Dokumen utama PDF Kepala Sekolah yang memuat halaman laporan terpilih. --}}
 <!doctype html>
 <html lang="id">
 <head>

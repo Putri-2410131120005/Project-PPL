@@ -10,6 +10,7 @@ abstract class AdminController extends Controller
 {
     protected function perPage(Request $request): int
     {
+        // Membatasi pilihan jumlah data per halaman ke nilai yang disediakan UI.
         $perPage = $request->integer('per_halaman');
 
         return in_array($perPage, [10, 30, 50, 100], true) ? $perPage : 10;
@@ -22,6 +23,7 @@ abstract class AdminController extends Controller
      */
     protected function viewContext(): array
     {
+        // Menyediakan profil admin dan identitas role untuk seluruh halaman admin.
         $admin = Auth::guard('staff')->user();
         abort_unless($admin?->is_super_admin, 403);
         $name = $admin?->nama ?: 'Super Admin Sekolah';

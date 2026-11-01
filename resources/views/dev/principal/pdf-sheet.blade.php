@@ -1,3 +1,4 @@
+{{-- Satu lembar laporan Kepala Sekolah untuk dicetak atau digabungkan. --}}
 <article class="ks-pdf-page-sheet">
     <header class="ks-pdf-letterhead">
         <p class="ks-pdf-school">SMAN 4 BANJARMASIN</p>
