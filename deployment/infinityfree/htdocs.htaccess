@@ -1,0 +1,27 @@
+# Install this file as /htdocs/.htaccess on InfinityFree.
+# Keep public/.htaccess unchanged.
+
+RewriteEngine On
+
+<IfModule mod_autoindex.c>
+    Options -Indexes
+</IfModule>
+
+# Block hidden files and directories while preserving ACME/hosting validation.
+RewriteRule (^|/)\.(?!well-known(?:/|$)) - [F,L,NC]
+
+# Never expose application source, secrets, logs, dependency metadata, or SQL.
+RewriteRule ^(?:\.env(?:\..*)?|artisan|composer\.(?:json|lock)|package(?:-lock)?\.json|phpunit\.xml|vite\.config\.js)(?:/|$) - [F,L,NC]
+RewriteRule ^(?:README(?:\.md)?|CHANGELOG(?:\.md)?|LICENSE|server\.php)(?:/|$) - [F,L,NC]
+RewriteRule ^(?:app|bootstrap|config|database|resources|routes|storage|tests|vendor|node_modules)(?:/|$) - [F,L,NC]
+RewriteRule \.(?:env|log|sql|sqlite|bak|dist|key|pem)$ - [F,L,NC]
+
+# Do not publish storage/app/public. Production photos are served only through
+# Laravel's authenticated /foto-siswa/{siswa} route.
+RewriteRule ^storage(?:/|$) - [F,L,NC]
+
+# Prevent a rewrite loop if someone requests /public/... explicitly.
+RewriteRule ^public(?:/|$) - [L]
+
+# The InfinityFree web root cannot be changed from htdocs to Laravel's public.
+RewriteRule ^(.*)$ public/$1 [L]

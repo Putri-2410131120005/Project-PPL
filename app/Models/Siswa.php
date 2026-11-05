@@ -25,8 +25,16 @@ class Siswa extends Model
 
     public function getFotoUrlAttribute(): ?string
     {
-        // Gunakan URL relatif agar foto tetap mengikuti host dan port aplikasi yang aktif.
-        return $this->foto ? '/storage/'.ltrim(str_replace('\\', '/', $this->foto), '/') : null;
+        if (! $this->foto) {
+            return null;
+        }
+
+        if (config('deployment.protected_student_photos')) {
+            return route('student-photos.show', $this);
+        }
+
+        // Development tetap memakai URL relatif dan storage:link lokal.
+        return '/storage/'.ltrim(str_replace('\\', '/', $this->foto), '/');
     }
 
     public function kelas(): BelongsTo

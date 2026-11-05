@@ -26,31 +26,48 @@ class ParentAuthController extends Controller
 
     public function store(Request $request): RedirectResponse
     {
-        // Memvalidasi dan mencocokkan kredensial akun orang tua.
+        // Memvalidasi kredensial akun yang memang diizinkan menggunakan password.
         $credentials = $request->validate([
             'username' => ['required', 'string'],
             'password' => ['required', 'string'],
         ]);
 
-        $parent = Pengguna::query()
+        $account = Pengguna::query()
             ->with('role')
             ->where('username', $credentials['username'])
             ->where('status_akun', 'Aktif')
-            ->whereHas('role', fn ($roles) => $roles->where('nama_role', 'Orang Tua'))
+            ->where(function ($accounts): void {
+                $accounts->whereHas('role', fn ($roles) => $roles->where('nama_role', 'Orang Tua'))
+                    ->orWhere(function ($superAdmins): void {
+                        $superAdmins
+                            ->where('is_super_admin', true)
+                            ->whereHas('role', fn ($roles) => $roles->whereIn('nama_role', ['Admin', 'Admin / Pengelola']));
+                    });
+            })
             ->first();
 
-        if (! $parent || ! Hash::check($credentials['password'], $parent->password)) {
+        if (! $account || ! Hash::check($credentials['password'], $account->password)) {
             throw ValidationException::withMessages([
                 'username' => 'Username atau password tidak sesuai.',
             ]);
         }
 
-        Auth::guard('parent')->login($parent);
         Auth::guard('staff')->logout();
         Auth::guard('guru_mapel')->logout();
+        Auth::guard('parent')->logout();
+
+        if ($account->role?->nama_role === 'Orang Tua') {
+            Auth::guard('parent')->login($account);
+        } else {
+            Auth::guard('staff')->login($account);
+        }
         $request->session()->regenerate();
 
-        return $this->redirectAfterLogin($parent);
+        if ($account->role?->nama_role === 'Orang Tua') {
+            return $this->redirectAfterLogin($account);
+        }
+
+        return redirect()->route('dev.preview');
     }
 
     public function editPassword(): View

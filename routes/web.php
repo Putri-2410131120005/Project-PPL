@@ -2,6 +2,7 @@
 
 use App\Http\Controllers\GoogleAuthController;
 use App\Http\Controllers\PushSubscriptionController;
+use App\Http\Controllers\StudentPhotoController;
 use Illuminate\Support\Facades\Route;
 
 // Halaman awal dan endpoint umum aplikasi.
@@ -15,6 +16,7 @@ Route::view('/offline', 'offline')->name('offline');
 // Endpoint untuk pendaftaran notifikasi push pada perangkat.
 Route::get('/push/vapid-key', [PushSubscriptionController::class, 'vapidKey'])->name('push.vapid-key');
 Route::post('/push/subscriptions', [PushSubscriptionController::class, 'store'])->name('push.subscriptions.store');
+Route::get('/foto-siswa/{siswa}', StudentPhotoController::class)->name('student-photos.show');
 
 // Route modul yang sama dipakai pada local, testing, dan production. Seluruhnya
 // dilindungi autentikasi nyata; tidak ada pemilih role atau bypass development.

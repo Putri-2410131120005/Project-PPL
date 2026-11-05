@@ -112,7 +112,8 @@ class GpkVerifikasiServiceTest extends TestCase
         $id = $this->perkembangan();
         $svc = app(GpkVerifikasiService::class);
         $verifikasi = $svc->verifikasi('perkembangan', $id, $this->idGpk, 'Terverifikasi');
-        $verifikasi->forceFill(['id_publikator' => null, 'tanggal_publikasi' => null])->save();
+        $verifikasi->authorizePublicationMutationBy($this->idGpk)
+            ->forceFill(['id_publikator' => null, 'tanggal_publikasi' => null])->save();
         $this->assertEquals(1, CatatanPerkembangan::dipublikasikan()->count());
         DB::table('catatan_perkembangan')->where('id_catatan_perkembangan', $id)
             ->update(['versi_pengajuan' => 2, 'status_pengajuan' => 'Dikirim']);

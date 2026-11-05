@@ -6,6 +6,7 @@ use App\Models\Pengguna;
 use App\Models\Role;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Route;
+use Illuminate\Support\Facades\Hash;
 use Tests\TestCase;
 
 class AuthenticationFinalizationTest extends TestCase
@@ -56,6 +57,53 @@ class AuthenticationFinalizationTest extends TestCase
 
         $this->get(route('dev.tim-inklusi.dashboard'))->assertRedirect(route('login'));
         $this->assertGuest('staff');
+    }
+
+    public function test_super_admin_can_login_with_username_and_password(): void
+    {
+        $superAdmin = $this->staff('Admin / Pengelola', 'superadmin-password@example.test');
+        $superAdmin->forceFill([
+            'username' => 'superadmin-existing',
+            'password' => Hash::make('password-super-admin'),
+            'is_super_admin' => true,
+        ])->save();
+
+        $this->post(route('dev.parent.login.store'), [
+            'username' => 'superadmin-existing',
+            'password' => 'password-super-admin',
+        ])->assertRedirect(route('dev.preview'));
+
+        $this->assertAuthenticatedAs($superAdmin, 'staff');
+        $this->assertGuest('parent');
+        $this->assertTrue(Hash::check('password-super-admin', $superAdmin->fresh()->password));
+    }
+
+    public function test_password_login_rejects_non_super_admin_staff_roles(): void
+    {
+        $accounts = [
+            ['Admin', false],
+            ['GPK', false],
+            ['Tim Inklusi', false],
+            ['Guru Mapel', false],
+            ['Kepala Sekolah', false],
+        ];
+
+        foreach ($accounts as $index => [$role, $isSuperAdmin]) {
+            $account = $this->staff($role, "password-rejected-{$index}@example.test");
+            $account->forceFill([
+                'username' => "password-rejected-{$index}",
+                'password' => Hash::make('password-staff'),
+                'is_super_admin' => $isSuperAdmin,
+            ])->save();
+
+            $this->post(route('dev.parent.login.store'), [
+                'username' => $account->username,
+                'password' => 'password-staff',
+            ])->assertSessionHasErrors('username');
+
+            $this->assertGuest('staff');
+            $this->assertGuest('parent');
+        }
     }
 
     public function test_logout_invalidates_every_auth_guard_and_protected_pages_are_not_cached(): void

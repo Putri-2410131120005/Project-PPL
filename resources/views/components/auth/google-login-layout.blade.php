@@ -31,7 +31,7 @@
             <div class="abk-parent-access-form-wrap">
                 <section class="abk-parent-access-form-card">
                     <h2>Selamat datang</h2>
-                    <p>Masuk dengan identitas akun dan password dari sekolah, atau gunakan Google untuk akun internal.</p>
+                    <p>Orang Tua dan Super Admin dapat masuk dengan username serta password. Akun internal lainnya menggunakan Google.</p>
 
                     <form method="POST" action="{{ route('dev.parent.login.store') }}">
                         @csrf
@@ -75,7 +75,7 @@
                     </a>
 
                     <div class="abk-parent-access-help">
-                        Google digunakan oleh GPK, Tim Inklusi, Kepala Sekolah, Guru Mata Pelajaran, dan Super Admin.
+                        Google digunakan oleh Admin/Pengelola, GPK, Tim Inklusi, Kepala Sekolah, Guru Mata Pelajaran, dan Super Admin.
                         @unless($googleConfigured)<br><span class="text-danger">Google Login belum dikonfigurasi.</span>@endunless
                     </div>
                 </section>

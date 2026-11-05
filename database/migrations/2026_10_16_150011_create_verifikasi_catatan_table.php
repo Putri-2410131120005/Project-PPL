@@ -29,15 +29,14 @@ return new class extends Migration
         });
 
         // MariaDB 10.4+: perlindungan konsistensi tambahan.
-        if (DB::getDriverName() === 'mysql') {
+        if (in_array(DB::getDriverName(), ['mysql', 'mariadb'], true)) {
             DB::statement("ALTER TABLE `verifikasi_catatan` ADD CONSTRAINT `chk_verifikasi_sumber_xor` CHECK (((id_catatan_perkembangan IS NOT NULL AND id_catatan_pendampingan IS NULL) OR (id_catatan_perkembangan IS NULL AND id_catatan_pendampingan IS NOT NULL)))");
+            DB::statement("ALTER TABLE `verifikasi_catatan` ADD CONSTRAINT `chk_verifikasi_publikasi` CHECK (((id_publikator IS NULL AND tanggal_publikasi IS NULL) OR (id_publikator IS NOT NULL AND tanggal_publikasi IS NOT NULL AND status_verifikasi = 'Terverifikasi')))");
         }
 
-        // TODO (kompatibilitas XAMPP MariaDB 10.4): aktifkan kembali CHECK publikasi
-        // dalam migration BARU setelah penyebab terputusnya koneksi MariaDB
-        // pada ALTER TABLE diinvestigasi. Saat ini wajib divalidasi pada aplikasi:
-        // jika dipublikasikan, id_publikator dan tanggal_publikasi harus ada,
-        // dan status_verifikasi harus 'Terverifikasi'.
+        // Application validation remains mandatory because some shared-hosting
+        // accounts do not grant CREATE TRIGGER and direct database constraints
+        // cannot enforce which authenticated GPK initiated the publication.
     }
 
     // Mengembalikan perubahan struktur saat migration dibatalkan.

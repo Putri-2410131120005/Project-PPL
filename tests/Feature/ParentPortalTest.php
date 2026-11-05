@@ -219,13 +219,14 @@ class ParentPortalTest extends TestCase
     private function publication(?int $assistanceId, ?int $developmentId): void
     {
         $gpk = $this->user('GPK '.Str::random(5), 'GPK');
-        VerifikasiCatatan::query()->forceCreate([
+        $verification = new VerifikasiCatatan();
+        $verification->authorizePublicationMutationBy($gpk)->forceFill([
             'id_catatan_pendampingan' => $assistanceId,
             'id_catatan_perkembangan' => $developmentId,
             'id_verifikator' => $gpk->getKey(), 'versi_pengajuan' => 1,
             'status_verifikasi' => 'Terverifikasi', 'tanggal_verifikasi' => now(),
             'id_publikator' => $gpk->getKey(), 'tanggal_publikasi' => now(),
-        ]);
+        ])->save();
     }
 
     private function user(string $name, string $roleName): Pengguna

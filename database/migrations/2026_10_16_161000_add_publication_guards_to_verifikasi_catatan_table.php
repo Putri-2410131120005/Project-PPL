@@ -16,6 +16,10 @@ return new class extends Migration
             return;
         }
 
+        if (! config('deployment.database_triggers', true)) {
+            return;
+        }
+
         // Safe to re-run after an interrupted first attempt: rebuild only these triggers.
         DB::unprepared('DROP TRIGGER IF EXISTS `trg_verifikasi_publikasi_insert`');
         DB::unprepared('DROP TRIGGER IF EXISTS `trg_verifikasi_publikasi_update`');
@@ -57,6 +61,10 @@ SQL);
     public function down(): void
     {
         if (! in_array(DB::getDriverName(), ['mysql', 'mariadb'], true)) {
+            return;
+        }
+
+        if (! config('deployment.database_triggers', true)) {
             return;
         }
 

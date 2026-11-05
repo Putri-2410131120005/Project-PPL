@@ -1,0 +1,19 @@
+# Jalankan terhadap domain pilot setelah upload.
+# Semua URL berikut harus menghasilkan 403 atau 404, bukan 200.
+
+/.env
+/.env.production
+/app/Models/Siswa.php
+/config/app.php
+/routes/web.php
+/vendor/autoload.php
+/database/migrations/2026_10_16_150003_create_siswa_table.php
+/storage/logs/laravel.log
+/storage/app/public/foto-siswa/example.jpg
+/composer.json
+/composer.lock
+/phpunit.xml
+/artisan
+
+# URL ini juga harus gagal untuk pengguna tanpa sesi yang sesuai:
+/foto-siswa/1

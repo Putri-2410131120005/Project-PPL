@@ -246,12 +246,14 @@ class PrincipalModuleTest extends TestCase
     public function test_verified_is_not_published_and_invalid_sources_fail_closed(): void
     {
         $f = $this->official();
-        $f['verification']->forceFill(['id_publikator' => null, 'tanggal_publikasi' => null])->save();
+        $f['verification']->authorizePublicationMutationBy($this->gpk)
+            ->forceFill(['id_publikator' => null, 'tanggal_publikasi' => null])->save();
         $data = app(PrincipalReports::class);
         $this->assertSame(1, $data->notes('perkembangan', false)->count());
         $this->assertSame(0, $data->notes('perkembangan')->count());
         $this->get(route('dev.principal.recap', $f['recap']->getKey()))->assertNotFound();
-        $f['verification']->forceFill(['id_publikator' => $this->gpk->getKey(), 'tanggal_publikasi' => now()])->save();
+        $f['verification']->authorizePublicationMutationBy($this->gpk)
+            ->forceFill(['id_publikator' => $this->gpk->getKey(), 'tanggal_publikasi' => now()])->save();
         $f['note']->forceFill(['versi_pengajuan' => 2])->save();
         $this->assertSame(0, $data->reports()->count());
         $f['note']->forceFill(['versi_pengajuan' => 1, 'id_siswa' => Siswa::where('nis', '2026003')->sole()->getKey()])->save();

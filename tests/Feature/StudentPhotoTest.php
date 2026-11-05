@@ -107,6 +107,47 @@ class StudentPhotoTest extends TestCase
             ->assertSee(Storage::disk('public')->url($photoPath));
     }
 
+    public function test_protected_student_photo_requires_the_correct_authenticated_scope(): void
+    {
+        config()->set('deployment.protected_student_photos', true);
+        Storage::fake('public');
+        $class = $this->makeClass();
+        $photoPath = UploadedFile::fake()->image('terlindung.jpg')->store('foto-siswa', 'public');
+        $student = Siswa::create([
+            'id_kelas' => $class->id_kelas,
+            'nis' => 'FOTO-004',
+            'nama_siswa' => 'Anak Terlindung',
+            'foto' => $photoPath,
+            'status_siswa' => 'Aktif',
+        ]);
+
+        $this->get(route('student-photos.show', $student))->assertNotFound();
+
+        $gpkRole = Role::create(['nama_role' => 'GPK']);
+        $unassigned = Pengguna::create([
+            'id_role' => $gpkRole->id_role,
+            'nama' => 'GPK Tidak Ditugaskan',
+            'email' => 'gpk-tidak-ditugaskan@example.test',
+            'password' => 'password',
+            'status_akun' => 'Aktif',
+        ]);
+        $this->actingAs($unassigned, 'staff')
+            ->get(route('student-photos.show', $student))
+            ->assertNotFound();
+
+        $this->withSession(['dev_role' => 'admin'])
+            ->get(route('student-photos.show', $student))
+            ->assertOk()
+            ->assertHeader('X-Content-Type-Options', 'nosniff');
+
+        $response = $this->withSession(['dev_role' => 'admin'])
+            ->get(route('student-photos.show', $student));
+        $this->assertStringContainsString('private', (string) $response->headers->get('Cache-Control'));
+        $this->assertStringContainsString('no-store', (string) $response->headers->get('Cache-Control'));
+
+        config()->set('deployment.protected_student_photos', false);
+    }
+
     private function makeClass(): Kelas
     {
         return Kelas::create([

@@ -99,6 +99,7 @@ class GpkVerifikasiService
             }
 
             $verifikasi = new VerifikasiCatatan();
+            $verifikasi->authorizePublicationMutationBy($idGpk);
             $verifikasi->forceFill([
                 'id_catatan_perkembangan' => $jenis === 'perkembangan' ? $catatan->getKey() : null,
                 'id_catatan_pendampingan' => $jenis === 'pendampingan' ? $catatan->getKey() : null,
